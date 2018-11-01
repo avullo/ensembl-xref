@@ -1,0 +1,38 @@
+language: perl
+
+perl:
+  - '5.14'
+  - '5.12'
+  - '5.10'
+
+env:
+  matrix:
+  - COVERALLS=true
+  - COVERALLS=false
+  global:
+  - secure: Ju069PzB8QZG3302emIhyCEEQfVfVsiXy0nGcR6hue+vW9nE82NnOEZHbZIwUCXEjUaZRMVQ31Em70Ky22OrLK4D59bs2ClH21u8URDGD/cn7JNPGWFrgxuaXQKMQrw72doeB0+w1+ShURtqM41vITjinyU3y34RZ1NcbDwYSZI=
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - unzip
+
+before_install:
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+  - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl.git
+  - git clone -b bioperl-release-1-6-1 --depth 1 https://github.com/bioperl/bioperl-live.git
+
+install:
+  - cpanm -v --installdeps --notest .
+  - cpanm -n Devel::Cover::Report::Coveralls
+
+script: "./travisci/harness.sh"
+
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+  slack:
+    secure: gTcWzQsVHKPxRJ1u0U2l2+QVujmG1uFW44kAO3l46V5Im5uLTOLeM20ykk6ox4kaPHLs5ky7NGzcJmTDLaHBKjI4Sa34l4tJd0lhkv+hKj9TSv5pDDCdUX8v869Nm8LqJKh26HqvVcN7eHFRatLD/tfYvvkaP1rLLhwLLdr7czQ=
