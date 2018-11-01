@@ -61,10 +61,12 @@ sub new {
 
   my $class = ref($caller) || $caller;
   my $self =  bless {
-		     source_id    => $args{source_id},
-		     species_id   => $args{species_id},
-		     species_name => $args{species},
-		     files        => $args{files},
+		     source_id    => $args{source_id}, # could croak here
+		     species_id   => $args{species_id}, # could croak here
+		     species      => $args{species},
+		     rel_file     => $args{rel_file},
+		     files        => $args{files}, # could croak here
+		     dbi          => $args{dbi}, # could croak here
 		     dba          => $args{dba},
 		     verbose      => $args{verbose} // 0,
 		    }, $class;
