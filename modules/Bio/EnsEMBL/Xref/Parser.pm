@@ -43,63 +43,50 @@ package Bio::EnsEMBL::Xref::Parser;
 use strict;
 use warnings;
 
+use Carp;
+
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =head1 METHODS
 
 =head2 new
 
+Base constructor
+
 =cut
 
 sub new {
-  my $caller = shift;
+  my ($caller, %args) = @_;
 
   my $class = ref($caller) || $caller;
-  my $self =  bless {}, $class;
+  my $self =  bless {
+		     source_id    => $args{source_id},
+		     species_id   => $args{species_id},
+		     species_name => $args{species},
+		     files        => $args{files},
+		     dba          => $args{dba},
+		     verbose      => $args{verbose} // 0,
+		    }, $class;
 
-  return $self;
-  
-}
-
-# TODO
-# sub run {
-#   my ($self, %args) = @_;
-
-#   # common stuff to all parsers
-
-#   # dynamic dispatch to either (overridden) run_1 or run_2
-#   my $dispatch = {
-# 		  opt1 => $self->run_1,
-# 		  opt2 => $self->run_2
-# 		 }->{(exists $args{db})?'opt2':'opt1'};
-
-#   throw("Unable to get the correct method to call") unless defined $dispatch;
-#   $dispatch->(%args);
-# }
-
-sub run {
-  my ($self, %args) = @_;
-  
-  my $self->{source_id}    = $args{source_id};
-  my $self->{species_id}   = $args{species_id};
-  my $self->{species_name} = $args{species};
-  my $self->{files}        = $args{files};
-  my $self->{verbose}      = $args{verbose} // 0;
-  my $self->{dbi}          = $args{dbi} // $self->dbi;
-
-  croak "Need to pass source_id, species_id, files and rel_file as pairs"
+  croak "Need to pass source_id, species_id and files"
     unless defined $self->{source_id} and defined $self->{species_id} and defined $self->{files};
 
-  my $file = shift @{$self->{files}};
-  my $self->{io} = $self->get_filehandle($file);
-  croak "Could not open $file\n" unless defined $self->{io};
+  assert_ref($self->{files}, 'ARRAY');
 
+  return $self;
 }
 
-sub run_script {
-  my ($self, %args) = @_;
+=head2 run
 
-  throw("Not yet done");
+Abstract method, implement in parser subclass
+
+=cut
+
+sub run {
+  my $self = shift;
+
+  throw("Cannot call Parser::run abstract method: provide implementation in subclass");
 }
 
 1;
