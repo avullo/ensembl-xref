@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
@@ -16,7 +17,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 =cut
-
 
 =head1 CONTACT
 
@@ -45,8 +45,8 @@ use warnings;
 
 use Carp;
 
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
 =head1 METHODS
 
@@ -57,22 +57,27 @@ Base constructor
 =cut
 
 sub new {
-  my ($caller, %args) = @_;
+  my ( $caller, %args ) = @_;
 
   my $class = ref($caller) || $caller;
-  my $self =  bless {
-                      source_id    => $args{source_id},
-                      species_id   => $args{species_id},
-                      species_name => $args{species},
-                      files        => $args{files},
-                      dba          => $args{dba},
-                      verbose      => $args{verbose} // 0,
-                    }, $class;
 
-  croak "Need to pass source_id, species_id and files"
-    unless defined $self->{source_id} and defined $self->{species_id} and defined $self->{files};
+  my $self = bless {
+     source_id  => $args{source_id},
+     species_id => $args{species_id},
+     species    => $args{species},
+     rel_file   => $args{rel_file},
+     files => $args{files},
+     dbi   => $args{dbi},
+     dba   => $args{dba},
+     verbose => $args{verbose} // 0, }, $class;
 
-  assert_ref($self->{files}, 'ARRAY');
+  defined $self->{source_id} and defined $self->{species_id}
+    and defined $self->{files} and defined $self->{dbi} or croak "Need to pass (source_id, species_id, files, dbi) args";
+
+  # extra necessary param checking
+  assert_ref( $self->{files}, 'ARRAY' );
+  assert_ref( $self->{dbi},   'DBI' );
+  assert_ref( $self->{dba},   'Bio::EnsEMBL::DBSQL::DBAdaptor' ) if defined $self->{dba};
 
   return $self;
 }

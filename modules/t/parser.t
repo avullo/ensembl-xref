@@ -28,22 +28,28 @@ limitations under the License.
 
 =cut
 
-use strict;
-use warnings;
 use Test::More;
 use Test::Exception;
 
 use_ok 'Bio::EnsEMBL::Xref::Parser';
 
+# check it throws without required arguments
 throws_ok { Bio::EnsEMBL::Xref::Parser->new() } qr/Need to pass/, 'Throws with no arguments';
 throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1) } qr/Need to pass/, 'Throws with not enough arguments';
 throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2) } qr/Need to pass/, 'Throws with not enough arguments';
-throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => 'dummy') }
-  qr/check it is a reference/, 'Throws with scalar files arg';
-throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => {'dummy'}) }
-  qr/was expected/, 'Throws with non arrayref files arg';
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => 'dummy') } qr/Need to pass/, 'Throws with not enough arguments';
 
-my $parser = Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy']);
+# check it throws with wrong argument types
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => 'dummy', dbi => 'dummy') }
+  qr/check it is a reference/, 'Throws with scalar files arg';
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => {'dummy'}, dbi => 'dummy') }
+  qr/was expected/, 'Throws with non arrayref files arg';
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {}) }
+  qr/was expected/, 'Throws with non DBI dbi arg';
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {}, dba => {}) }
+  qr/was expected/, 'Throws with non DBAdaptor dba arg';
+
+my $parser = Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {});
 isa_ok($parser, 'Bio::EnsEMBL::Xref::Parser');
 
 throws_ok { $parser->run() } qr/abstract method/, 'Throws calling abstract method';
