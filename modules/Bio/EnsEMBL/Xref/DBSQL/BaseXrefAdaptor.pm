@@ -361,7 +361,7 @@ sub _first_element {
     return $arr->[0];
   }
   else {
-    return undef;
+    return;
   }
 }
 
