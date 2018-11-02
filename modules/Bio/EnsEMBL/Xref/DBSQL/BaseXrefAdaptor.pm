@@ -63,7 +63,7 @@ sub fetch_all {
 
 =head2 fetch_by_dbID
 
-  Arg	     : ID of genome info
+  Arg        : ID of genome info
   Arg        : (optional) if 1, expand children of genome info
   Description: Fetch genome info for specified ID
   Returntype : Bio::EnsEMBL::MetaData::GenomeInfo
@@ -84,7 +84,7 @@ sub fetch_by_dbID {
 
 =head2 fetch_by_dbIDs
 
-  Arg	     : IDs of genome info
+  Arg        : IDs of genome info
   Arg        : (optional) if 1, expand children of genome info
   Description: Fetch genome info for specified ID
   Returntype : Bio::EnsEMBL::MetaData::GenomeInfo
@@ -153,7 +153,7 @@ sub _get_obj_class {
 
 =head2 _fetch_generic_with_args
 
-  Arg	     : hashref of arguments by column
+  Arg        : hashref of arguments by column
   Arg        : (optional) if set to 1, all children will be fetched
   Description: Instantiate a GenomeInfo from the database using a 
                generic method, with the supplied arguments
@@ -227,8 +227,8 @@ sub _args_to_sql {
 
 =head2 _fetch_generic
 
-  Arg	     : SQL to use to fetch object
-  Arg	     : arrayref of bind parameters
+  Arg        : SQL to use to fetch object
+  Arg        : arrayref of bind parameters
   Arg        : (optional) if set to 1, all children will be fetched
   Description: Instantiate a GenomeInfo from the database using the specified SQL
   Returntype : Arrayref of Bio::EnsEMBL::MetaData::GenomeInfo
@@ -269,7 +269,7 @@ sub _fetch_generic {
 
 =head2 _cache
 
-  Arg	     : type of object for cache
+  Arg        : type of object for cache
   Description: Return internal cache for given type
   Returntype : none
   Exceptions : none
@@ -288,7 +288,7 @@ sub _cache {
 
 =head2 _clear_cache
 
-  Arg	     : (optional) type of object to clear
+  Arg        : (optional) type of object to clear
   Description: Clear internal cache (optionally just one type)
   Returntype : none
   Exceptions : none
@@ -310,8 +310,8 @@ sub _clear_cache {
 
 =head2 _get_cached_obj
 
-  Arg	     : type of object to retrieve
-  Arg	     : ID of object to retrieve
+  Arg        : type of object to retrieve
+  Arg        : ID of object to retrieve
   Description: Retrieve object from internal cache
   Returntype : object
   Exceptions : none
@@ -327,8 +327,8 @@ sub _get_cached_obj {
 
 =head2 _store_cached_obj
 
-  Arg	     : type of object to store
-  Arg	     : object to store
+  Arg        : type of object to store
+  Arg        : object to store
   Description: Store object in internal cache
   Returntype : none
   Exceptions : none
@@ -346,7 +346,7 @@ sub _store_cached_obj {
 
 =head2 _first_element
 
-  Arg	     : arrayref
+  Arg        : arrayref
   Description: Utility method to return the first element in a list, undef if empty
   Returntype : arrayref element
   Exceptions : none
