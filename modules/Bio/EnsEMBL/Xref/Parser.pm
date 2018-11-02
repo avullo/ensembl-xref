@@ -61,13 +61,13 @@ sub new {
 
   my $class = ref($caller) || $caller;
   my $self =  bless {
-		     source_id    => $args{source_id},
-		     species_id   => $args{species_id},
-		     species_name => $args{species},
-		     files        => $args{files},
-		     dba          => $args{dba},
-		     verbose      => $args{verbose} // 0,
-		    }, $class;
+                      source_id    => $args{source_id},
+                      species_id   => $args{species_id},
+                      species_name => $args{species},
+                      files        => $args{files},
+                      dba          => $args{dba},
+                      verbose      => $args{verbose} // 0,
+                    }, $class;
 
   croak "Need to pass source_id, species_id and files"
     unless defined $self->{source_id} and defined $self->{species_id} and defined $self->{files};
