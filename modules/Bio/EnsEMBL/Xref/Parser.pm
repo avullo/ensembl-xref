@@ -61,26 +61,29 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my $self = bless {
-     source_id  => $args{source_id},
-     species_id => $args{species_id},
-     species    => $args{species},
-     rel_file   => $args{rel_file},
-     files => $args{files},
-     dbi   => $args{dbi},
-     dba   => $args{dba},
-     verbose => $args{verbose} // 0, }, $class;
+  my $self = bless { source_id  => $args{source_id},
+                     species_id => $args{species_id},
+                     species    => $args{species},
+                     rel_file   => $args{rel_file},
+                     files      => $args{files},
+                     dbi        => $args{dbi},
+                     dba        => $args{dba},
+                     verbose    => $args{verbose} // 0, }, $class;
 
-  defined $self->{source_id} and defined $self->{species_id}
-    and defined $self->{files} and defined $self->{dbi} or croak "Need to pass (source_id, species_id, files, dbi) args";
+  defined $self->{source_id}    and
+    defined $self->{species_id} and
+    defined $self->{files}      and
+    defined $self->{dbi} or
+    croak "Need to pass (source_id, species_id, files, dbi) args";
 
   # extra necessary param checking
   assert_ref( $self->{files}, 'ARRAY' );
   assert_ref( $self->{dbi},   'DBI' );
-  assert_ref( $self->{dba},   'Bio::EnsEMBL::DBSQL::DBAdaptor' ) if defined $self->{dba};
+  assert_ref( $self->{dba},   'Bio::EnsEMBL::DBSQL::DBAdaptor' )
+    if defined $self->{dba};
 
   return $self;
-}
+} ## end sub new
 
 =head2 run
 
@@ -91,7 +94,7 @@ Abstract method, implement in parser subclass
 sub run {
   my $self = shift;
 
-  throw("Cannot call Parser::run abstract method: provide implementation in subclass");
+  throw( "Cannot call Parser::run abstract method: provide implementation in subclass" );
 }
 
 1;
