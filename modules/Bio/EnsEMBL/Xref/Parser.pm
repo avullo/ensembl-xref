@@ -78,7 +78,7 @@ sub new {
 
   # extra necessary param checking
   assert_ref( $self->{files}, 'ARRAY' );
-  assert_ref( $self->{dbi},   'DBI' );
+  assert_ref( $self->{dbi},   'DBI::db' );
   assert_ref( $self->{dba},   'Bio::EnsEMBL::DBSQL::DBAdaptor' )
     if defined $self->{dba};
 

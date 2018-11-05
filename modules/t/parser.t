@@ -30,8 +30,15 @@ limitations under the License.
 
 use Test::More;
 use Test::Exception;
+use Data::Dumper;
+
+use Bio::EnsEMBL::Test::MultiTestDB;
+
 
 use_ok 'Bio::EnsEMBL::Xref::Parser';
+
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
+my $dba = $multi_db->get_DBAdaptor('core');
 
 # check it throws without required arguments
 throws_ok { Bio::EnsEMBL::Xref::Parser->new() } qr/Need to pass/, 'Throws with no arguments';
@@ -46,10 +53,10 @@ throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, fil
   qr/was expected/, 'Throws with non arrayref files arg';
 throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {}) }
   qr/was expected/, 'Throws with non DBI dbi arg';
-throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {}, dba => {}) }
+throws_ok { Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => $dba->dbc->db_handle, dba => {}) }
   qr/was expected/, 'Throws with non DBAdaptor dba arg';
 
-my $parser = Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => {});
+my $parser = Bio::EnsEMBL::Xref::Parser->new(source_id => 1, species_id => 2, files => ['dummy'], dbi => $dba->dbc->db_handle, dba => $dba);
 isa_ok($parser, 'Bio::EnsEMBL::Xref::Parser');
 
 throws_ok { $parser->run() } qr/abstract method/, 'Throws calling abstract method';
