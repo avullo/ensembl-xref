@@ -30,9 +30,6 @@ limitations under the License.
 
 use Test::More;
 use Test::Exception;
-use Data::Dumper;
-use FindBin '$Bin';
-use lib "$Bin/";
 
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
@@ -43,7 +40,7 @@ use_ok 'Bio::EnsEMBL::Xref::Parser';
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $dba = $multi_db->get_DBAdaptor('core');
 
-my $db = Bio::EnsEMBL::Xref::Test::TestDB->new(config_file => "$Bin/testdb.conf");
+my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my %config = %{ $db->config };
 
 my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
