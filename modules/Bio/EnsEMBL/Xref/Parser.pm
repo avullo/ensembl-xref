@@ -66,20 +66,22 @@ sub new {
                      species    => $args{species},
                      rel_file   => $args{rel_file},
                      files      => $args{files},
-                     dbi        => $args{dbi},
+                     xref_dba   => $args{xref_dba},
                      dba        => $args{dba},
                      verbose    => $args{verbose} // 0, }, $class;
 
   defined $self->{source_id}    and
     defined $self->{species_id} and
     defined $self->{files}      and
-    defined $self->{dbi} or
-    croak "Need to pass (source_id, species_id, files, dbi) args";
+    defined $self->{xref_dba} or
+    croak "Need to pass (source_id, species_id, files, xref_dba) args";
 
   # extra necessary param checking
   assert_ref( $self->{files}, 'ARRAY' );
-  assert_ref( $self->{dbi},   'DBI::db' );
-  assert_ref( $self->{dba},   'Bio::EnsEMBL::DBSQL::DBAdaptor' )
+  assert_ref( $self->{xref_dba},
+              'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor' );
+  assert_ref( $self->{xref_dba}->dbi, 'DBI::db' );
+  assert_ref( $self->{dba},           'Bio::EnsEMBL::DBSQL::DBAdaptor' )
     if defined $self->{dba};
 
   return $self;
