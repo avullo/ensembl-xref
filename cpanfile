@@ -1,4 +1,5 @@
 requires 'Config::IniFiles';
+requires 'SQL::Translator', '>= 0.11018';
 requires 'DBIx::Class';
 requires 'DBI';
 requires 'DBD::mysql';
