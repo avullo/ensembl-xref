@@ -34,7 +34,7 @@ use Data::Dumper;
 use FindBin '$Bin';
 use lib "$Bin/";
 
-use Xref::Test::TestDB;
+use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Test::MultiTestDB;
 
@@ -43,15 +43,16 @@ use_ok 'Bio::EnsEMBL::Xref::Parser';
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $dba = $multi_db->get_DBAdaptor('core');
 
-my $db = Xref::Test::TestDB->new(config_file => "$Bin/testdb.conf");
+my $db = Bio::EnsEMBL::Xref::Test::TestDB->new(config_file => "$Bin/testdb.conf");
+my %config = %{ $db->config };
 
-my ($host, $dbname, $user, $pass, $port) = parse_db_connection($db->schema->{storage}{'_dbi_connect_info'});
-
-my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(host   => $host,
-							   dbname => $dbname,
-							   user   => $user,
-							   pass   => $pass,
-							   port   => $port);
+my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+  host   => $config{host},
+  dbname => $config{db},
+  user   => $config{user},
+  pass   => $config{pass},
+  port   => $config{port}
+);
 
 # check it throws without required arguments
 throws_ok { Bio::EnsEMBL::Xref::Parser->new() } qr/Need to pass/, 'Throws with no arguments';
@@ -76,12 +77,3 @@ throws_ok { $parser->run() } qr/abstract method/, 'Throws calling abstract metho
 
 done_testing();
 
-sub parse_db_connection {
-  my $conn_info = shift;
-
-  $conn_info->[0] =~ /database=(.+?);host=(.+?);port=(\d+?)$/;
-  my @conn;
-  push @conn, ($2, $1, $conn_info->[1], $conn_info->[2], $3);
-
-  return @conn;
-}
