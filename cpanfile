@@ -1,12 +1,13 @@
+requires 'Config::IniFiles';
+requires 'DBIx::Class';
 requires 'DBI';
 requires 'DBD::mysql';
+requires 'Digest::MD5';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
-requires 'URI::Escape';
-requires 'Config::IniFiles';
-requires 'Digest::MD5';
 requires 'Text::Glob';
 requires 'Text::CSV';
+requires 'URI::Escape';
 requires 'XML::LibXML';
 requires 'XML::Simple';
 
