@@ -57,7 +57,6 @@ package Bio::EnsEMBL::Xref::DB;
 use Moose;
 use Config::General;
 use Carp;
-use File::Temp qw/tempdir/;
 use Bio::EnsEMBL::Xref::Schema;
 use DBI;
 

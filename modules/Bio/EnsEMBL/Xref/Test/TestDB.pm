@@ -33,7 +33,6 @@ my $testdb = Bio::EnsEMBL::Xref::Test::TestDB->new(
 package Bio::EnsEMBL::Xref::Test::TestDB;
 
 use Moose;
-use File::Temp qw/tempdir/;
 
 extends 'Bio::EnsEMBL::Xref::DB';
 
