@@ -32,6 +32,8 @@ my $testdb = Bio::EnsEMBL::Xref::Test::TestDB->new(
 
 package Bio::EnsEMBL::Xref::Test::TestDB;
 
+use strict;
+use warnings;
 use Moose;
 
 extends 'Bio::EnsEMBL::Xref::DB';

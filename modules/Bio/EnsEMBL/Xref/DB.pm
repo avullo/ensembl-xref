@@ -54,6 +54,9 @@ $db->create_db_row('Xref',{
 
 package Bio::EnsEMBL::Xref::DB;
 
+use strict;
+use warnings;
+
 use Moose;
 use Config::General;
 use Carp;
