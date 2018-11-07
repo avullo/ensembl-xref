@@ -13,6 +13,13 @@ env:
 
 sudo: false
 
+matrix:
+  exclude:
+    - perl: '5.14'
+      env: COVERALLS=true
+    - perl: '5.26'
+      env: COVERALLS=false
+
 addons:
   apt:
     packages:
