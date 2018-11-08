@@ -7,6 +7,7 @@
   'databases' => {
     'homo_sapiens' => { 
       'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     },
   },
 }
