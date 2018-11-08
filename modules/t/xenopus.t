@@ -55,7 +55,7 @@ use_ok 'Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser';
 my $parser = Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser->new(
  source_id  => 150,
  species_id => 8364,
- files      => ['test-data/xenopusjamboree.txt'],
+ files      => ["$Bin/test-data/xenopusjamboree.txt"],
  xref_dba   => $xref_dba,
  dba        => $dba
 );
