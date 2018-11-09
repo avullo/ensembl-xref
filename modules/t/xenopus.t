@@ -24,6 +24,8 @@ limitations under the License.
 
 =cut
 
+use strict;
+use warnings;
 use Test::More;
 use Test::Exception;
 use Data::Dumper;
