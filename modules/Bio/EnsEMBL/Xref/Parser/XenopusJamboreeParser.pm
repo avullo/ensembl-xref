@@ -41,6 +41,14 @@ A parser class to parse the Xenbase source file.
 
 =head1 SYNOPSIS
 
+  my $parser = Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser->new(
+    source_id  => 150,
+    species_id => 8364,
+    files      => ["xenopusjamboree.txt"],
+    xref_dba   => $xref_dba
+  );
+
+  $parser->run();
 =cut
 
 package Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser;
@@ -58,7 +66,6 @@ sub run {
   my $species_id = $self->{species_id};
   my $files      = $self->{files};
   my $verbose    = $self->{verbose} // 0;
-  my $dba        = $self->{dba};
   my $xref_dba   = $self->{xref_dba};
 
   my $file = shift @{$files};
@@ -80,14 +87,9 @@ sub run {
   my $count = 0;
   while ( my $data = $input_file->getline_hr($file_io) ) {
 
-    my $desc;
-    if ( defined $data->{'desc'} ) {
-      $desc = $self->parse_description( $data->{'desc'} );
-    }
+    my $desc = $self->parse_description( $data->{'desc'} ) if ( defined($data->{'desc'}) );
 
-    if ( $data->{'label'} eq "unnamed" ) {
-      $data->{'label'} = $data->{'acc'};
-    }
+    $data->{'label'} = $data->{'acc'} if ( $data->{'label'} eq "unnamed" );
 
     $xref_dba->add_to_direct_xrefs(
       {
