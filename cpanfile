@@ -26,3 +26,4 @@ test_requires 'IO::String';
 test_requires 'Config::General';
 test_requires 'Test::Perl::Critic';
 test_requires 'Perl::Critic::Utils';
+test_requires 'Test::Pod::Coverage';
