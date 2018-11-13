@@ -2,3 +2,6 @@ severity  = 5
 
 [Subroutines::ProhibitExplicitReturnUndef]
 severity=4
+
+[CodeLayout::ProhibitHardTabs]
+allow_leading_tabs = 0
