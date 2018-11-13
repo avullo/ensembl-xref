@@ -1,0 +1,193 @@
+
+=head1 LICENSE
+
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+     http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+=cut
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=cut
+
+package Bio::EnsEMBL::Xref::Parser::ArrayExpressParser;
+
+use strict;
+use warnings;
+use Carp;
+use Bio::EnsEMBL::Registry;
+use Net::FTP;
+
+use parent qw( Bio::EnsEMBL::Xref::Parser );
+
+my $default_ftp_server = 'ftp.ebi.ac.uk';
+my $default_ftp_dir =
+  'pub/databases/microarray/data/atlas/bioentity_properties/ensembl';
+
+sub run {
+
+  my ( $self, $ref_arg ) = @_;
+  my $source_id    = $self->{source_id};
+  my $species_id   = $self->{species_id};
+  my $species_name = $self->{species};
+  my $files        = $self->{files};
+  my $verbose      = $self->{verbose} // 0;
+  my $xref_dba     = $self->{xref_dba};
+  my $dba          = $self->{dba};
+
+  my $file = shift @{$files};
+
+  my $project;
+  if ( $file =~ /project[=][>](\S+?)[,]/ ) {
+    $project = $1;
+  }
+
+  my %species_id_to_names = $xref_dba->species_id2name();
+
+  if ( defined $species_name ) {
+    push @{ $species_id_to_names{$species_id} }, $species_name;
+  }
+  if ( !defined $species_id_to_names{$species_id} ) { next; }
+  my $species_id_to_names = \%species_id_to_names;
+  my $names               = $species_id_to_names->{$species_id};
+  my $species_lookup      = $self->_get_species($verbose);
+  my $active = $self->_is_active( $species_lookup, $names, $verbose );
+
+  if ( !$active ) {
+    return;
+  }
+
+  $species_name = $species_id_to_names{$species_id}[0];
+
+  #get stable_ids from core and create xrefs
+  my $gene_adaptor = $self->_get_gene_adaptor($project, $species_name, $dba);
+
+  print "Finished loading the gene_adaptor\n" if $verbose;
+
+  my @stable_ids = map { $_->stable_id } @{ $gene_adaptor->fetch_all() };
+
+  my $xref_count = 0;
+  foreach my $gene_stable_id (@stable_ids) {
+
+    my $xref_id = $xref_dba->add_xref(
+      {
+        acc        => $gene_stable_id,
+        label      => $gene_stable_id,
+        source_id  => $source_id,
+        species_id => $species_id,
+        info_type  => "DIRECT"
+      }
+    );
+
+    $xref_dba->add_direct_xref( $xref_id, $gene_stable_id, 'gene', '' );
+    if ($xref_id) {
+      $xref_count++;
+    }
+  }
+
+  print "Added $xref_count DIRECT xrefs\n" if ($verbose);
+  if ( !$xref_count ) {
+    return 1;    # 1 error
+  }
+
+  return 0;      # successfull
+
+}
+
+sub _get_gene_adaptor {
+  my ( $self, $project, $species_name, $dba ) = @_;
+
+  my $registry = "Bio::EnsEMBL::Registry";
+  
+  my ($gene_adaptor);
+
+  if ( defined $project && $project eq 'ensembl' ) {
+    $registry->load_registry_from_multiple_dbs(
+      {
+        '-host' => 'mysql-ens-sta-1',
+        '-port' => 4519,
+        '-user' => 'ensro',
+      },
+    );
+    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
+  }
+  elsif ( defined $project && $project eq 'ensemblgenomes' ) {
+    $registry->load_registry_from_multiple_dbs(
+      {
+        '-host' => 'mysql-eg-staging-1.ebi.ac.uk',
+        '-port' => 4160,
+        '-user' => 'ensro',
+      },
+      {
+        '-host' => 'mysql-eg-staging-2.ebi.ac.uk',
+        '-port' => 4275,
+        '-user' => 'ensro',
+      },
+    );
+    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
+  }
+  elsif ( defined $dba ) {
+    $gene_adaptor = $dba->get_GeneAdaptor();
+  }
+  else {
+    die( "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes" );
+  }
+
+  return $gene_adaptor;
+}
+
+sub _get_species {
+  my ( $self, $verbose ) = @_;
+  $verbose = ( defined $verbose ) ? $verbose : 0;
+
+  my $ftp = Net::FTP->new( $default_ftp_server, Debug => $verbose )
+    or confess "Cannot connect to $default_ftp_server: $@";
+  $ftp->login( "anonymous", '-anonymous@' )
+    or confess "Cannot login ", $ftp->message;
+  $ftp->cwd($default_ftp_dir);
+  my @files = $ftp->ls() or confess "Cannot change to $default_ftp_dir: $@";
+  $ftp->quit;
+
+  my %species_lookup;
+  foreach my $file (@files) {
+    my ($species) = split( /\./, $file );
+    $species_lookup{$species} = 1;
+  }
+  return \%species_lookup;
+}
+
+sub _is_active {
+  my ( $self, $species_lookup, $names, $verbose ) = @_;
+
+  #Loop through the names and aliases first. If we get a hit then great
+  my $active = 0;
+  foreach my $name ( @{$names} ) {
+    if ( $species_lookup->{$name} ) {
+      printf(
+        'Found ArrayExpress has declared the name "%s". This was an alias'
+          . "\n",
+        $name
+      ) if $verbose;
+      $active = 1;
+      last;
+    }
+  }
+  return $active;
+}
+
+1;
