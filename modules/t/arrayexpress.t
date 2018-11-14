@@ -89,9 +89,19 @@ ok(
   'Sample Arrayexpress direct Xref has been inserted'
 );
 
+ok (
+  $db->schema->resultset('GeneDirectXref')->find(
+    {
+       ensembl_stable_id => 'ENSG00000131044'
+    }
+  ),
+   'Sample Arrayexpress gene direct Xref has been inserted'
+ );
+
 # Test if all the rows from gene table were inserted as the parser loads all gene stable_ids as direct xref
 is( $db->schema->resultset('Xref')->count,
   21, "All 21 rows were inserted in to xref" );
+
 is( $db->schema->resultset('GeneDirectXref')->count,
   21, "All 21 rows were inserted in to gene_direct_xref" );
 
