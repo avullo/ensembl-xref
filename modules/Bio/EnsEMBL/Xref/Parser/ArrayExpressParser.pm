@@ -25,6 +25,31 @@ limitations under the License.
 
 =cut
 
+=head1 NAME
+
+Bio::EnsEMBL::Xref::Parser::ArrayExpressParser
+
+=head1 DESCRIPTION
+
+A parser class to parse the ArrayExpress source. Fetches the stable ids from core database
+and populates the xref database's accession and label columns as DIRECT xref
+
+-species = MULTI (Used by all ensembl species)
+
+=head1 SYNOPSIS
+
+  my $parser = Bio::EnsEMBL::Xref::Parser::ArrayExpressParser->new(
+    source_id  => 1,
+    species_id => 9606,
+    files      => ["project=>ensembl"],
+    xref_dba   => $xref_dba,  # xref db adaptor
+    dba        => $dba   # core db adaptor
+  );
+
+  $parser->run();
+=cut
+
+
 package Bio::EnsEMBL::Xref::Parser::ArrayExpressParser;
 
 use strict;
