@@ -24,16 +24,22 @@ limitations under the License.
 
 =cut
 
+=head1 POD COVERAGE
+
+Test to ensure at minimum all public functions have descriptions
+
+=cut
+
 use strict;
 use warnings;
 
 use Test::More;
 
-eval 'use Test::Pod::Coverage';
-plan skip_all => 'Test::Pod::Coverage required' if $@;
+my $package_available = eval { use Test::Pod::Coverage };
+plan skip_all => 'Test::Pod::Coverage required' if $package_available;
 
 foreach my $mod ( all_modules('modules') ) {
-  pod_coverage_ok($mod, { also_private => [ qr/^_[a-zA-Z_]+$/ ], });
+  pod_coverage_ok($mod);
 }
 
 done_testing();

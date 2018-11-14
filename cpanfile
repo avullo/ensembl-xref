@@ -27,3 +27,4 @@ test_requires 'Config::General';
 test_requires 'Test::Perl::Critic';
 test_requires 'Perl::Critic::Utils';
 test_requires 'Test::Pod::Coverage';
+test_requires 'Perl::Critic::Moose';
