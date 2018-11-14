@@ -14,7 +14,6 @@ See the NOTICE file distributed with this work for additional information
 
 =cut
 
-use utf8;
 package Bio::EnsEMBL::Xref::Schema::Result::Pair;
 
 =head1 NAME
@@ -25,6 +24,7 @@ Bio::EnsEMBL::Xref::Schema::Result::Pair
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Core';
 
