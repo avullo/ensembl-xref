@@ -31,7 +31,7 @@ use Test::More;
 
 use Test::Perl::Critic (
     -severity => 3,
-    -profile => 'perlcriticrc');
+    -profile => '.perlcriticrc');
 
 all_critic_ok('modules/Bio');
 
