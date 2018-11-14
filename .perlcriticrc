@@ -1,7 +1,14 @@
-severity  = 5
+severity  = 1
+color = 1
+color-severity-highest = red
+color-severity-high = magenta
+color-severity-medium = yellow
 
 [Subroutines::ProhibitExplicitReturnUndef]
 severity=4
 
 [CodeLayout::ProhibitHardTabs]
 allow_leading_tabs = 0
+
+[CodeLayout::RequireTidyCode]
+perltidyrc = .perltidyrc
