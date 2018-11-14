@@ -34,12 +34,8 @@ use lib "$Bin/";
 
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Test::MultiTestDB;
 
 use_ok 'Bio::EnsEMBL::Xref::Parser';
-
-my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new();
-my $dba = $multi_db->get_DBAdaptor('core');
 
 my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my %config = %{ $db->config };
@@ -58,9 +54,9 @@ my $parser = Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser->new(
  source_id  => 150,
  species_id => 8364,
  files      => ["$Bin/test-data/xenopusjamboree.txt"],
- xref_dba   => $xref_dba,
- dba        => $dba
+ xref_dba   => $xref_dba
 );
+
 isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::XenopusJamboreeParser' );
 
 $parser->run();
