@@ -35,6 +35,7 @@ package Bio::EnsEMBL::Xref::Test::TestDB;
 use strict;
 use warnings;
 use Moose;
+use namespace::autoclean;
 
 extends 'Bio::EnsEMBL::Xref::DB';
 
