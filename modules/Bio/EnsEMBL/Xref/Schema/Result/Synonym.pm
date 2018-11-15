@@ -47,7 +47,7 @@ __PACKAGE__->table("synonym");
 =head2 synonym
 
   data_type: 'varchar'
-  is_nullable: 1
+  is_nullable: 0
   size: 255
 
 =cut
