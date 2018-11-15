@@ -451,7 +451,7 @@ sub upload_xref_object_graphs {
     }
 
     #################################################################################
-# Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
+    # Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
     $dbi = $self->dbi unless defined $dbi;
     my $xref_sth = $dbi->prepare(
@@ -483,7 +483,7 @@ sub upload_xref_object_graphs {
     $xref_sth->{PrintError} = 0;
 
     #################################################################################
-# End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
+    # End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
 
     foreach my $xref ( @{$rxrefs} ) {
@@ -563,8 +563,8 @@ sub upload_xref_object_graphs {
       }
 
       #############################################################################
-# create entry in primary_xref table with sequence; if this is a "cumulative"
-# entry it may already exist, and require an UPDATE rather than an INSERT
+      # create entry in primary_xref table with sequence; if this is a "cumulative"
+      # entry it may already exist, and require an UPDATE rather than an INSERT
       #############################################################################
       if ( defined $xref->{SEQUENCE} ) {
         $primary_xref_id_sth->execute($xref_id) or
@@ -593,7 +593,7 @@ sub upload_xref_object_graphs {
       }
 
       #######################################################################
-  # if there are dependent xrefs, add xrefs and dependent xrefs for them
+      # if there are dependent xrefs, add xrefs and dependent xrefs for them
       #######################################################################
       foreach my $depref ( @{ $xref->{DEPENDENT_XREFS} } ) {
         my %dep = %{$depref};
