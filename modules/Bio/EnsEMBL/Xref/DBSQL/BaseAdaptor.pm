@@ -1328,18 +1328,14 @@ sub add_to_syn_for_mult_sources {
   my ( $self, $acc, $sources, $syn, $species_id, $dbi ) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth =
-    $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
-
+  
   foreach my $source_id ( @{$sources} ) {
     my $xref_id =
       $self->get_xref( $acc, $source_id, $species_id, $dbi );
     if ( defined $xref_id ) {
-      $add_synonym_sth->execute( $xref_id, $syn ) or
-        croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+      $self->add_synonym( $xref_id, $syn )
     }
   }
-  $add_synonym_sth->finish();
   return;
 }
 
@@ -1350,18 +1346,15 @@ sub add_to_syn {
   my ( $self, $acc, $source_id, $syn, $species_id, $dbi ) = @_;
 
   $dbi = $self->dbi unless defined $dbi;
-  my $add_synonym_sth =
-    $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+  
   my $xref_id = $self->get_xref( $acc, $source_id, $species_id, $dbi );
   if ( defined $xref_id ) {
-    $add_synonym_sth->execute( $xref_id, $syn ) or
-      croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+    $self->add_synonym( $xref_id, $syn );
   }
   else {
     carp( "Could not find acc $acc in " .
           "xref table source = $source_id of species $species_id\n" );
   }
-  $add_synonym_sth->finish();
   return;
 }
 
@@ -1373,7 +1366,7 @@ sub add_synonym {
 
   $dbi = $self->dbi unless defined $dbi;
   my $add_synonym_sth =
-    $dbi->prepare('INSERT IGNORE INTO synonym VALUES(?,?)');
+    $dbi->prepare('INSERT IGNORE INTO synonym (xref_id, synonym) VALUES(?,?)');
   $add_synonym_sth->execute( $xref_id, $syn ) or
     croak( $dbi->errstr() . "\n $xref_id\n $syn\n\n" );
 
