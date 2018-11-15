@@ -60,12 +60,12 @@ sub new {
   my $self = bless {}, $class;
 
   $self->dbc( Bio::EnsEMBL::DBSQL::DBConnection->new(
-                                          -HOST   => $args{host},
-                                          -DBNAME => $args{dbname},
-                                          -USER   => $args{user},
-                                          -PASS   => $args{pass} || '',
-                                          -PORT => $args{port} || '3306'
-              ) );
+    -HOST   => $args{host},
+    -DBNAME => $args{dbname},
+    -USER   => $args{user},
+    -PASS   => $args{pass} || '',
+    -PORT => $args{port} || '3306'
+  ) );
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
@@ -99,7 +99,7 @@ sub get_filehandle {
 
   my $io = undef;
 
-  if ( !( defined $file_name ) or $file_name eq '' ) {
+  if ( !( defined $file_name ) || $file_name eq '' ) {
     confess "No file name";
   }
   my $alt_file_name = $file_name;
@@ -1286,7 +1286,7 @@ sub add_dependent_xref_maponly {
   $dbi //= $self->dbi;
 
   my $sql = (<<'ADX');
-INSERT INTO dependent_xref 
+INSERT INTO dependent_xref
   (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
   VALUES (?,?,?,?)
 ADX
@@ -1414,8 +1414,8 @@ GLA
   ####################
 
   $sql = (<<"GLS");
-SELECT  xref.accession, synonym.synonym 
-  FROM xref, source, synonym 
+SELECT  xref.accession, synonym.synonym
+  FROM xref, source, synonym
     WHERE synonym.xref_id = xref.xref_id AND
           source.name like '$name%' AND
            xref.source_id = source.source_id
@@ -1483,9 +1483,9 @@ sub get_label_to_desc {
   $dbi = $self->dbi unless defined $dbi;
 
   my $sql = (<<"GDH");
-  SELECT xref.description, xref.label 
-    FROM xref, source 
-      WHERE source.name LIKE '$name%' AND 
+  SELECT xref.description, xref.label
+    FROM xref, source
+      WHERE source.name LIKE '$name%' AND
             xref.source_id = source.source_id
 GDH
   if ( defined $prio_desc ) {
