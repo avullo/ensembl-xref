@@ -58,7 +58,7 @@ __PACKAGE__->add_columns(
   "xref_id",
   { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
   "synonym",
-  { data_type => "varchar", is_nullable => 1, size => 255 },
+  { data_type => "varchar", is_nullable => 0, size => 255 },
 );
 
 =head1 UNIQUE CONSTRAINTS
