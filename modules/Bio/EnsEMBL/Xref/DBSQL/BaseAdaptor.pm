@@ -1333,7 +1333,7 @@ sub add_to_syn_for_mult_sources {
     my $xref_id =
       $self->get_xref( $acc, $source_id, $species_id, $dbi );
     if ( defined $xref_id ) {
-      $self->add_synonym( $xref_id, $syn )
+      $self->add_synonym( $xref_id, $syn );
     }
   }
   return;
