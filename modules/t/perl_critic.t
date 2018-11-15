@@ -35,4 +35,3 @@ use Test::Perl::Critic (
 
 all_critic_ok('modules/Bio');
 
-done_testing();
