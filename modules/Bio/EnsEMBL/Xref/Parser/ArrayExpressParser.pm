@@ -58,6 +58,7 @@ use strict;
 use warnings;
 use Carp;
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Xref::FetchFiles;
 use URI::ftp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
@@ -188,7 +189,7 @@ sub _get_species {
   my ( $self, $verbose ) = @_;
   $verbose = ( defined $verbose ) ? $verbose : 0;
 
-  my $ff=  XrefParser::FetchFiles->new();
+  my $ff = Bio::EnsEMBL::Xref::FetchFiles->new();
   my $ftp = $ff->get_ftp(URI::ftp->new("ftp://".$default_ftp_server));
 
   if ( !defined $ftp) {
