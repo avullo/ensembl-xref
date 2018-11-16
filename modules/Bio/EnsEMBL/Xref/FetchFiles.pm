@@ -95,9 +95,4 @@ sub get_ftp {
   return $ftp;
 } ## end sub get_ftp
 
-
-sub _fetch_from_ftp {
-
-} ## end sub _fetch_from_ftp
-
 1;
