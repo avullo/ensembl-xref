@@ -33,7 +33,8 @@ Bio::EnsEMBL::Xref::Parser::ArrayExpressParser
 =head1 DESCRIPTION
 
 A parser class to parse the ArrayExpress source. Fetches the stable ids from core database
-and populates the xref database's accession and label columns as DIRECT xref
+and populates the xref database's accession and label columns as DIRECT xref,
+provided the species is active and declared in ArrayExpress.
 
 -species = MULTI (Used by all ensembl species)
 
@@ -78,6 +79,7 @@ sub run {
 
   my $file = shift @{$files};
 
+  # project could be ensembl or ensemblgenomes
   my $project;
   if ( $file =~ /project[=][>](\S+?)[,]/ ) {
     $project = $1;
@@ -85,17 +87,22 @@ sub run {
 
   my %species_id_to_names = $xref_dba->species_id2name();
 
+  # the species_name passed could be an alias that is different from what is stored in species table,
+  # so it is better to store it as well in the hash. We later check if the species is active in ArrayExpress
+  # using all these speices names
+
   if ( defined $species_name ) {
     push @{ $species_id_to_names{$species_id} }, $species_name;
   }
-  if ( !defined $species_id_to_names{$species_id} ) { next; }
-  my $species_id_to_names = \%species_id_to_names;
-  my $names               = $species_id_to_names->{$species_id};
+
+  if ( !exists $species_id_to_names{$species_id} ) { next; }
+
+  my $names               = $species_id_to_names{$species_id};
   my $species_lookup      = $self->_get_species($verbose);
-  my $active = $self->_is_active( $species_lookup, $names, $verbose );
+  my $active = $self->_is_active_species( $species_lookup, $names, $verbose );
 
   if ( !$active ) {
-    return;
+    next;
   }
 
   $species_name = $species_id_to_names{$species_id}[0];
@@ -128,10 +135,10 @@ sub run {
 
   print "Added $xref_count DIRECT xrefs\n" if ($verbose);
   if ( !$xref_count ) {
-    return 1;    # 1 error
+   croak "No arrayexpress xref added\n";
   }
 
-  return 0;      # successfull
+  return 0;      # successful
 
 }
 
@@ -197,18 +204,15 @@ sub _get_species {
   return \%species_lookup;
 }
 
-sub _is_active {
+# checks if the species is still active in ArrayExress
+sub _is_active_species {
   my ( $self, $species_lookup, $names, $verbose ) = @_;
 
   #Loop through the names and aliases first. If we get a hit then great
   my $active = 0;
   foreach my $name ( @{$names} ) {
     if ( $species_lookup->{$name} ) {
-      printf(
-        'Found ArrayExpress has declared the name "%s". This was an alias'
-          . "\n",
-        $name
-      ) if $verbose;
+      printf( 'Found ArrayExpress has declared the name "%s". This was an alias' . "\n", $name ) if $verbose;
       $active = 1;
       last;
     }
