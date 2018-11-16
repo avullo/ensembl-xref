@@ -33,7 +33,8 @@ Bio::EnsEMBL::Xref::Parser::MGIParser
 
 =head1 DESCRIPTION
 
-A parser class to parse the MGI (official) source.
+A parser class to parse the MGI (official) source, 
+creating a DIRECT xref between MGI accession and ensembl mouse gene stable id ENSMUSG*
 
 -species = mus_musculus
 -species_id = 10090
@@ -117,7 +118,7 @@ sub run {
     );
 
     $xref_dba->add_direct_xref( $xref_id, $ensid, "Gene", undef );
-    if ( defined( $syn_hash->{$acc} ) ) {
+    if ( exists $syn_hash->{$acc} ) {
       foreach my $syn ( @{ $syn_hash->{$acc} } ) {
         $xref_dba->add_to_syn( $acc, $source_id, $syn, $species_id );
         $syn_count++;
