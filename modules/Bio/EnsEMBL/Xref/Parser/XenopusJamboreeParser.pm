@@ -89,7 +89,8 @@ sub run {
   my $count = 0;
   while ( my $data = $input_file->getline_hr($file_io) ) {
 
-    my $desc = $self->parse_description( $data->{'desc'} ) if ( defined($data->{'desc'}) );
+    my $desc;
+    $desc = $self->parse_description( $data->{'desc'} ) if ( defined($data->{'desc'}) );
 
     $data->{'label'} = $data->{'acc'} if ( $data->{'label'} eq "unnamed" );
 
@@ -117,14 +118,10 @@ sub run {
   return 0;
 }
 
-=begin comment
-Regex handles lines in the following desc formats
 
-XB-GENE-940410	unnamed	Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14	ENSXETG00000007206
-XB-GENE-956173	hba4	alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3	ENSXETG00000001141
-
-=end comment
-=cut
+# Regex handles lines in the following desc formats
+# XB-GENE-940410	unnamed	Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14	ENSXETG00000007206
+# XB-GENE-956173	hba4	alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3	ENSXETG00000001141
 
 sub parse_description {
   my ( $self, $desc ) = @_;
