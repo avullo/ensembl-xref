@@ -95,14 +95,14 @@ sub run {
     push @{ $species_id_to_names{$species_id} }, $species_name;
   }
 
-  if ( !exists $species_id_to_names{$species_id} ) { next; }
+  if ( !exists $species_id_to_names{$species_id} ) { return 0; }
 
   my $names               = $species_id_to_names{$species_id};
   my $species_lookup      = $self->_get_species($verbose);
   my $active = $self->_is_active_species( $species_lookup, $names, $verbose );
 
   if ( !$active ) {
-    next;
+    return 0;
   }
 
   $species_name = $species_id_to_names{$species_id}[0];
