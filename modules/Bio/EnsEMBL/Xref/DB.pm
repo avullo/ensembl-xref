@@ -130,7 +130,6 @@ sub _init_config {
   } else {
     confess 'No config or config_file provided to new(). Cannot execute';
   }
-  return;
 }
 
 sub _validate_config {
