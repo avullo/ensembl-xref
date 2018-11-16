@@ -97,9 +97,5 @@ sub run {
   throw( "Cannot call Parser::run abstract method: provide implementation in subclass" );
 }
 
-sub DESTROY {
- my $self = shift;
- $self->{xref_dba} = undef;
-}
 
 1;
