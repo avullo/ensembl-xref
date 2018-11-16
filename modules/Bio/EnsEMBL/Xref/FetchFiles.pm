@@ -26,7 +26,7 @@ limitations under the License.
 
 =cut
 
-package XrefParser::FetchFiles;
+package Bio::EnsEMBL::Xref::FetchFiles;
 
 use strict;
 use warnings;
