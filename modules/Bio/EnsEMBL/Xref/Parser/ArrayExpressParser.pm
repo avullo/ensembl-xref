@@ -58,7 +58,7 @@ use strict;
 use warnings;
 use Carp;
 use Bio::EnsEMBL::Registry;
-use Net::FTP;
+use URI::ftp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
@@ -188,10 +188,13 @@ sub _get_species {
   my ( $self, $verbose ) = @_;
   $verbose = ( defined $verbose ) ? $verbose : 0;
 
-  my $ftp = Net::FTP->new( $default_ftp_server, Debug => $verbose )
-    or confess "Cannot connect to $default_ftp_server: $@";
-  $ftp->login( "anonymous", '-anonymous@' )
-    or confess "Cannot login ", $ftp->message;
+  my $ff=  XrefParser::FetchFiles->new();
+  my $ftp = $ff->get_ftp(URI::ftp->new("ftp://".$default_ftp_server));
+
+  if ( !defined $ftp) {
+    croak "Failed to get FTP connection to $default_ftp_server\n";
+  }
+
   $ftp->cwd($default_ftp_dir);
   my @files = $ftp->ls() or confess "Cannot change to $default_ftp_dir: $@";
   $ftp->quit;
