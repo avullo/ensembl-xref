@@ -53,7 +53,7 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   port   => $config{port}
 );
 
-# populate the species info as species_id2name method is called from the ArrayExpressParser 
+# populate the species info as get_species_particulars method is called from the ArrayExpressParser 
 $db->schema->populate(
   'Species',
   [

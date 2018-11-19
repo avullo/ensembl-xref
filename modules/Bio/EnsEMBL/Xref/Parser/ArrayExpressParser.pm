@@ -86,34 +86,27 @@ sub run {
     $project = $1;
   }
 
-  my %species_id_to_names = $xref_dba->species_id2name();
 
-  # the species_name passed could be an alias that is different from what is stored in species table,
-  # so it is better to store it as well in the hash. We later check if the species is active in ArrayExpress
-  # using all these speices names
+  my $species_record = $xref_dba->get_species_particulars($species_id);
+  
+  my $aliases = [$species_record->{aliases}];
+  push @$aliases, $species_name if defined $species_name; # add an override alias
 
-  if ( defined $species_name ) {
-    push @{ $species_id_to_names{$species_id} }, $species_name;
-  }
-
-  if ( !exists $species_id_to_names{$species_id} ) { return 0; }
-
-  my $names               = $species_id_to_names{$species_id};
-  my $species_lookup      = $self->_get_species($verbose);
-  my $active = $self->_is_active_species( $species_lookup, $names, $verbose );
+  my $species_lookup = $self->_get_species($verbose);
+  my $active = $self->_is_active_species( $species_lookup, $aliases, $verbose );
 
   if ( !$active ) {
     return 0;
   }
 
-  $species_name = $species_id_to_names{$species_id}[0];
-
   #get stable_ids from core and create xrefs
-  my $gene_adaptor = $self->_get_gene_adaptor($project, $species_name, $dba);
+  my $gene_adaptor = $self->_get_gene_adaptor($project, $species_record->{name}, $dba);
 
   print "Finished loading the gene_adaptor\n" if $verbose;
 
   my @stable_ids = map { $_->stable_id } @{ $gene_adaptor->fetch_all() };
+  # FIXME: this would be a lot faster if we extended BaseFeatureAdaptor to
+  # fetchall_stable_ids
 
   my $xref_count = 0;
   foreach my $gene_stable_id (@stable_ids) {

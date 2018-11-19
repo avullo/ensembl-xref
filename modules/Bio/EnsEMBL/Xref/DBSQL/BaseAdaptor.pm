@@ -741,65 +741,36 @@ sub get_xref_sources {
   return %sourcename_to_sourceid;
 }
 
-########################################################################
-# Create and return a hash that that goes from species_id to taxonomy_id
-########################################################################
-sub species_id2taxonomy {
+=head2 get_species_particulars 
 
-  my $self = shift;
+  Replaces species_id2name and related operations
+  Given a species_id aka taxon_id to fetch the species name
+  and aliases from the DB.
+  FIXME: Species particulars should be fetched from a file
+  or a core DB, rather than stored in a table. It would be simpler
+  At one time aliases may have been a comma-separated list.
 
-  my %species_id2taxonomy;
+  Returntype: Hashref : { taxonomy_id => int , name => scalar, aliases => scalar }
 
-  my $sth =
-    $self->dbi->prepare('SELECT species_id, taxonomy_id FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id  = $row[0];
-    my $taxonomy_id = $row[1];
-    if ( defined $species_id2taxonomy{$species_id} ) {
-      push @{ $species_id2taxonomy{$species_id} }, $taxonomy_id;
-    }
-    else {
-      $species_id2taxonomy{$species_id} = [$taxonomy_id];
-    }
+=cut
+
+sub get_species_particulars {
+  my ($self,$taxon_id) = @_;
+
+  if (!defined $taxon_id) {
+    croak 'Cannot get information about a species without a dbID'
   }
-  $sth->finish();
-  return %species_id2taxonomy;
+  my $sth = $self->dbi->prepare_cached(
+    'SELECT taxonomy_id, name, aliases FROM species WHERE taxonomy_id = ?'
+  );
+  $sth->execute($taxon_id);
+
+  # If there is ever more than one I will scream. Schema prohibits this
+  my $record = $sth->fetchrow_hashref; 
+  
+  return $record;
 }
 
-#########################################################################
-# Create and return a hash that that goes from species_id to species name
-#########################################################################
-sub species_id2name {
-  my $self = shift;
-
-  my %species_id2name;
-
-  my $sth = $self->dbi->prepare('SELECT species_id, name FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    my $name       = $row[1];
-    $species_id2name{$species_id} = [$name];
-  }
-  $sth->finish();
-
-  ##############################################
-  # Also populate the hash with all the aliases.
-  ##############################################
-  $sth = $self->dbi->prepare('SELECT species_id, aliases FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    foreach my $name ( split /,\s*/xms, $row[1] ) {
-      $species_id2name{$species_id} ||= [];
-      push @{ $species_id2name{$species_id} }, $name;
-    }
-  }
-  $sth->finish();
-
-  return %species_id2name;
-} ## end sub species_id2name
 
 ###########################################################################
 # If there was an error, an xref with the same acc & source already exists.

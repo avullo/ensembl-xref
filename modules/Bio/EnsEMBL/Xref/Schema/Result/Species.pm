@@ -49,6 +49,8 @@ __PACKAGE__->table("species");
   data_type: 'integer'
   extra: {unsigned => 1}
   is_nullable: 0
+  FIXME This column is redundant with species_id. We should remove species_id and propagate
+  Taxon ID throught the code for added clarity. The whole table is redundant in effect
 
 =head2 name
 
