@@ -432,7 +432,7 @@ sub upload_xref_object_graphs {
 
   my $count = scalar @{$rxrefs};
   if ($verbose) {
-    print "count = $count\n" || croak 'Could not print out count';
+    print "count = $count\n";
   }
 
   if ($count) {
@@ -441,18 +441,13 @@ sub upload_xref_object_graphs {
     # upload new ones
     ##################
     if ($verbose) {
-      print "Uploading xrefs\n" || croak 'Could not print string';
+      print "Uploading xrefs\n";
     }
 
     #################################################################################
 # Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
-    my $xref_update_label_sth =
-      $self->dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
-    my $xref_update_descr_sth =
-      $self->dbi->prepare('UPDATE xref SET description=? WHERE xref_id=?');
     my $pair_sth = $self->dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
-
 
     # disable error handling here as we'll do it ourselves
     # reenabled it, as errorcodes are really unhelpful
@@ -464,68 +459,41 @@ sub upload_xref_object_graphs {
     #################################################################################
 
     foreach my $xref ( @{$rxrefs} ) {
-      my ( $xref_id, $direct_xref_id );
       if ( !( defined $xref->{ACCESSION} ) ) {
-        print
-"Your xref does not have an accession-number,so it can't be stored in the database\n"
-          || croak 'Could not write message';
-        return;
+        confess "Your xref does not have an accession-number\n";
+      }
+      if ( !( defined $xref->{SOURCE_ID} ) ) {
+        confess "your xref: $xref->{ACCESSION} does not have a source-id\n";
       }
 
       ########################################
       # Create entry in xref table and note ID
       ########################################
-      #
-      #  if we failed to add the xref it must already exist so go find the xref_id for this
-      #
-      if ( !( defined $xref->{SOURCE_ID} ) ) {
-        print
-          "your xref: $xref->{ACCESSION} does not have a source-id\n";
-        return;
-      }
-
-      $xref_id = $self->add_xref( (
-        "acc" => $xref->{ACCESSION},
-        "version" => $xref->{VERSION} || 0,
-        "label" => $xref->{LABEL}   || $xref->{ACCESSION},
-        "desc" => $xref->{DESCRIPTION},
-        "source_id" => $xref->{SOURCE_ID},
+      my $xref_id = $self->add_xref( (
+        "acc"        => $xref->{ACCESSION},
+        "version"    => $xref->{VERSION} || 0,
+        "label"      => $xref->{LABEL}   || $xref->{ACCESSION},
+        "desc"       => $xref->{DESCRIPTION},
+        "source_id"  => $xref->{SOURCE_ID},
         "species_id" => $xref->{SPECIES_ID},
-        "info_type" => $xref->{INFO_TYPE} || 'MISC' ) );
-
-      if ( defined $xref->{LABEL} ) {
-        $xref_update_label_sth->execute( $xref->{LABEL}, $xref_id );
-      }
-      if ( defined $xref->{DESCRIPTION} ) {
-        $xref_update_descr_sth->execute( $xref->{DESCRIPTION},
-                                         $xref_id );
-      }
+        "info_type"  => $xref->{INFO_TYPE} || 'MISC' ),
+        "update_label" => 1, "update_desc" => 1 );
 
       foreach my $direct_xref ( @{ $xref->{DIRECT_XREFS} } ) {
-        $direct_xref_id = $self->add_xref( (
-          "acc" => $xref->{ACCESSION},
-          "version" => $xref->{VERSION} || 0,
-          "label" => $xref->{LABEL}   || $xref->{ACCESSION},
-          "desc" => $xref->{DESCRIPTION},
-          "source_id" => $direct_xref->{SOURCE_ID},
+        my $direct_xref_id = $self->add_xref( (
+          "acc"        => $xref->{ACCESSION},
+          "version"    => $xref->{VERSION} || 0,
+          "label"      => $xref->{LABEL}   || $xref->{ACCESSION},
+          "desc"       => $xref->{DESCRIPTION},
+          "source_id"  => $direct_xref->{SOURCE_ID},
           "species_id" => $xref->{SPECIES_ID},
-          "info_type" => $direct_xref->{LINKAGE_TYPE} || 'MISC' ) );
+          "info_type"  => $direct_xref->{LINKAGE_TYPE} ) );
 
         $self->add_direct_xref( $direct_xref_id,
                                 $direct_xref->{STABLE_ID},
                                 $direct_xref->{ENSEMBL_TYPE},
                                 $direct_xref->{LINKAGE_TYPE}
                               );
-      }
-
-      ################
-      # Error checking
-      ################
-      if ( !( ( defined $xref_id ) and $xref_id ) ) {
-        print STDERR "xref_id is not set for :\n" .
-          "$xref->{ACCESSION}\n$xref->{LABEL}\n" .
-          "$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n" .
-          "$xref->{SPECIES_ID}\n";
       }
 
       #############################################################################
@@ -537,11 +505,10 @@ sub upload_xref_object_graphs {
           $self->_update_primary_xref_sequence( $xref->{SEQUENCE}, $xref_id );
         }
         else {
-          $self->_add_primary_xref( $xref_id,
-                                    $xref->{SEQUENCE},
-                                    $xref->{SEQUENCE_TYPE},
-                                    $xref->{STATUS} );
-          }
+          $self->_add_primary_xref(
+            $xref_id, $xref->{SEQUENCE}, $xref->{SEQUENCE_TYPE}, $xref->{STATUS}
+          );
+        }
       }
 
       ##########################################################
@@ -561,20 +528,13 @@ sub upload_xref_object_graphs {
         # Insert the xref
         #################
         my $dep_xref_id = $self->add_xref( (
-          "acc" => $dep{ACCESSION},
-          "version" => $dep{VERSION} || 0,
-          "label" => $dep{LABEL}   || $dep{ACCESSION},
-          "desc" => $dep{DESCRIPTION},
-          "source_id" => $dep{SOURCE_ID},
+          "acc"        => $dep{ACCESSION},
+          "version"    => $dep{VERSION} || 0,
+          "label"      => $dep{LABEL}   || $dep{ACCESSION},
+          "desc"       => $dep{DESCRIPTION},
+          "source_id"  => $dep{SOURCE_ID},
           "species_id" => $dep{SPECIES_ID},
-          "info_type" => 'DEPENDENT' ) );
-
-        if ( !( defined $dep_xref_id ) || $dep_xref_id == 0 ) {
-          print STDERR
-            "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n"
-            . $self->dbi->err . "\n";
-          print STDERR "source = $dep{SOURCE_ID}\n";
-        }
+          "info_type"  => 'DEPENDENT' ) );
 
         #
         # Add the linkage_annotation and source id it came from
@@ -596,7 +556,7 @@ sub upload_xref_object_graphs {
       #################################################
       # Add the pair data. refseq dna/pep pairs usually
       #################################################
-      if ( defined $xref_id and defined $xref->{PAIR} ) {
+      if ( defined $xref->{PAIR} ) {
         $pair_sth->execute( $xref->{SOURCE_ID}, $xref->{ACCESSION},
                             $xref->{PAIR} );
       }
@@ -604,15 +564,9 @@ sub upload_xref_object_graphs {
       ###########################
       # tidy up statement handles
       ###########################
-      if ( defined $xref_update_label_sth ) {
-        $xref_update_label_sth->finish();
-      }
-      if ( defined $xref_update_descr_sth ) {
-        $xref_update_descr_sth->finish();
-      }
       if ( defined $pair_sth )    { $pair_sth->finish() }
 
-    }    # foreach xref
+    } # foreach xref
 
   } ## end if ($count)
   return 1;
@@ -940,21 +894,27 @@ sub add_xref {
   my ( $self, $arg_ref ) = @_;
 
   my $acc = $arg_ref->{acc} || croak 'add_xref needs aa acc';
-  my $source_id = $arg_ref->{source_id} ||
-    croak 'add_xref needs a source_id';
-  my $species_id = $arg_ref->{species_id} ||
-    croak 'add_xref needs a species_id';
-  my $label       = $arg_ref->{label} || $acc;
-  my $description = $arg_ref->{desc};
-  my $version     = $arg_ref->{version} || 0;
-  my $info_type   = $arg_ref->{info_type} || 'MISC';
-  my $info_text   = $arg_ref->{info_text} || '';
+  my $source_id    = $arg_ref->{source_id} || croak 'add_xref needs a source_id';
+  my $species_id   = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
+  my $label        = $arg_ref->{label} || $acc;
+  my $description  = $arg_ref->{desc};
+  my $version      = $arg_ref->{version} || 0;
+  my $info_type    = $arg_ref->{info_type} || 'MISC';
+  my $info_text    = $arg_ref->{info_text} || '';
+  my $update_label = $arg_ref->{update_label} || 0;
+  my $update_desc  = $arg_ref->{update_desc} || 0;
 
   ##################################################################
   # See if it already exists. It so return the xref_id for this one.
   ##################################################################
   my $xref_id = $self->get_xref( $acc, $source_id, $species_id );
   if ( defined $xref_id ) {
+    if ( $update_label ) {
+      $self->_update_xref_label( $xref_id, $label );
+    }
+    if ( $update_desc ) {
+      $self->_update_xref_description( $xref_id, $description );
+    }
     return $xref_id;
   }
 
@@ -979,7 +939,7 @@ sub add_xref {
   $add_xref_sth->execute( $acc, $version || 0, $label,
                           $description, $source_id, $species_id,
                           $info_type,   $info_text ) or
-    croak("$acc\t$label\t\t$source_id\t$species_id\n");
+    confess "$acc\t$label\t\t$source_id\t$species_id\n";
 
   $add_xref_sth->finish();
   return $add_xref_sth->{'mysql_insertid'};
@@ -1619,24 +1579,55 @@ sub _add_primary_xref {
 
   $add_primary_xref_sth->finish();
   return $add_primary_xref_sth->{'mysql_insertid'};
-} ## end sub add_primary_xref
+} ## end sub _add_primary_xref
 
 ###################################################
 # Update primary_xref sequence for matching xref_id
 ###################################################
 sub _update_primary_xref_sequence {
-  my ( $self, $xref_id, $info_type ) = @_;
+  my ( $self, $xref_id, $sequence ) = @_;
 
   my $sth = $self->dbi->prepare(
     'UPDATE primary_xref SET sequence=? where xref_id=?');
 
-  if ( !$sth->execute( $info_type, $xref_id ) ) {
-    croak $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
-  }
+  $sth->execute( $sequence, $xref_id ) or
+    croak $self->dbi->errstr() . "\n $xref_id\n $sequence\n\n";
 
   $sth->finish();
   return;
-}
+} ## sub _update_primary_xref_sequence
+
+###################################################
+# Update primary_xref sequence for matching xref_id
+###################################################
+sub _update_xref_label {
+  my ( $self, $xref_id, $label ) = @_;
+
+  my $sth = $self->dbi->prepare(
+    'UPDATE xref SET label=? WHERE xref_id=?');
+
+  $sth->execute( $label, $xref_id ) or
+    croak $self->dbi->errstr() . "\n $xref_id\n $label\n\n";
+
+  $sth->finish();
+  return;
+} ## sub _update_xref_label
+
+###################################################
+# Update primary_xref sequence for matching xref_id
+###################################################
+sub _update_xref_description {
+  my ( $self, $xref_id, $description ) = @_;
+
+  my $sth = $self->dbi->prepare(
+    'UPDATE xref SET description=? WHERE xref_id=?');
+
+  $sth->execute( $description, $xref_id ) or
+    croak $self->dbi->errstr() . "\n $xref_id\n $description\n\n";
+
+  $sth->finish();
+  return;
+} ## sub _update_xref_description
 
 1;
 
