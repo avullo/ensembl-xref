@@ -46,6 +46,7 @@ use Carp;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Xref::FetchFiles;
 use Getopt::Long;
+use IO::Uncompress::AnyUncompress;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 
@@ -117,18 +118,14 @@ sub get_filehandle {
     $file_name = $alt_file_name;
   }
 
-  if ( $file_name =~ /\.(gz|Z)$/x ) {
-    # Read from zcat pipe
-    $io = IO::File->new("zcat $file_name |") or
-      carp("Can not open file '$file_name' with 'zcat'");
+  # 'Transparent' lets IO::Uncompress modules read uncompressed input.
+  # It should be on by default but set it just in case.
+  $io = IO::Uncompress::AnyUncompress->new($file_name,
+                                           'Transparent' => 1 ) ||
+    carp("Can not open file '$file_name'");
+  if ( !defined $io ) {
+    return;
   }
-  else {
-    # Read file normally
-    $io = IO::File->new($file_name) or
-      carp("Can not open file '$file_name'");
-  }
-
-  if ( !defined $io ) { return }
 
   if ($verbose) {
     print "Reading from '$file_name'...\n" ||
