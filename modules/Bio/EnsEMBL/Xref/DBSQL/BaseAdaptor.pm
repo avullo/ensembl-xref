@@ -1606,15 +1606,7 @@ sub _update_xref_info_type {
 # Create an primary_xref entry.
 ###########################################################
 sub _add_primary_xref {
-  my ( $self, $arg_ref ) = @_;
-
-  my $xref_id       = $arg_ref->{xref_id} ||
-    croak 'Requires xref_id';
-  my $sequence      = $arg_ref->{sequence} ||
-    croak 'Requires sequence';
-  my $sequence_type = $arg_ref->{sequence_type} ||
-    croak 'Requires sequence type';
-  my $status        = $arg_ref->{status};
+  my ( $self, $xref_id, $sequence, $sequence_type, $status ) = @_;
 
   my $add_primary_xref_sth =
     $self->dbi->prepare( 'INSERT INTO primary_xref VALUES(?,?,?,?)' );
@@ -1627,7 +1619,7 @@ sub _add_primary_xref {
 
   $add_primary_xref_sth->finish();
   return $add_primary_xref_sth->{'mysql_insertid'};
-} ## end sub add_xref
+} ## end sub add_primary_xref
 
 ###################################################
 # Update primary_xref sequence for matching xref_id
@@ -1635,9 +1627,9 @@ sub _add_primary_xref {
 sub _update_primary_xref_sequence {
   my ( $self, $xref_id, $info_type ) = @_;
 
+  my $sth = $self->dbi->prepare(
+    'UPDATE primary_xref SET sequence=? where xref_id=?');
 
-  my $sth =
-    $self->dbi->prepare('UPDATE primary_xref SET sequence=? where xref_id=?');
   if ( !$sth->execute( $info_type, $xref_id ) ) {
     croak $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
   }
