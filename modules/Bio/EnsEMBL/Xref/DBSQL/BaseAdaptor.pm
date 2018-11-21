@@ -121,11 +121,8 @@ sub get_filehandle {
   # 'Transparent' lets IO::Uncompress modules read uncompressed input.
   # It should be on by default but set it just in case.
   $io = IO::Uncompress::AnyUncompress->new($file_name,
-                                           'Transparent' => 1 ) ||
-    carp("Can not open file '$file_name'");
-  if ( !defined $io ) {
-    return;
-  }
+                                           'Transparent' => 1 )
+    || confess("Can not open file '$file_name'");
 
   if ($verbose) {
     print "Reading from '$file_name'...\n" ||
@@ -162,14 +159,7 @@ sub get_source_id_for_source_name {
     $source_id = $row[0];
   }
   else {
-    carp
-"WARNING: There is no entity $source_name in the source-table of the xref database.\n";
-    carp
-"WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
-    carp
-      "WARNING: Couldn't get source ID for source name $source_name\n";
-
-    $source_id = '-1';
+    confess "No source_id for source_name='${source_name}', priority_desc='${priority_desc}'";
   }
   $sth->finish();
   return $source_id;
