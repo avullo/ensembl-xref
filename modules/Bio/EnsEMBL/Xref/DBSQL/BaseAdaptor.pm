@@ -529,9 +529,9 @@ sub upload_xref_object_graphs {
         #################
         my $dep_xref_id = $self->add_xref( (
           "acc"        => $dep{ACCESSION},
-          "version"    => $dep{VERSION} || 0,
-          "label"      => $dep{LABEL}   || $dep{ACCESSION},
-          "desc"       => $dep{DESCRIPTION},
+          "version"    => $dep{VERSION}     || 0,
+          "label"      => $dep{LABEL}       || $dep{ACCESSION},
+          "desc"       => $dep{DESCRIPTION} || $xref->{DESCRIPTION},
           "source_id"  => $dep{SOURCE_ID},
           "species_id" => $dep{SPECIES_ID},
           "info_type"  => 'DEPENDENT' ) );
