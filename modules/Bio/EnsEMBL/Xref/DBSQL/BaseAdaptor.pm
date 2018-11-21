@@ -449,11 +449,6 @@ sub upload_xref_object_graphs {
     #################################################################################
     my $pair_sth = $self->dbi->prepare('INSERT INTO pairs VALUES(?,?,?)');
 
-    # disable error handling here as we'll do it ourselves
-    # reenabled it, as errorcodes are really unhelpful
-    # $xref_sth->{RaiseError} = 0;
-    # $xref_sth->{PrintError} = 0;
-
     #################################################################################
 # End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
@@ -550,7 +545,6 @@ sub upload_xref_object_graphs {
         foreach my $syn ( @{ $dep{SYNONYMS} } ) {
           $self->add_synonym( $dep_xref_id, $syn );
         }    # foreach syn
-
       }    # foreach dep
 
       #################################################
@@ -564,11 +558,11 @@ sub upload_xref_object_graphs {
       ###########################
       # tidy up statement handles
       ###########################
-      if ( defined $pair_sth )    { $pair_sth->finish() }
+      if ( defined $pair_sth ) { $pair_sth->finish() }
 
     } # foreach xref
-
   } ## end if ($count)
+
   return 1;
 } ## end sub upload_xref_object_graphs
 
