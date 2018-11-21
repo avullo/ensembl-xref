@@ -90,12 +90,11 @@ sub dbi {
 }
 
 #######################################################################
-# Given a file name, returns a IO::Handle object.  If the file is
-# gzipped, the handle will be to an unseekable stream coming out of a
-# zcat pipe.  If the given file name doesn't correspond to an existing
-# file, the routine will try to add '.gz' to the file name or to remove
-# any .'Z' or '.gz' and try again.  Returns undef on failure and will
-# write a warning to stderr.
+# Given a file name, returns a IO::Handle object.  Supports most common
+# compression formats, e.g. zip, gzip, bzip2, lzma, xz.  If the given
+# file name doesn't correspond to an existing file, the routine will
+# try to add '.gz' to the file name or to remove any .'Z' or '.gz' and
+# try again.  Throws on failure.
 #######################################################################
 sub get_filehandle {
   my ( $self, $file_name ) = @_;
@@ -138,7 +137,7 @@ sub get_filehandle {
 # Arg[1] source name
 # Arg[2] priority description
 #
-# Returns source_id or -1 if not found
+# Returns source_id, or throws if not found
 #############################################
 sub get_source_id_for_source_name {
   my ( $self, $source_name, $priority_desc) = @_;
