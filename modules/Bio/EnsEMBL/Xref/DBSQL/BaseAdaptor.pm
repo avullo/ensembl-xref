@@ -447,12 +447,6 @@ sub upload_xref_object_graphs {
     #################################################################################
 # Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
-    my $primary_xref_id_sth =
-      $self->dbi->prepare('SELECT xref_id FROM primary_xref WHERE xref_id=?');
-    my $pri_insert_sth =
-      $self->dbi->prepare('INSERT INTO primary_xref VALUES(?,?,?,?)');
-    my $pri_update_sth = $self->dbi->prepare(
-                  'UPDATE primary_xref SET sequence=? WHERE xref_id=?');
     my $xref_update_label_sth =
       $self->dbi->prepare('UPDATE xref SET label=? WHERE xref_id=?');
     my $xref_update_descr_sth =
@@ -539,21 +533,15 @@ sub upload_xref_object_graphs {
 # entry it may already exist, and require an UPDATE rather than an INSERT
       #############################################################################
       if ( defined $xref->{SEQUENCE} ) {
-        $primary_xref_id_sth->execute($xref_id) or
-          croak( $self->dbi->errstr() );
-        my @row    = $primary_xref_id_sth->fetchrow_array();
-        my $exists = $row[0];
-        if ($exists) {
-          $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id ) or
-            croak( $self->dbi->errstr() );
+        if ( $self->primary_xref_id_exists($xref_id) ) {
+          $self->_update_primary_xref_sequence( $xref->{SEQUENCE}, $xref_id );
         }
         else {
-          $pri_insert_sth->execute( $xref_id,
+          $self->_add_primary_xref( $xref_id,
                                     $xref->{SEQUENCE},
                                     $xref->{SEQUENCE_TYPE},
-                                    $xref->{STATUS} ) or
-            croak( $self->dbi->errstr() );
-        }
+                                    $xref->{STATUS} );
+          }
       }
 
       ##########################################################
@@ -616,8 +604,6 @@ sub upload_xref_object_graphs {
       ###########################
       # tidy up statement handles
       ###########################
-      if ( defined $pri_insert_sth ) { $pri_insert_sth->finish() }
-      if ( defined $pri_update_sth ) { $pri_update_sth->finish() }
       if ( defined $xref_update_label_sth ) {
         $xref_update_label_sth->finish();
       }
@@ -625,9 +611,6 @@ sub upload_xref_object_graphs {
         $xref_update_descr_sth->finish();
       }
       if ( defined $pair_sth )    { $pair_sth->finish() }
-      if ( defined $primary_xref_id_sth ) {
-        $primary_xref_id_sth->finish();
-      }
 
     }    # foreach xref
 
@@ -877,6 +860,32 @@ sub get_direct_xref {
 # if not found return undef;
 ###################################################################
 sub get_xref {
+  my ( $self, $acc, $source, $species_id ) = @_;
+
+  #
+  # If the statement handle does nt exist create it.
+  #
+  my $sql =
+'select xref_id from xref where accession = ? and source_id = ? and species_id = ?';
+  my $get_xref_sth = $self->dbi->prepare($sql);
+
+  #
+  # Find the xref_id using the sql above
+  #
+  $get_xref_sth->execute( $acc, $source, $species_id ) or
+    croak( $self->dbi->errstr() );
+  if ( my @row = $get_xref_sth->fetchrow_array() ) {
+    return $row[0];
+  }
+  $get_xref_sth->finish();
+  return;
+}
+
+###################################################################
+# return the primary xref_id for a particular accession, source and species
+# if not found return undef;
+###################################################################
+sub get_primary_xref {
   my ( $self, $acc, $source, $species_id ) = @_;
 
   #
@@ -1584,6 +1593,51 @@ sub _update_xref_info_type {
 
   my $sth =
     $self->dbi->prepare('UPDATE xref SET info_type=? where xref_id=?');
+  if ( !$sth->execute( $info_type, $xref_id ) ) {
+    croak $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
+  }
+
+  $sth->finish();
+  return;
+}
+
+
+###########################################################
+# Create an primary_xref entry.
+###########################################################
+sub _add_primary_xref {
+  my ( $self, $arg_ref ) = @_;
+
+  my $xref_id       = $arg_ref->{xref_id} ||
+    croak 'Requires xref_id';
+  my $sequence      = $arg_ref->{sequence} ||
+    croak 'Requires sequence';
+  my $sequence_type = $arg_ref->{sequence_type} ||
+    croak 'Requires sequence type';
+  my $status        = $arg_ref->{status};
+
+  my $add_primary_xref_sth =
+    $self->dbi->prepare( 'INSERT INTO primary_xref VALUES(?,?,?,?)' );
+
+  ####################################
+  # Add the xref and croak if it fails
+  ####################################
+  $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
+    croak("$xref_id\t$\t$sequence_type\t$status\n");
+
+  $add_primary_xref_sth->finish();
+  return $add_primary_xref_sth->{'mysql_insertid'};
+} ## end sub add_xref
+
+###################################################
+# Update primary_xref sequence for matching xref_id
+###################################################
+sub _update_primary_xref_sequence {
+  my ( $self, $xref_id, $info_type ) = @_;
+
+
+  my $sth =
+    $self->dbi->prepare('UPDATE primary_xref SET sequence=? where xref_id=?');
   if ( !$sth->execute( $info_type, $xref_id ) ) {
     croak $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
   }
