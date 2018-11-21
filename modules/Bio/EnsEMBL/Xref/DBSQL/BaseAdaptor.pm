@@ -497,7 +497,7 @@ sub upload_xref_object_graphs {
         "desc" => $xref->{DESCRIPTION},
         "source_id" => $xref->{SOURCE_ID},
         "species_id" => $xref->{SPECIES_ID},
-        "info_type" => $xref->{INFO_TYPE} || 'MISC' ) )
+        "info_type" => $xref->{INFO_TYPE} || 'MISC' ) );
 
       if ( defined $xref->{LABEL} ) {
         $xref_update_label_sth->execute( $xref->{LABEL}, $xref_id );
@@ -515,7 +515,7 @@ sub upload_xref_object_graphs {
           "desc" => $xref->{DESCRIPTION},
           "source_id" => $direct_xref->{SOURCE_ID},
           "species_id" => $xref->{SPECIES_ID},
-          "info_type" => $direct_xref->{LINKAGE_TYPE} || 'MISC' ) )
+          "info_type" => $direct_xref->{LINKAGE_TYPE} || 'MISC' ) );
 
         $self->add_direct_xref( $direct_xref_id,
                                 $direct_xref->{STABLE_ID},
@@ -572,15 +572,14 @@ sub upload_xref_object_graphs {
         #################
         # Insert the xref
         #################
-# print "inserting $dep{ACCESSION},$dep{VERSION},$dep{LABEL},$dep{DESCRIPTION},$dep{SOURCE_ID},${\$xref->{SPECIES_ID}}\n";
-        $dep_xref_id = $self->add_xref( (
-          "acc" => $$dep->{ACCESSION},
-          "version" => $$dep->{VERSION} || 0,
-          "label" => $$dep->{LABEL}   || $$dep->{ACCESSION},
-          "desc" => $$dep->{DESCRIPTION},
-          "source_id" => $dep->{SOURCE_ID},
-          "species_id" => $dep->{SPECIES_ID},
-          "info_type" => 'DEPENDENT' ) )
+        my $dep_xref_id = $self->add_xref( (
+          "acc" => $dep{ACCESSION},
+          "version" => $dep{VERSION} || 0,
+          "label" => $dep{LABEL}   || $dep{ACCESSION},
+          "desc" => $dep{DESCRIPTION},
+          "source_id" => $dep{SOURCE_ID},
+          "species_id" => $dep{SPECIES_ID},
+          "info_type" => 'DEPENDENT' ) );
 
         if ( !( defined $dep_xref_id ) || $dep_xref_id == 0 ) {
           print STDERR
