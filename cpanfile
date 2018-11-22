@@ -12,6 +12,7 @@ requires 'URI::Escape';
 requires 'XML::LibXML';
 requires 'XML::Simple';
 requires 'Moose';
+requires 'LWP::UserAgent';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';

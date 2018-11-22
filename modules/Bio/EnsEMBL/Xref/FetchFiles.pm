@@ -24,6 +24,13 @@ limitations under the License.
   Questions may also be sent to the Ensembl help desk at
   <http://www.ensembl.org/Help/Contact>.
 
+=head1 DESCRIPTION
+
+Given one or several FTP or HTTP URIs, download them.  If a URI is
+for a file or MySQL connection, then these will be ignored.  For
+FTP, standard shell file name globbing is allowed (but not regular
+expressions).  HTTP downloads are deferred to Bio::EnsEMB::Utils::Net
+
 =cut
 
 package Bio::EnsEMBL::Xref::FetchFiles;
@@ -31,32 +38,15 @@ package Bio::EnsEMBL::Xref::FetchFiles;
 use strict;
 use warnings;
 
-# Given one or several FTP or HTTP URIs, download them.  If an URI is
-# for a file or MySQL connection, then these will be ignored.  For
-# FTP, standard shell file name globbing is allowed (but not regular
-# expressions).  HTTP does not allow file name globbing.  The routine
-# returns a list of successfully downloaded local files or an empty list
-# if there was an error.
-
-
 use Carp;
-use DBI;
-use Digest::MD5 qw(md5_hex);
-use Getopt::Long;
-use POSIX qw(strftime);
-
 use File::Basename;
 use File::Spec::Functions;
-use IO::File;
+use File::Path qw( make_path );
 use Net::FTP;
-use HTTP::Tiny;
+use LWP::UserAgent;
 use URI;
 use URI::file;
 use Text::Glob qw( match_glob );
-use LWP::UserAgent;
-
-
-my $base_dir = File::Spec->curdir();
 
 sub new {
     my ($proto) = @_;
@@ -65,267 +55,271 @@ sub new {
     return bless {}, $class;
 }
 
+=head2 fetch_files
+
+Arg 1      :  Hashref { 
+                dest_dir => $path_for_downloads, 
+                user_uris => [$uri,...], 
+                deletedownloaded => boolean, # Delete any existing files
+                verbose => boolean 
+              }
+Description:  Given a config, this method selects the relevant client and downloads
+              the files from the supplies list of URLs. It uses a dispatch table to choose
+              which method to run to fetch. It always tries to reuse existing downloaded
+              files - set deletedownloaded if you don't want that to happen
+Returntype :  List of paths on the local file system
+
+=cut
+
 sub fetch_files {
   my ($self, $arg_ref) = @_;
-
 
   my $dest_dir         = $arg_ref->{dest_dir};
   my $user_uris        = $arg_ref->{user_uris};
   my $deletedownloaded = $arg_ref->{del_down};
-  my $checkdownload    = $arg_ref->{chk_down};
-  my $verbose          = $arg_ref->{verbose} ;
+  my $verbose          = $arg_ref->{verbose};
 
-  my @processed_files;
+  my @processed_files; # to be returned to caller
+  my %dispatch = (
+    script => \&script_handler,
+    file => \&file_handler,
+    ftp => \&ftp_handler,
+    http => \&http_handler,
+    https => \&http_handler,
+    mysql => \&script_handler,
+  );
 
-  foreach my $user_uri (@$user_uris) {
+  # Ensure there is a folder to receive downloaded files
+  make_path($dest_dir); 
+
+  foreach my $stringy_uri (@$user_uris) {
     # Change old-style 'LOCAL:' URIs into 'file:'.
-    $user_uri =~ s/^LOCAL:/file:/ix;
-    my $uri = URI->new($user_uri);
+    $stringy_uri =~ s/^LOCAL:/file:/ix;
+    my $uri = URI->new($stringy_uri);
 
-    if ( $uri->scheme() eq 'script' ) {
-      push( @processed_files, $user_uri );
-    } elsif ( $uri->scheme() eq 'file' ) {
-
-      # Deal with local files.
-
-      $user_uri =~ s/file://x;
-      if ( -s $user_uri ) {
-        push( @processed_files, $user_uri );
-      } else {
-        printf( "==> Can not find file '%s' (or it is empty)\n",
-                $user_uri );
-        return ();
-      }
-    } elsif ( $uri->scheme() eq 'ftp' ) {
-      # Deal with FTP files.
-
-      my $file_path = catfile( $dest_dir, basename( $uri->path() ) );
-
-      if ( $deletedownloaded && -e $file_path ) {
-        if ($verbose) {
-          printf( "Deleting '%s'\n", $file_path );
-        }
-        unlink($file_path);
-      }
-
-      if ( $checkdownload && -s $file_path ) {
-        # The file is already there, no need to connect to a FTP
-        # server.  This also means no file name globbing was
-        # used (for globbing FTP URIs, we always need to connect
-        # to a FTP site to see what files are there).
-
-        if ($verbose) {
-          printf( "File '%s' already exists\n", $file_path );
-        }
-        push( @processed_files, $file_path );
-        next;
-      }
-
-      if ( -e $file_path ) { unlink($file_path) }
-
-      if ($verbose) {
-        printf( "Connecting to FTP host '%s' for file '%s' \n",
-                $uri->host(), $file_path );
-      }
-
-      my $ftp = $self->get_ftp($uri, 0);
-      if(!defined($ftp) or ! $ftp->can('ls') or !$ftp->ls()){
-	$ftp =  $self->get_ftp($uri, 1);
-      }
-      foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
-	      if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
-		  next;
-	      }
-
-	      $file_path = catfile( $dest_dir, basename($remote_file) );
-
-	      if ( $deletedownloaded && -e $file_path ) {
-		  if ($verbose) {
-		      printf( "Deleting '%s'\n", $file_path );
-		  }
-		  unlink($file_path);
-	      }
-
-	      if ( $checkdownload && -s $file_path ) {
-		  if ($verbose) {
-		      printf( "File '%s' already exists\n", $file_path );
-		  }
-	      } else {
-
-		  if ( -e $file_path ) { unlink($file_path) }
-
-		  if ( !-d dirname($file_path) ) {
-		      if ($verbose) {
-			  printf( "Creating directory '%s'\n",
-				  dirname($file_path) );
-		      }
-		      if ( !mkdir( dirname($file_path) ) ) {
-			  printf( "==> Can not create directory '%s': %s",
-				  dirname($file_path), $! );
-			  return ();
-		      }
-		  }
-
-		  if ($verbose) {
-		      printf( "Fetching '%s' (size = %s)\n",
-			      $remote_file,
-			      $ftp->size($remote_file) || '(unknown)' );
-		      printf( "Local file is '%s'\n", $file_path );
-		  }
-
-		  if ( !$ftp->get( $remote_file, $file_path ) ) {
-		      printf( "==> Could not get '%s': %s\n",
-			      basename( $uri->path() ), $ftp->message() );
-		      return ();
-		  }
-	      } ## end else [ if ( $checkdownload &&...)]
-
-	      if ( $file_path =~ /\.(gz|Z)$/x ) {
-		  # Read from zcat pipe
-		  #
-		  my $cmd = "gzip -t $file_path";
-		  if ( system($cmd) != 0 ) {
-		      printf( "system command '%s' failed: %s - "
-			      . "Checking of gzip file failed - "
-			      . "FILE CORRUPTED ?\n\n",
-			      $cmd, $? );
-
-		      if ( -e $file_path ) {
-			  if ($verbose) {
-			      printf( "Deleting '%s'\n", $file_path );
-			  }
-			  unlink($file_path);
-		      }
-		      return ();
-		  } else {
-		      if ($verbose) {
-			  printf( "'%s' passed (gzip -t) corruption test.\n",
-				  $file_path );
-		      }
-		  }
-	      }
-	      push( @processed_files, $file_path );
-
-      } ## end foreach my $remote_file ( (...))
-    if (!@processed_files) { printf ("No files found matching $uri") ; }
-
-
-    } elsif ( $uri->scheme() eq 'http' || $uri->scheme eq 'https') {
-      # Deal with HTTP files.
-
-      my $filename = basename ($uri->path() );
-      if ($uri->path eq '') { $filename = "index.html"; }
-
-      my $file_path = catfile( $dest_dir, $filename );
-
-      if ( $deletedownloaded && -e $file_path ) {
-        if ($verbose) {
-          printf( "Deleting '%s'\n", $file_path );
-        }
-        unlink($file_path);
-      }
-
-      if ( $checkdownload && -s $file_path ) {
-        # The file is already there, no need to connect to a
-        # HTTP server.
-
-        if ($verbose) {
-          printf( "File '%s' already exists\n", $file_path );
-        }
-        push( @processed_files, $file_path );
-        next;
-      }
-
-      if ( -e $file_path ) { unlink($file_path) }
-
-      if ( !-d dirname($file_path) ) {
-        if ($verbose) {
-          printf( "Creating directory '%s'\n", dirname($file_path) );
-        }
-        if ( !mkdir( dirname($file_path) ) ) {
-          printf( "==> Can not create directory '%s': %s",
-                  dirname($file_path), $! );
-          return ();
-        }
-      }
-
-      if ($verbose) {
-        printf( "Connecting to HTTP host '%s'\n", $uri->host() );
-        printf( "Fetching '%s'\n",                $uri->path() );
-      }
-
-      if ( $checkdownload && -s $file_path ) {
-        if ($verbose) {
-          printf( "File '%s' already exists\n", $file_path );
-        }
-      } else {
-
-        if ($verbose) {
-          printf( "Local file is '%s'\n", $file_path );
-        }
-
-        if ( -e $file_path ) { unlink($file_path) }
-
-        open OUT, ">$file_path" or die "Couldn't open file $file_path $!";
-        my $http = HTTP::Tiny->new();
-
-        my $response = $http->get($uri->as_string());
-
-        if ( !$response->{success} ) {
-          printf( "==> Could not get '%s': %s\n",
-                  basename( $uri->path() ), $response->{content} );
-          return ();
-        }
-        print OUT $response->{content};
-        close OUT;
-      }
-
-      push( @processed_files, $file_path );
-
-    } elsif ( $uri->scheme() eq 'mysql' ) {
-      # Just leave MySQL data untouched for now.
-      push( @processed_files, $user_uri );
-    } else {
-      printf( "==> Unknown URI scheme '%s' in URI '%s'\n",
-              $uri->scheme(), $uri->as_string() );
-      return ();
+    unless (exists $dispatch{$uri->scheme()}) { 
+      croak 'Unrecognised fetch method from config file: '.$uri->scheme().' from '.$stringy_uri;
     }
-  } ## end foreach my $user_uri (@user_uris)
+    my $code = $dispatch{$uri->scheme()};
+    my @downloaded_files = $self->$code($stringy_uri, $uri, $dest_dir, $deletedownloaded, $verbose);
+    push @processed_files, @downloaded_files;
+  }
+
+  if (!@processed_files) { croak "No files were downloaded or existed already"; }
+  # Validate any compressed files we downloaded
+  my @failures;
+  foreach my $file (@processed_files) {
+    if ($file =~ /\.(gz|Z)$/x) {
+      my $cmd = "gzip -t $file";
+      my $return = system($cmd);
+      if ($return != 0) {
+        push @failures,$file;
+      }
+    }
+  }
+
+  if (@failures) {
+    my $error = sprintf "Failed to validate: %s\nThese files have been deleted",join ',',@failures;
+    foreach my $doomed (@failures) {
+      unlink $doomed;
+    }
+    confess $error;
+  }
 
   return @processed_files;
-} ## end sub fetch_files
+}
+
+=head2 script_handler
+
+Description:  A dud function, for the eventuality that we should ever want to
+              not do nothing with script-type, mysql-type sources
+Caller:       fetch_files
+
+=cut
+
+sub script_handler {
+  my ($self, $user_uri) = @_;
+  return $user_uri;
+}
+
+=head2 file_handler
+
+Description:  Handles file system paths, by checking if they're present
+Caller:       fetch_files
+
+=cut
+
+sub file_handler {
+  my ($self, $user_uri) = @_;
+
+  $user_uri =~ s/\Afile://x;
+  if ( -s $user_uri ) {
+    return $user_uri;
+  } else {
+    confess "Claimed file does not exist or is empty: $user_uri";
+  }
+}
+
+=head2 ftp_handler
+
+Description:  Fetches glob-matchable files from an FTP site. It is able to
+              avoid downloading by looking for the expected file.
+              Could not be handled in Bio::EnsEMBL::Utils::Net, due to needing
+              a manifest of files in order to do glob-matching
+Caller:       fetch_files
+
+=cut
+
+sub ftp_handler {
+  my ($self, $user_uri, $uri, $dest_dir, $delete, $verbose) = @_;
+  
+  # In case of single file fetch
+  my $path = $self->check_download($dest_dir, basename($uri->path()), $delete, $verbose);
+  return $path if defined $path;
+  # From here on we are pulling sets of files from the FTP site, either by glob pattern
+  # or just getting all of them
+
+  my @ftp_manifest = @{ $self->list_ftp_files($uri) };
+
+  my @download_manifest; # A buffer of file paths
+
+  my $ftp = $self->get_ftp($uri);
+
+  foreach my $remote_file (@ftp_manifest) {
+    # Skip if the pattern in the URI does not match individual files?
+    # Probably for removing .. and such
+    next if ( !match_glob( basename( $uri->path() ), $remote_file ) );
+
+    my $file_path = $self->check_download($dest_dir, basename($remote_file), $delete, $verbose);
+    if ($file_path) {
+      push @download_manifest, $file_path;
+    } else {
+      print "Fetching $remote_file to $dest_dir\n" if $verbose;
+      my $status = $ftp->get( $remote_file, catfile( $dest_dir, basename($remote_file)) );
+      if ($status) {
+        push @download_manifest, $dest_dir.$remote_file;
+      } else {
+        confess "Failed to download $remote_file via FTP: ".$ftp->message();
+      }
+    }
+  }
+  $ftp->quit();
+  
+  return @download_manifest;
+}
+
+=head2 http_handler
+
+Description:  Fetches a single URL. Will check for existing files by default
+Caller:       fetch_files
+
+=cut
+
+sub http_handler {
+  my ($self, $uri_string, $uri, $dest_dir, $delete, $verbose) = @_;
+  my $remote_file_name;
+  if ($uri->path eq '') { $remote_file_name = "index.html"; } # failover to default webpage
+  $remote_file_name //= basename($uri->path());
+
+  my $path = $self->check_download($dest_dir, $remote_file_name, $delete, $verbose);
+  return $path if defined $path;
+
+  print "Fetching $uri_string\n" if $verbose;
+  my $download_path = catfile($dest_dir,$remote_file_name);
+  
+  my $ua = LWP::UserAgent->new();
+  my $response = $ua->get($uri_string, ':content_file' => $download_path);
+  if (! $response->is_success) {
+    confess "Failed when downloading $uri_string with response ".$response->status_line;
+  }
+
+  return $download_path;
+}
 
 
-sub get_ftp{
-  my ($self, $uri, $passive) = @_;
+=head2 get_ftp
+
+Arg 1:        URI::ftp instance
+Arg 2:        Passive option for Net::FTP
+Arg 3:        FTP user account
+Arg 4:        FTP password should it be necessary
+Description:  Provides an FTP client configured to download files from the given URI
+              It would be a lot more robust if we could use LWP::UserAgent, but this
+              code requires an FTP->ls() call, hence a real FTP client is needed
+ReturnType:   Net::FTP instance
+
+=cut
+
+sub get_ftp {
+  my ($self, $uri, $passive, $user, $pass) = @_;
   my $ftp;
+  $passive = ($passive) ? 1 : 0; # Sanitise potential passive options
+  $user //= 'anonymous';
+  $pass //= '-anonymous@';
 
-  if($passive){
-    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1);
+  $ftp = Net::FTP->new( $uri->host(), Debug => 0, Passive => $passive);
+
+  croak sprintf("Cannot open FTP connection: %s\n", $@) if !defined($ftp);
+
+  my $state = $ftp->login( $user, $pass );
+  croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() ) if !$state;
+
+  $state = $ftp->cwd( dirname( $uri->path() ) );
+  if (!$state) {
+    croak sprintf( "== Can not change directory to '%s': %s\n", dirname( $uri->path() ), $ftp->message() );  
   }
-  else{
-    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0);
-  }
-
-  if ( !defined($ftp) ) {
-    printf( "==> Can not open FTP connection: %s\n", $@ );
-    return ();
-  }
-
-  if ( !$ftp->login( 'anonymous', '-anonymous@' ) ) {
-    printf( "==> Can not log in on FTP host: %s\n",
-	    $ftp->message() );
-    return ();
-	}
-
-  if ( !$ftp->cwd( dirname( $uri->path() ) ) ) {
-    printf( "== Can not change directory to '%s': %s\n",
-		  dirname( $uri->path() ), $ftp->message() );
-    return ();
-  }
-
+  
   $ftp->binary();
   return $ftp;
+}
+
+
+=head2 check_download
+
+Arg 1:        Base path
+Arg 2:        File name
+Arg 3:        Delete? (boolean)
+Arg 4:        Verbose (boolean)
+Description:  Check filesystem for the downloads we expect from this source
+              Optionally clean them up so we can replace them
+Returntype:   Path to file - A path means the file exists, undef means it does not.
+              It may have been deleted to make the result undef, as per Arg 3
+
+=cut
+
+sub check_download {
+  my ($self, $base_path, $filename, $delete, $verbose) = @_;
+
+  my $file_path = catfile($base_path,$filename);
+  if (-s $file_path) {
+    if ($delete) {
+      unlink $file_path;
+      print "Deleted $file_path\n" if $verbose;
+      return;
+    }
+    return $file_path;
+  } else {
+    return;
+  }
+}
+
+
+=head2 list_ftp_files
+
+Arg 1:        URI::ftp instance
+Description:  Returns a list of files found in the given FTP directory
+              Mainly used to see what species data is available in the Xref pipeline
+ReturnType :  Listref of file names
+
+=cut
+
+sub list_ftp_files {
+  my ($self, $uri) = @_;
+  my $ftp_client = $self->get_ftp($uri);
+  my @files;
+  @files = $ftp_client->ls() or confess "Cannot list content of FTP site %s at %s",$uri->host,$uri->path;
+  $ftp_client->quit;
+  return \@files;
 }
 
 1;
