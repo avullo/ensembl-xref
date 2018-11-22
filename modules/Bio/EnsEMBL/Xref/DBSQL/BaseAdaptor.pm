@@ -145,7 +145,7 @@ sub get_source_id_for_source_name {
   my $low_name = lc $source_name;
   my $sql = 'SELECT source_id FROM source WHERE LOWER(name)=?';
 
-  @sql_params = ( $low_name );
+  my @sql_params = ( $low_name );
   if ( defined $priority_desc ) {
     $sql .= " AND LOWER(priority_description)=?";
     push @sql_params, lc $priority_desc;
@@ -338,9 +338,7 @@ sub label_to_acc {
   my ( $xref_id, $synonym );
   $syn_sth->bind_columns( \$xref_id, \$synonym );
   while ( $syn_sth->fetch() ) {
-
     push @{ $synonyms{$xref_id} }, $synonym;
-
   }
 
   my %valid_codes;
@@ -350,7 +348,7 @@ sub label_to_acc {
   my $sql =
     'SELECT source_id FROM source WHERE UPPER(name) LIKE ?';
   my $sth = $self->dbi->prepare_cached($sql);
-  $sth->execute("${direct_name}%");
+  $sth->execute("${big_name}%");
   while ( my @row = $sth->fetchrow_array() ) {
     push @sources, $row[0];
   }
@@ -415,7 +413,7 @@ sub upload_xref_object_graphs {
   my ( $self, $rxrefs ) = @_;
 
   if ( !( scalar @{$rxrefs} ) ) {
-    return 1;
+    confess "Please give me some xrefs to load";
   }
 
   #################################################################################
@@ -482,7 +480,7 @@ sub upload_xref_object_graphs {
 
   } # foreach xref
 
-  return 1;
+  return;
 } ## end sub upload_xref_object_graphs
 
 ######################################################################################
@@ -682,16 +680,16 @@ sub get_direct_xref {
 
   $type = lc $type;
 
-  my %sql_hash = {
+  my %sql_hash = (
     "gene" =>
       "SELECT general_xref_id FROM gene_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
     "transcript" =>
       "SELECT general_xref_id FROM transcript_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
     "translation" =>
       "SELECT general_xref_id FROM translation_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref "
-  };
+  );
 
-  $sql = $sql_hash{$type};
+  my $sql = $sql_hash{$type};
   my @sql_params = ($stable_id);
   if ( defined $link ) {
     $sql .= '= ?';
@@ -702,7 +700,7 @@ sub get_direct_xref {
   }
   my $direct_sth = $self->dbi->prepare_cached($sql);
 
-  $direct_sth->execute(@sql_params) || croak( $self->dbi->errstr() );
+  $direct_sth->execute(@sql_params) || confess( $self->dbi->errstr() );
   if ( wantarray() ) {
     # Generic behaviour
 
@@ -738,33 +736,7 @@ sub get_xref {
   # If the statement handle does nt exist create it.
   #
   my $sql =
-'SELECT xref_id FROM xref WHERE accession = ? AND source_id = ? AND species_id = ?';
-  my $get_xref_sth = $self->dbi->prepare_cached($sql);
-
-  #
-  # Find the xref_id using the sql above
-  #
-  $get_xref_sth->execute( $acc, $source, $species_id ) or
-    croak( $self->dbi->errstr() );
-  if ( my @row = $get_xref_sth->fetchrow_array() ) {
-    return $row[0];
-  }
-
-  return;
-}
-
-###################################################################
-# return the primary xref_id for a particular accession, source and species
-# if not found return undef;
-###################################################################
-sub get_primary_xref {
-  my ( $self, $acc, $source, $species_id ) = @_;
-
-  #
-  # If the statement handle does nt exist create it.
-  #
-  my $sql =
-'SELECT xref_id FROM xref WHERE accession = ? AND source_id = ? AND species_id = ?';
+    'SELECT xref_id FROM xref WHERE accession = ? AND source_id = ? AND species_id = ?';
   my $get_xref_sth = $self->dbi->prepare_cached($sql);
 
   #
@@ -1327,7 +1299,7 @@ sub get_acc_to_label {
     xref.source_id = source.source_id
 GLA
 
-  @sql_params = ($name . '%');
+  my @sql_params = ($name . '%');
   if ( defined $prio_desc ) {
     $sql .= " AND source.priority_description LIKE ?";
     push @sql_params, $prio_desc;
@@ -1363,7 +1335,7 @@ sub get_label_to_desc {
     xref.source_id = source.source_id
 GDH
 
-  @sql_params = ($name . '%');
+  my @sql_params = ($name . '%');
   if ( defined $prio_desc ) {
     $sql .= " AND source.priority_description LIKE ?";
     push @sql_params, $prio_desc;
