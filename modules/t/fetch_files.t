@@ -29,6 +29,7 @@ limitations under the License.
 use strict;
 use warnings;
 use Test::More;
+use Test::Exception;
 use Cwd;
 use Bio::EnsEMBL::Xref::FetchFiles;
 
@@ -75,5 +76,21 @@ foreach my $alleged_file (@file_list) {
   ok(-s $alleged_file, $alleged_file.' is present');
   unlink $alleged_file;
 }
+
+$uris = ['derp:fake/protocol'];
+
+throws_ok { $client->fetch_files({dest_dir => getcwd(), user_uris => $uris}) }
+  qr/Unrecognised fetch method from config file/,
+  'Try an invalid protocol';
+
+`echo 'a' > test_file.gz`; # Create a fake gz archive
+
+$uris = ['http://test.url/test_file.gz' ];
+
+throws_ok { $client->fetch_files({dest_dir => getcwd(), user_uris => $uris}) }
+  qr/Failed to validate:/,
+  'Verify GZIP integrity check operates';
+
+unlink('test_file.gz');
 
 done_testing();
