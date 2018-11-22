@@ -46,6 +46,7 @@ use Carp;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Xref::FetchFiles;
 use Getopt::Long;
+use IO::Uncompress::AnyUncompress;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 
@@ -89,12 +90,11 @@ sub dbi {
 }
 
 #######################################################################
-# Given a file name, returns a IO::Handle object.  If the file is
-# gzipped, the handle will be to an unseekable stream coming out of a
-# zcat pipe.  If the given file name doesn't correspond to an existing
-# file, the routine will try to add '.gz' to the file name or to remove
-# any .'Z' or '.gz' and try again.  Returns undef on failure and will
-# write a warning to stderr.
+# Given a file name, returns a IO::Handle object.  Supports most common
+# compression formats, e.g. zip, gzip, bzip2, lzma, xz.  If the given
+# file name doesn't correspond to an existing file, the routine will
+# try to add '.gz' to the file name or to remove any .'Z' or '.gz' and
+# try again.  Throws on failure.
 #######################################################################
 sub get_filehandle {
   my ( $self, $file_name ) = @_;
@@ -117,18 +117,11 @@ sub get_filehandle {
     $file_name = $alt_file_name;
   }
 
-  if ( $file_name =~ /\.(gz|Z)$/x ) {
-    # Read from zcat pipe
-    $io = IO::File->new("zcat $file_name |") or
-      carp("Can not open file '$file_name' with 'zcat'");
-  }
-  else {
-    # Read file normally
-    $io = IO::File->new($file_name) or
-      carp("Can not open file '$file_name'");
-  }
-
-  if ( !defined $io ) { return }
+  # 'Transparent' lets IO::Uncompress modules read uncompressed input.
+  # It should be on by default but set it just in case.
+  $io = IO::Uncompress::AnyUncompress->new($file_name,
+                                           'Transparent' => 1 )
+    || confess("Can not open file '$file_name'");
 
   if ($verbose) {
     print "Reading from '$file_name'...\n" ||
@@ -144,7 +137,7 @@ sub get_filehandle {
 # Arg[1] source name
 # Arg[2] priority description
 #
-# Returns source_id or -1 if not found
+# Returns source_id, or throws if not found
 #############################################
 sub get_source_id_for_source_name {
   my ( $self, $source_name, $priority_desc) = @_;
@@ -165,14 +158,7 @@ sub get_source_id_for_source_name {
     $source_id = $row[0];
   }
   else {
-    carp
-"WARNING: There is no entity $source_name in the source-table of the xref database.\n";
-    carp
-"WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
-    carp
-      "WARNING: Couldn't get source ID for source name $source_name\n";
-
-    $source_id = '-1';
+    confess "No source_id for source_name='${source_name}', priority_desc='${priority_desc}'";
   }
 
   return $source_id;
@@ -517,9 +503,9 @@ sub upload_xref_object_graphs {
         #################
         my $dep_xref_id = $self->add_xref( (
           "acc"        => $dep{ACCESSION},
-          "version"    => $dep{VERSION} || 0,
-          "label"      => $dep{LABEL}   || $dep{ACCESSION},
-          "desc"       => $dep{DESCRIPTION},
+          "version"    => $dep{VERSION}     || 0,
+          "label"      => $dep{LABEL}       || $dep{ACCESSION},
+          "desc"       => $dep{DESCRIPTION} || $xref->{DESCRIPTION},
           "source_id"  => $dep{SOURCE_ID},
           "species_id" => $dep{SPECIES_ID},
           "info_type"  => 'DEPENDENT' ) );
