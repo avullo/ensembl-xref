@@ -1500,18 +1500,17 @@ sub parsing_finished_store_data {
 # object_xref                                 object_xref_id
 # identity_xref                               object_xref_id
 
-  my %table_and_key =
-    ( 'xref' => 'xref_id', 'object_xref' => 'object_xref_id' );
+  my %table_and_key = (
+    'xref'        => 'SELECT MAX(xref_id) FROM xref',
+    'object_xref' => 'SELECT MAX(object_xref_id) FROM object_xref' );
 
   foreach my $table ( keys %table_and_key ) {
-    my $sth = $self->dbi->prepare(
-             'SELECT MAX(' . $table_and_key{$table} . ") FROM $table" );
+    my $sth = $self->dbi->prepare_cached( $table_and_key{$table} );
     $sth->execute;
     my $max_val;
     $sth->bind_columns( \$max_val );
     $sth->fetch;
-    $sth->finish;
-    $self->add_meta_pair( 'PARSED_' . $table_and_key{$table},
+    $self->add_meta_pair( 'PARSED_' . $table . '_id'},
                           $max_val || 1);
   }
   return;
