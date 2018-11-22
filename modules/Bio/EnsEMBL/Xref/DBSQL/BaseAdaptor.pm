@@ -205,6 +205,7 @@ sub get_source_name_for_source_id {
   $sth->execute($source_id);
   my @row = $sth->fetchrow_array();
   if (@row) {
+    $sth->finish();
     $source_name = $row[0];
   }
   else {
@@ -650,6 +651,7 @@ sub primary_xref_id_exists {
   my $result = $row[0];
   if ( defined $result ) { $exists = 1; }
 
+  $sth->finish();
 
   return $exists;
 
@@ -681,11 +683,11 @@ sub get_direct_xref {
   $type = lc $type;
 
   my %sql_hash = (
-    "gene" =>
+    gene =>
       "SELECT general_xref_id FROM gene_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
-    "transcript" =>
+    transcript =>
       "SELECT general_xref_id FROM transcript_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
-    "translation" =>
+    translation =>
       "SELECT general_xref_id FROM translation_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref "
   );
 
@@ -718,6 +720,7 @@ sub get_direct_xref {
     # There seem to be no parsers present relying on the old behaviour
     # any more
     if ( my @row = $direct_sth->fetchrow_array() ) {
+      $direct_sth->finish();
       return $row[0];
     }
   }
@@ -745,8 +748,14 @@ sub get_xref {
   $get_xref_sth->execute( $acc, $source, $species_id ) or
     croak( $self->dbi->errstr() );
   if ( my @row = $get_xref_sth->fetchrow_array() ) {
+
+    # Calling finish() as we only requires the first row only
+    $get_xref_sth->finish();
+
     return $row[0];
   }
+
+
 
   return;
 }
@@ -769,6 +778,7 @@ sub get_object_xref {
     or
     croak( $self->dbi->errstr() );
   if ( my @row = $get_object_xref_sth->fetchrow_array() ) {
+    $get_object_xref_sth->finish();
     return $row[0];
   }
 
@@ -1118,6 +1128,9 @@ ADX
   return;
 } ## end sub add_dependent_xref_maponly
 
+#########################################################################
+# Add dependent xrefs to the xref table aong with dependent xref mappings
+#########################################################################
 sub add_multiple_dependent_xrefs {
   my ( $self, $xref_id, $xref ) = @_;
 
@@ -1496,6 +1509,7 @@ sub parsing_finished_store_data {
     $sth->fetch;
     $self->add_meta_pair( 'PARSED_' . $table . '_id',
                           $max_val || 1);
+    $sth->finish();
   }
   return;
 } ## end sub parsing_finished_store_data
