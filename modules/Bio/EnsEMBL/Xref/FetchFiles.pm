@@ -316,10 +316,11 @@ ReturnType :  Listref of file names
 sub list_ftp_files {
   my ($self, $uri) = @_;
   my $ftp_client = $self->get_ftp($uri);
-  my @files;
-  @files = $ftp_client->ls() or confess "Cannot list content of FTP site %s at %s",$uri->host,$uri->path;
+  my $files;
+  $files = $ftp_client->ls() 
+    or confess sprintf "Cannot list content of FTP site %s at %s: %s",$uri->host, $uri->path, $ftp_client->message;
   $ftp_client->quit;
-  return \@files;
+  return $files;
 }
 
 1;
