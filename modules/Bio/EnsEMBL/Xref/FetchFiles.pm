@@ -266,9 +266,11 @@ sub get_ftp {
   my $state = $ftp->login( $user, $pass );
   croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() ) if !$state;
 
-  $state = $ftp->cwd( dirname( $uri->path() ) );
+  my ($filename, $path, $extras) = fileparse( $uri->path() ); # fileparse is a bit safer than dirname
+  $state = $ftp->cwd( $path );
+
   if (!$state) {
-    croak sprintf( "== Can not change directory to '%s': %s\n", dirname( $uri->path() ), $ftp->message() );  
+    croak sprintf( "== Can not change directory to '%s': %s\n", $path, $ftp->message() );  
   }
   
   $ftp->binary();
@@ -308,7 +310,8 @@ sub check_download {
 
 =head2 list_ftp_files
 
-Arg 1:        URI::ftp instance
+Arg 1:        String URI or URI object
+Arg 2:        Any file extension you want removed from the list
 Description:  Returns a list of files found in the given FTP directory
               Mainly used to see what species data is available in the Xref pipeline
 ReturnType :  Listref of file names
@@ -316,12 +319,21 @@ ReturnType :  Listref of file names
 =cut
 
 sub list_ftp_files {
-  my ($self, $uri) = @_;
+  my ($self, $uri, $suffix) = @_;
+  
+  if (ref($uri) ne 'URI') {
+    $uri = URI->new($uri);
+  }
   my $ftp_client = $self->get_ftp($uri);
   my $files;
-  $files = $ftp_client->ls() 
-    or confess sprintf "Cannot list content of FTP site %s at %s: %s",$uri->host, $uri->path, $ftp_client->message;
+  print $ftp_client->pwd();
+  $files = $ftp_client->ls()
+    or confess sprintf "Cannot list content of FTP site %s at %s: %s", $uri->host, $uri->path, $ftp_client->message;
   $ftp_client->quit;
+
+  foreach my $name (@$files) {
+    $name =~ s/$suffix//x;
+  }
   return $files;
 }
 
