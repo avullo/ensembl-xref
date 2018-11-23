@@ -60,23 +60,20 @@ use Carp;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Xref::FetchFiles;
 use URI::ftp;
+use List::Compare;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
-
-my $default_ftp_server = 'ftp.ebi.ac.uk';
-my $default_ftp_dir =
-  'pub/databases/microarray/data/atlas/bioentity_properties/ensembl';
 
 sub run {
 
   my ( $self, $ref_arg ) = @_;
-  my $source_id    = $self->{source_id};
-  my $species_id   = $self->{species_id};
-  my $species_name = $self->{species};
-  my $files        = $self->{files};
-  my $verbose      = $self->{verbose} // 0;
-  my $xref_dba     = $self->{xref_dba};
-  my $dba          = $self->{dba};
+  my $source_id             = $self->{source_id};
+  my $species_id            = $self->{species_id};
+  my $override_species_name = $self->{species};
+  my $files                 = $self->{files};
+  my $verbose               = $self->{verbose} // 0;
+  my $xref_dba              = $self->{xref_dba};
+  # my $core_dba              = $self->{dba};
 
   my $file = shift @{$files};
 
@@ -86,21 +83,15 @@ sub run {
     $project = $1;
   }
 
-
-  my $species_record = $xref_dba->get_species_particulars($species_id);
-  
-  my $aliases = [$species_record->{aliases}];
-  push @$aliases, $species_name if defined $species_name; # add an override alias
-
-  my $species_lookup = $self->_get_species($verbose);
-  my $active = $self->_is_active_species( $species_lookup, $aliases, $verbose );
-
-  if ( !$active ) {
-    return 0;
+  # If a species is not listed on the ArrayExpress FTP site by any of
+  # our aliases, we cannot load xrefs for this species
+  my $ref_species_name = $self->is_active_species($species_id, $xref_dba, $override_species_name);
+  if (! $ref_species_name ) {
+    return;
   }
-
+  
   #get stable_ids from core and create xrefs
-  my $gene_adaptor = $self->_get_gene_adaptor($project, $species_record->{name}, $dba);
+  my $gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor($ref_species_name,'core','Gene');
 
   print "Finished loading the gene_adaptor\n" if $verbose;
 
@@ -129,92 +120,50 @@ sub run {
 
   print "Added $xref_count DIRECT xrefs\n" if ($verbose);
   if ( !$xref_count ) {
-   croak "No arrayexpress xref added\n";
+    croak "No arrayexpress xref added\n";
   }
 
   return 0;      # successful
 
 }
 
-sub _get_gene_adaptor {
-  my ( $self, $project, $species_name, $dba ) = @_;
+=head2 is_active_species
 
-  my $registry = "Bio::EnsEMBL::Registry";
+Arg 1      :  species_id - the ID from species table in the Xref schema
+Arg 2      :  xref_dba - DBAdaptor to the Xref database
+Arg 3      :  species_name - An alternate name for the species to match the remote site
+
+Description:  Determine whether the species (species_id) is available for this source 
+              by consulting its FTP site for species-named files. Can supply a 
+              custom species name as override to allow flexibility
+
+Returntype :  String - The most production species name for Ensembl
+
+=cut
+
+sub is_active_species {
+  my ($self, $species_id, $xref_dba, $species_name) = @_;
   
-  my ($gene_adaptor);
+  # collect Ensembl names and species aliases for our current species
+  my $species_record = $xref_dba->get_species_particulars($species_id);
+  my $aliases = [$species_record->{aliases}];
+  push @$aliases, $species_name if defined $species_name;
 
-  if ( defined $project && $project eq 'ensembl' ) {
-    $registry->load_registry_from_multiple_dbs(
-      {
-        '-host' => 'mysql-ens-sta-1',
-        '-port' => 4519,
-        '-user' => 'ensro',
-      },
-    );
-    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
+  my $client = Bio::EnsEMBL::Xref::FetchFiles->new();
+  # File names end .ensgene.tsv or similar. Thes rest is a latin species name
+  my $file_names = $client->list_ftp_files(
+    'ftp://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/bioentity_properties/ensembl/',
+    qr/\..+/
+  );
+  
+  my $comparison = List::Compare->new( $file_names, $aliases );
+  my @match = $comparison->get_intersection;
+  
+  if (scalar @match > 0) {
+    return $species_record->{name};
+  } else {
+    return 0;
   }
-  elsif ( defined $project && $project eq 'ensemblgenomes' ) {
-    $registry->load_registry_from_multiple_dbs(
-      {
-        '-host' => 'mysql-eg-staging-1.ebi.ac.uk',
-        '-port' => 4160,
-        '-user' => 'ensro',
-      },
-      {
-        '-host' => 'mysql-eg-staging-2.ebi.ac.uk',
-        '-port' => 4275,
-        '-user' => 'ensro',
-      },
-    );
-    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
-  }
-  elsif ( defined $dba ) {
-    $gene_adaptor = $dba->get_GeneAdaptor();
-  }
-  else {
-    die( "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes" );
-  }
-
-  return $gene_adaptor;
-}
-
-sub _get_species {
-  my ( $self, $verbose ) = @_;
-  $verbose = ( defined $verbose ) ? $verbose : 0;
-
-  my $ff = Bio::EnsEMBL::Xref::FetchFiles->new();
-  my $ftp = $ff->get_ftp(URI::ftp->new("ftp://".$default_ftp_server));
-
-  if ( !defined $ftp) {
-    croak "Failed to get FTP connection to $default_ftp_server\n";
-  }
-
-  $ftp->cwd($default_ftp_dir);
-  my @files = $ftp->ls() or confess "Cannot change to $default_ftp_dir: $@";
-  $ftp->quit;
-
-  my %species_lookup;
-  foreach my $file (@files) {
-    my ($species) = split( /\./, $file );
-    $species_lookup{$species} = 1;
-  }
-  return \%species_lookup;
-}
-
-# checks if the species is still active in ArrayExress
-sub _is_active_species {
-  my ( $self, $species_lookup, $names, $verbose ) = @_;
-
-  #Loop through the names and aliases first. If we get a hit then great
-  my $active = 0;
-  foreach my $name ( @{$names} ) {
-    if ( $species_lookup->{$name} ) {
-      printf( 'Found ArrayExpress has declared the name "%s". This was an alias' . "\n", $name ) if $verbose;
-      $active = 1;
-      last;
-    }
-  }
-  return $active;
 }
 
 1;
