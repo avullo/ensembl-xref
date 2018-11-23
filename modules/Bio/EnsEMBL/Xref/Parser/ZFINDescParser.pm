@@ -24,7 +24,7 @@ use warnings;
 use Carp;
 use Text::CSV;
 
-use parent qw( XrefParser::BaseParser );
+use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
 sub run {
