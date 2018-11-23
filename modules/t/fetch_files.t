@@ -33,6 +33,10 @@ use Test::Exception;
 use Cwd;
 use Bio::EnsEMBL::Xref::FetchFiles;
 
+if (! $ENV{TEST_INTERNET}) {
+  plan( skip_all => 'Not testing FTP client and such. export TEST_INTERNET=1 to run this test. It does not work on Travis');
+}
+
 my $client = Bio::EnsEMBL::Xref::FetchFiles->new();
 
 my $uris = [
