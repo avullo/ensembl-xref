@@ -78,7 +78,7 @@ ok(
 );
 
 # Test if all the rows were inserted
-is($db->schema->resultset('Xref')->count, 6, "All 10 rows were inserted");
+is($db->schema->resultset('Xref')->count, 6, "All 6 rows were inserted");
 
 done_testing();
 
