@@ -36,8 +36,8 @@ sub run {
   my $xref_dba   = $self->{xref_dba};
   my $verbose    = $self->{verbose} // 0;
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
-    croak "Need to pass source_id, species_id and files as pairs";
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
+    confess "Need to pass source_id, species_id and files as pairs";
   }
 
   my $file = shift @{$files};
@@ -54,14 +54,14 @@ sub run {
   my $file_io = $xref_dba->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "Can't open ZFIN file $file\n";
+    confess "Can't open ZFIN file '$file'\n";
   }
 
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1,
     binary         => 1
-  }) or croak "Cannot use file $file: " . Text::CSV->error_diag ();
+  }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
 
   # 2 extra columns are ignored
@@ -85,10 +85,10 @@ sub run {
     }
   }
 
-  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $input_file->eof or confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
-  if($verbose){
+  if ( $verbose ) {
     print "$count ZFIN xrefs added, $withdrawn withdrawn entries ignored\n";
   }
 
