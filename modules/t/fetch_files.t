@@ -41,31 +41,34 @@ my $uris = [
   'ftp://ftp.ensembl.org/pub/current_README', # Testing single FTP file
   'ftp://ftp.ensembl.org/pub/misc-scripts/Variant_effect_predictor_*', # Testing glob-matched FTP files
   'http://www.ensembl.org/', # Test automatic insertion of index.html
-  'http://github.com/Ensembl/ensembl/blob/master/LICENSE', # Test http file fetch
-  'https://github.com/Ensembl/ensembl/blob/master/README.md', # Test https
+  'http://static.ensembl.org/i/species/Mus_musculus.png', # Test http file fetch
+  'https://static.ensembl.org/i/species/Homo_sapiens.png', # Test https
 ];
 
 `echo 'a' > test_file`; # We need a file on disk for the LOCAL: type of input
 
+my $here = getcwd;
+
 my @file_list = $client->fetch_files({
-  dest_dir => getcwd(),
+  dest_dir => $here,
   user_uris => $uris,
   deletedownloaded => 0,
   verbose => 1
 });
 
-is_deeply(\@file_list, [qw/
-  test_file
-  ilovesubshells
-  current_README
-  Variant_effect_predictor_1.0
-  Variant_effect_predictor_2.0
-  Variant_effect_predictor_2.1
-  Variant_effect_predictor_2.2
-  Variant_effect_predictor_2.3
-  index.html
-  LICENSE
-  README.md
+is_deeply(\@file_list, [ 
+  'test_file',
+  'ilovesubshells',
+  map { $here.'/'.$_ } qw/
+    current_README
+    Variant_effect_predictor_1.0
+    Variant_effect_predictor_2.0
+    Variant_effect_predictor_2.1
+    Variant_effect_predictor_2.2
+    Variant_effect_predictor_2.3
+    index.html
+    Mus_musculus.png
+    Homo_sapiens.png
   /],
   'All files reported downloaded'
 );

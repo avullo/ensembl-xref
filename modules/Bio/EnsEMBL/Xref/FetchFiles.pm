@@ -113,13 +113,13 @@ sub fetch_files {
       my $cmd = "gzip -t $file";
       my $return = system($cmd);
       if ($return != 0) {
-        push @failures,$file;
+        push @failures, $file;
       }
     }
   }
 
   if (@failures) {
-    my $error = sprintf "Failed to validate: %s\nThese files have been deleted",join ',',@failures;
+    my $error = sprintf "Failed to validate: %s\nThese files have been deleted", join ',',@failures;
     foreach my $doomed (@failures) {
       unlink $doomed;
     }
@@ -139,6 +139,7 @@ Caller:       fetch_files
 
 sub script_handler {
   my ($self, $user_uri) = @_;
+  $user_uri =~ s/\Ascript://x;
   return $user_uri;
 }
 
@@ -197,7 +198,7 @@ sub ftp_handler {
       print "Fetching $remote_file to $dest_dir\n" if $verbose;
       my $status = $ftp->get( $remote_file, catfile( $dest_dir, basename($remote_file)) );
       if ($status) {
-        push @download_manifest, $dest_dir.$remote_file;
+        push @download_manifest, catfile($dest_dir,basename($remote_file));
       } else {
         confess "Failed to download $remote_file via FTP: ".$ftp->message();
       }
@@ -218,7 +219,7 @@ Caller:       fetch_files
 sub http_handler {
   my ($self, $uri_string, $uri, $dest_dir, $delete, $verbose) = @_;
   my $remote_file_name;
-  if ($uri->path eq '') { $remote_file_name = "index.html"; } # failover to default webpage
+  if ($uri->path eq '/') { $remote_file_name = "index.html"; } # failover to default webpage
   $remote_file_name //= basename($uri->path());
 
   my $path = $self->check_download($dest_dir, $remote_file_name, $delete, $verbose);
@@ -228,6 +229,7 @@ sub http_handler {
   my $download_path = catfile($dest_dir,$remote_file_name);
   
   my $ua = LWP::UserAgent->new();
+  $ua->ssl_opts( verify_hostname => 0);
   my $response = $ua->get($uri_string, ':content_file' => $download_path);
   if (! $response->is_success) {
     confess "Failed when downloading $uri_string with response ".$response->status_line;
