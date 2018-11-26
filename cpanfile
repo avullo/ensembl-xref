@@ -13,6 +13,7 @@ requires 'XML::LibXML';
 requires 'XML::Simple';
 requires 'Moose';
 requires 'LWP::UserAgent';
+reqyures 'List::Compare';
 
 test_requires 'Test::Warnings';
 test_requires 'Test::Differences';
