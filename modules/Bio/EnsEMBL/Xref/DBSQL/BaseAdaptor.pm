@@ -539,7 +539,7 @@ sub upload_xref_object_graphs {
       "desc"       => $xref->{DESCRIPTION},
       "source_id"  => $xref->{SOURCE_ID},
       "species_id" => $xref->{SPECIES_ID},
-      "info_type"  => $xref->{INFO_TYPE} // 'MISC' ),
+      "info_type"  => $xref->{INFO_TYPE} ),
       "update_label" => 1, "update_desc" => 1 );
 
     #################################################################
@@ -992,14 +992,14 @@ sub get_object_xref {
 sub add_xref {
   my ( $self, $arg_ref ) = @_;
 
-  my $acc          = $arg_ref->{acc} || croak 'add_xref needs aa acc';
-  my $source_id    = $arg_ref->{source_id} || croak 'add_xref needs a source_id';
-  my $species_id   = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
+  my $acc          = $arg_ref->{acc} || confess 'add_xref needs aa acc';
+  my $source_id    = $arg_ref->{source_id} || confess 'add_xref needs a source_id';
+  my $species_id   = $arg_ref->{species_id} || confess 'add_xref needs a species_id';
   my $label        = $arg_ref->{label} // $acc;
   my $description  = $arg_ref->{desc};
   my $version      = $arg_ref->{version} // 0;
   my $info_type    = $arg_ref->{info_type} // 'MISC';
-  my $info_text    = $arg_ref->{info_text};
+  my $info_text    = $arg_ref->{info_text} // q{};
   my $update_label = $arg_ref->{update_label};
   my $update_desc  = $arg_ref->{update_desc};
 
