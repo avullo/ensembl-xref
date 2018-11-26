@@ -64,12 +64,10 @@ my $verbose;
 
 =head2 new
   Arg [1]    : proto
-  Arg [2]    : arguments
+  Arg [2]    : arguments : { host => string, dbname => string, user => string, pass => string, port => int}
   Description: Initialisation class for the dbi connection
   Return type: self
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -92,12 +90,10 @@ sub new {
 } ## end sub new
 
 
-=head2 new
+=head2 dbc
   Description: Getter/Setter for the dbc object
   Return type: db_connection
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -110,10 +106,8 @@ sub dbc {
 
 =head2 new
   Description: Getter/Setter for the dbi object
-  Return type: db_handle
-  Exceptions : none
+  Return type: DBI database handle
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -135,7 +129,6 @@ sub dbi {
   Return type: filehandle
   Exceptions : confesses if not found
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -181,7 +174,6 @@ sub get_filehandle {
   Return type: integer
   Exceptions : confesses if not found
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -220,9 +212,7 @@ sub get_source_id_for_source_name {
                Adds % to each end of the source name and doe a like query to find
                all the matching source names source_ids.
   Return type: array
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -248,9 +238,7 @@ sub get_source_ids_for_source_name_pattern {
   Arg [1]    : source id
   Description: Gets the source name for a given source ID
   Return type: string
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -285,10 +273,8 @@ sub get_source_name_for_source_id {
   Arg [2]    : reverse ordered source name list
   Description: Get a hash to go from accession of a dependent xref to master_xref_id
                for all of source names given
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -341,10 +327,8 @@ DSS
   Arg [2]    : separator
   Description: Get a hash to go from accession of a direct xref to master_xref_id
                for all of source names given
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -361,7 +345,29 @@ sub get_valid_xrefs_for_direct_xrefs {
     push @direct_sources, $row[0];
   }
 
-  my $gen_sql = (<<"GDS");
+  my $gene_sql = (<<"GDS");
+    SELECT d.general_xref_id,
+           d.ensembl_stable_id,
+           'Gene',
+           d.linkage_xref,
+           x1.accession
+    FROM gene_direct_xref d, xref x1
+    WHERE x1.xref_id = d.general_xref_id AND
+          x1.source_id=?
+GDS
+
+  my $transcript_sql = (<<"TDS");
+    SELECT d.general_xref_id,
+           d.ensembl_stable_id,
+           'Transcript',
+           d.linkage_xref,
+           x1.accession
+    FROM transcript_direct_xref d, xref x1
+    WHERE x1.xref_id = d.general_xref_id AND
+          x1.source_id=?
+TDS
+
+  my $translation_sql = (<<"PDS");
     SELECT d.general_xref_id,
            d.ensembl_stable_id,
            'TYPE',
@@ -370,17 +376,18 @@ sub get_valid_xrefs_for_direct_xrefs {
     FROM TABLE_direct_xref d, xref x1
     WHERE x1.xref_id = d.general_xref_id AND
           x1.source_id=?
-GDS
+PDS
+
+  my %sql_hash = {
+    "Gene" => $gene_sql,
+    "Transcript" => $transcript_sql,
+    "Translation" => $translation_sql
+  };
 
   my @sth;
   my $i = 0;
   foreach my $type (qw(Gene Transcript Translation)) {
-    my $t_sql = $gen_sql;
-    my $table = lc $type;
-    $t_sql =~ s/TABLE/$table/xsm;
-    $t_sql =~ s/TYPE/$type/xsm;
-
-    $sth[ $i++ ] = $self->dbi->prepare_cached($t_sql);
+    $sth[ $i++ ] = $self->dbi->prepare_cached( $sql_hash{$type} );
   }
 
   foreach my $d (@direct_sources) {
@@ -405,10 +412,8 @@ GDS
   Arg [2]    : species id
   Description: Get a hash of label to acc for a particular source name and
                species_id
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -464,10 +469,8 @@ sub label_to_acc {
                This is an array becouse more than one entry can exist. i.e. for
                uniprot and refseq we have direct and sequence match sets and we
                need to give both.
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -506,7 +509,6 @@ sub get_valid_codes {
   Return type:
   Exceptions : confess if accession of source ID are not provided
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -517,10 +519,6 @@ sub upload_xref_object_graphs {
     confess "Please give me some xrefs to load";
   }
 
-  #################################################################################
-# End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
-  #################################################################################
-
   foreach my $xref ( @{$rxrefs} ) {
     if ( !( defined $xref->{ACCESSION} ) ) {
       confess "Your xref does not have an accession-number\n";
@@ -529,9 +527,7 @@ sub upload_xref_object_graphs {
       confess "your xref: $xref->{ACCESSION} does not have a source-id\n";
     }
 
-    ########################################
     # Create entry in xref table and note ID
-    ########################################
     my $xref_id = $self->add_xref( (
       "acc"        => $xref->{ACCESSION},
       "version"    => $xref->{VERSION} // 0,
@@ -542,15 +538,11 @@ sub upload_xref_object_graphs {
       "info_type"  => $xref->{INFO_TYPE} ),
       "update_label" => 1, "update_desc" => 1 );
 
-    #################################################################
     # If there are any direct_xrefs, add these to the relevant tables
-    #################################################################
     $self->add_multiple_direct_xrefs( $xref );
 
-    #############################################################################
-# create entry in primary_xref table with sequence; if this is a "cumulative"
-# entry it may already exist, and require an UPDATE rather than an INSERT
-    #############################################################################
+    # create entry in primary_xref table with sequence; if this is a "cumulative"
+    # entry it may already exist, and require an UPDATE rather than an INSERT
     if ( defined $xref->{SEQUENCE} ) {
       if ( $self->primary_xref_id_exists($xref_id) ) {
         $self->_update_primary_xref_sequence( $xref->{SEQUENCE}, $xref_id );
@@ -562,19 +554,13 @@ sub upload_xref_object_graphs {
       }
     }
 
-    ##########################################################
     # if there are synonyms, add entries in the synonym table
-    ##########################################################
     $self->add_multiple_synonyms( $xref_id, $xref->{SYNONYMS} );
 
-    #######################################################################
-# if there are dependent xrefs, add xrefs and dependent xrefs for them
-    #######################################################################
+    # if there are dependent xrefs, add xrefs and dependent xrefs for them
     $self->add_multiple_dependent_xrefs( $xref_id, $xref );
 
-    #################################################
     # Add the pair data. refseq dna/pep pairs usually
-    #################################################
     if ( defined $xref->{PAIR} ) {
       $self->_add_pair( $xref->{SOURCE_ID}, $xref->{ACCESSION}, $xref->{PAIR} );
     }
@@ -592,9 +578,7 @@ sub upload_xref_object_graphs {
                just adds ot yo the direct_xref table.
                $direct_xref is a reference to an array of hash objects.
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -602,16 +586,12 @@ sub upload_direct_xrefs {
   my ( $self, $direct_xref ) = @_;
   for my $dr ( @{$direct_xref} ) {
 
-    ################################################
     # Find the xref_id for this accession and source
-    ################################################
     my $general_xref_id =
       $self->get_xref( $dr->{ACCESSION}, $dr->{SOURCE_ID},
                        $dr->{SPECIES_ID});
 
-    #######################################################
     # If found add the direct xref else write error message
-    #######################################################
     if ($general_xref_id) {
       $self->add_direct_xref( $general_xref_id,
                               $dr->{ENSEMBL_STABLE_ID},
@@ -635,9 +615,7 @@ sub upload_direct_xrefs {
   Arg [2]    : value
   Description: Insert into the meta table the key and value.
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -655,10 +633,8 @@ sub add_meta_pair {
 
 =head2 get_xref_sources
   Description: Create a hash of all the source names for xrefs
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -683,10 +659,8 @@ sub get_xref_sources {
 
 =head2 species_id2taxonomy
   Description: Create and return a hash that that goes from species_id to taxonomy_id
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -717,9 +691,7 @@ sub species_id2taxonomy {
 =head2 species_id2name
   Description: Create and return a hash that that goes from species_id to species name
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -759,9 +731,7 @@ sub species_id2name {
                If there was an error, an xref with the same acc & source already
                exists. If so, find its ID, otherwise get ID of xref just inserted
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -788,9 +758,7 @@ sub get_xref_id {
   Description: If primary xref already exists for a partiuclar xref_id return 1
                else return 0
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -816,10 +784,8 @@ sub primary_xref_id_exists {
 =head2 get_taxonomy_from_species_id
   Arg [1]    : species ID
   Description: Get the taxon id for a particular species id
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -844,9 +810,7 @@ sub get_taxonomy_from_species_id {
   Arg [3]    : linked xref id
   Description: xref_ids for a given stable id and linkage_xref
   Return type: array or integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -909,30 +873,24 @@ sub get_direct_xref {
   Description: return the xref_id for a particular accession, source and species
                if not found return undef
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
 sub get_xref {
   my ( $self, $acc, $source, $species_id ) = @_;
 
-  #
   # If the statement handle does nt exist create it.
-  #
   my $sql =
     'SELECT xref_id FROM xref WHERE accession = ? AND source_id = ? AND species_id = ?';
   my $get_xref_sth = $self->dbi->prepare_cached($sql);
 
-  #
   # Find the xref_id using the sql above
-  #
   $get_xref_sth->execute( $acc, $source, $species_id ) or
     croak( $self->dbi->errstr() );
   if ( my @row = $get_xref_sth->fetchrow_array() ) {
 
-    # Calling finish() as we only requires the first row only
+    # Calling finish() as we only require the first row only
     $get_xref_sth->finish();
 
     return $row[0];
@@ -949,9 +907,7 @@ sub get_xref {
   Description: return the object_xref_id for a particular xref_id, ensembl_id
                and ensembl_object_type. If not found return undef
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -983,9 +939,7 @@ sub get_object_xref {
                If it already exists it return that xrefs xref_id else creates it
                and return the new xref_id
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1003,9 +957,7 @@ sub add_xref {
   my $update_label = $arg_ref->{update_label};
   my $update_desc  = $arg_ref->{update_desc};
 
-  ##################################################################
   # See if it already exists. It so return the xref_id for this one.
-  ##################################################################
   my $xref_id = $self->get_xref( $acc, $source_id, $species_id );
   if ( defined $xref_id ) {
     if ( $update_label ) {
@@ -1022,19 +974,15 @@ sub add_xref {
 '(accession,version,label,description,source_id,species_id, info_type, info_text) '
     . 'VALUES (?,?,?,?,?,?,?,?)' );
 
-  ######################################################################
   # If the description is more than 255 characters, chop it off and add
   # an indication that it has been truncated to the end of it.
-  ######################################################################
   if ( defined $description && ( ( length $description ) > 255 ) ) {
     my $truncmsg = ' /.../';
     substr $description, 255 - ( length $truncmsg ), length $truncmsg,
       $truncmsg;
   }
 
-  ####################################
   # Add the xref and croak if it fails
-  ####################################
   $add_xref_sth->execute( $acc, $version // 0, $label,
                           $description, $source_id, $species_id,
                           $info_type,   $info_text ) or
@@ -1047,12 +995,10 @@ sub add_xref {
 =head2 add_object_xref
   Arg [1]    : xref
   Description: Create an object_xref
-               If it already exists it return the object_xref_id else creates it
-               and returns the new object_xref_id
+               If it already exists return the object_xref_id otherwise create it
+               and return the new object_xref_id
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1066,10 +1012,7 @@ sub add_object_xref {
   my $object_type = $arg_ref->{object_type} ||
     croak 'add_object_xref needs an object_type';
 
-  ##################################################################
   # See if it already exists. It so return the xref_id for this one.
-  ##################################################################
-
   my $object_xref_id =
     $self->get_object_xref( $xref_id, $ensembl_id, $object_type );
   if ( defined $object_xref_id ) {
@@ -1080,12 +1023,10 @@ sub add_object_xref {
     'INSERT INTO object_xref (ensembl_id, ensembl_object_type, xref_id) VALUES (?,?,?)'
   );
 
-  ####################################
-  # Add the object_xref and croak if it fails
-  ####################################
+  # Add the object_xref and confess if it fails
   $add_object_xref_sth->execute( $ensembl_id, $object_type, $xref_id )
     or
-    croak("$ensembl_id\t$object_type\t\t$xref_id\n");
+    confess("$ensembl_id\t$object_type\t\t$xref_id\n");
 
   return $add_object_xref_sth->{'mysql_insertid'};
 } ## end sub add_object_xref
@@ -1095,9 +1036,8 @@ sub add_object_xref {
   Arg [1]    : xref object
   Description: Create an identity_xref
   Return type:
-  Exceptions : Throw is execution fails
+  Exceptions : Throw if execution fails
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1105,26 +1045,24 @@ sub add_identity_xref {
   my ( $self, $arg_ref ) = @_;
 
   my $object_xref_id = $arg_ref->{object_xref_id} ||
-    croak 'add_identity_xref needs an object_xref_id';
+    confess 'add_identity_xref needs an object_xref_id';
   my $score = $arg_ref->{score} ||
-    croak 'add_identity_xref needs a score';
+    confess 'add_identity_xref needs a score';
   my $target_identity = $arg_ref->{target_identity} ||
-    croak 'add_identity_xref needs a target_identity';
+    confess 'add_identity_xref needs a target_identity';
   my $query_identity = $arg_ref->{query_identity} ||
-    croak 'add_identity_xref needs a query_identity';
+    confess 'add_identity_xref needs a query_identity';
 
   my $add_identity_xref_sth =
     $self->dbi->prepare_( 'INSERT INTO identity_xref ' .
            '(object_xref_id, score, query_identity, target_identity) ' .
            'VALUES(?,?,?,?)' );
 
-  ####################################
-  # Add the object_xref and croak if it fails
-  ####################################
+  # Add the object_xref and confess if it fails
   $add_identity_xref_sth->execute( $object_xref_id, $score,
                                    $query_identity, $target_identity
     ) or
-    croak(
+    confess(
       "$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
 
   return;
@@ -1137,9 +1075,7 @@ sub add_identity_xref {
                Note that a corresponding method for dependent xrefs is called
                add_dependent_xref()
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1147,15 +1083,15 @@ sub add_to_direct_xrefs {
   my ( $self, $arg_ref ) = @_;
 
   my $stable_id = $arg_ref->{stable_id} ||
-    croak('Need a direct_xref on which this xref linked too');
+    confess('Need a direct_xref on which this xref linked too');
   my $type = $arg_ref->{type} ||
-    croak('Need a table type on which to add');
+    confess('Need a table type on which to add');
   my $acc = $arg_ref->{acc} ||
-    croak('Need an accession of this direct xref');
+    confess('Need an accession of this direct xref');
   my $source_id = $arg_ref->{source_id} ||
-    croak('Need a source_id for this direct xref');
+    confess('Need a source_id for this direct xref');
   my $species_id = $arg_ref->{species_id} ||
-    croak('Need a species_id for this direct xref');
+    confess('Need a species_id for this direct xref');
   my $version = $arg_ref->{version} // 0;
   my $label   = $arg_ref->{label}   // $acc;
   my $description = $arg_ref->{desc};
@@ -1168,9 +1104,7 @@ sub add_to_direct_xrefs {
 AXX
   my $add_xref_sth = $self->dbi->prepare_cached($sql);
 
-  ###############################################################
   # If the acc already has an xrefs find it else cretae a new one
-  ###############################################################
   my $direct_id =
     $self->get_xref( $acc, $source_id, $species_id );
   if ( !( defined $direct_id ) ) {
@@ -1178,14 +1112,12 @@ AXX
                             $label,     $description,
                             $source_id, $species_id,
                             'DIRECT',   $info_text ) or
-      croak("$acc\t$label\t\t$source_id\t$species_id\n");
+      confess("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
   $direct_id = $self->get_xref( $acc, $source_id, $species_id );
 
-  #########################
   # Now add the direct info
-  #########################
   $self->add_direct_xref( $direct_id, $stable_id, $type, $linkage );
   return;
 } ## end sub add_to_direct_xrefs
@@ -1202,9 +1134,7 @@ AXX
                Note that a corresponding method for dependent xrefs is called
                add_dependent_xref_maponly()
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1246,9 +1176,7 @@ sub add_direct_xref {
   Arg [1]    : xref object
   Description: Add multiple records to the direct_xref table.
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1282,9 +1210,7 @@ sub add_multiple_direct_xrefs {
                Note that a corresponding method for direct xrefs is called
                add_to_direct_xrefs()
   Return type: integer
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1308,31 +1234,25 @@ INSERT INTO xref
 IXR
   my $add_xref_sth = $self->dbi->prepare_cached($sql);
 
-  ####################################################
   # Does the xref already exist. If so get its xref_id
   # else create it and get the new xref_id
-  ####################################################
   my $dependent_id =
     $self->get_xref( $acc, $source_id, $species_id );
   if ( !( defined $dependent_id ) ) {
     $add_xref_sth->execute( $acc,         $version,   $label,
                             $description, $source_id, $species_id,
                             'DEPENDENT',  $info_text ) or
-      croak("$acc\t$label\t\t$source_id\t$species_id\n");
+      confess("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
-  ################################################
-  # Croak if we have failed to create/get the xref
-  ################################################
+  # Confess if we have failed to create/get the xref
   $dependent_id =
     $self->get_xref( $acc, $source_id, $species_id );
   if ( !( defined $dependent_id ) ) {
-    croak("$acc\t$label\t\t$source_id\t$species_id\n");
+    confess("$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
-  ################################
   # Now add the dependency mapping
-  ################################
   $self->add_dependent_xref_maponly( $dependent_id, $source_id,
                                      $master_xref, $linkage );
 
@@ -1350,9 +1270,7 @@ IXR
                Note that an xref must already have been added to the xref table
                Note that a corresponding method for direct xrefs is called add_direct_xref()
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1395,11 +1313,9 @@ ADX
 =head2 add_multiple_dependent_xrefs
   Arg [1]    : xref ID
   Arg [2]    : xref
-  Description: Add dependent xrefs to the xref table aong with dependent xref mappings
+  Description: Add dependent xrefs to the xref table along with dependent xref mappings
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1409,9 +1325,7 @@ sub add_multiple_dependent_xrefs {
   foreach my $depref ( @{ $xref->{DEPENDENT_XREFS} } ) {
     my %dep = %{$depref};
 
-    #################
     # Insert the xref
-    #################
     my $dep_xref_id = $self->add_xref( (
       "acc"        => $dep{ACCESSION},
       "version"    => $dep{VERSION}     // 1,
@@ -1421,22 +1335,18 @@ sub add_multiple_dependent_xrefs {
       "species_id" => $dep{SPECIES_ID},
       "info_type"  => 'DEPENDENT' ) );
 
-    #
     # Add the linkage_annotation and source id it came from
-    #
     $self->add_dependent_xref_maponly(
       $dep_xref_id,
       $dep{LINKAGE_SOURCE_ID},
       $xref_id,
       $dep{LINKAGE_ANNOTATION} );
 
-    #########################################################
     # if there are synonyms, add entries in the synonym table
-    #########################################################
     foreach my $syn ( @{ $dep{SYNONYMS} } ) {
       $self->add_synonym( $dep_xref_id, $syn );
-    }    # foreach syn
-  }    # foreach dep
+    }  # foreach syn
+  }  # foreach dep
 
   return;
 } ## end sub add_multiple_dependent_xrefs
@@ -1451,9 +1361,7 @@ sub add_multiple_dependent_xrefs {
                This is for priority xrefs where we have more than one source
                but want to write synonyms for each with the same accession
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1479,9 +1387,7 @@ sub add_to_syn_for_mult_sources {
   Arg [4]    : species ID
   Description: Add synomyn for an xref given by accession and source_id
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1493,7 +1399,7 @@ sub add_to_syn {
     $self->add_synonym( $xref_id, $syn );
   }
   else {
-    confedd( "Could not find acc $acc in " .
+    confess( "Could not find acc $acc in " .
              "xref table source = $source_id of species $species_id\n" );
   }
 
@@ -1506,9 +1412,7 @@ sub add_to_syn {
   Arg [2]    : synonym
   Description: Add synomyn for an xref given by xref_id
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1526,12 +1430,10 @@ sub add_synonym {
 
 =head2 add_multiple_synonyms
   Arg [1]    : xref ID
-  Arg [2]    : synonyms
+  Arg [2]    : Listref : synonyms
   Description: Add multiple synomyns for an xref given by xref_id
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1552,10 +1454,8 @@ sub add_multiple_synonyms {
   Arg [3]    : source priority description
   Description: Create a hash that uses the label as a key and the acc as the
                value. Also add synonyms for these as keys.
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1586,10 +1486,7 @@ GLA
     $hash1{ $row[1] } = $row[0];
   }
 
-  ####################
   # Remember synonyms
-  ####################
-
   $sql = (<<"GLS");
   SELECT  xref.accession, synonym.synonym
   FROM xref, source, synonym
@@ -1625,10 +1522,8 @@ GLS
   Arg [3]    : source priority description
   Description: Create a hash that uses the accession as a key and the label as
                the value.
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1670,10 +1565,8 @@ GLA
   Arg [3]    : source priority description
   Description: Create a hash that uses the label as a key and the desc as the
                value. Also add synonyms for these as keys.
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1740,12 +1633,10 @@ GDS
 
 =head2 set_release
   Arg [1]    : source ID
-  Arg [2]    : ensembl release
+  Arg [2]    : source release
   Description: Set release for a particular source_id.
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1770,9 +1661,7 @@ sub set_release {
   Description: create a hash of all the dependent mapping that exist for a given
                source_id of the format {master_xref_id|dependent_xref_id}
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1805,10 +1694,8 @@ GDM
   Arg [1]    : source name
   Description: Create a has that uses the accession and labels for keys and an
                array of the synonyms as the values
-  Return type: hash
-  Exceptions : none
+  Return type: Hashref
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1849,11 +1736,9 @@ GES
 
 
 =head2 parsing_finished_store_data
-  Description: Store data needed to beable to revert to same stage as after parsing
+  Description: Store data needed to be able to revert to same stage as after parsing
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
   Notes      : Store max id for
 
@@ -1889,12 +1774,9 @@ sub parsing_finished_store_data {
 
 =head2 get_meta_value
   Arg [1]    : key
-  Description: Get the last value from the meta data table that matches like the
-               meta data key value provided
+  Description: Return metadata value
   Return type: integer or string
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1920,7 +1802,6 @@ sub get_meta_value {
   Return type:
   Exceptions : confess if UPDATE fails
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1941,11 +1822,10 @@ sub _update_xref_info_type {
   Arg [1]    : source ID
   Arg [2]    : accession
   Arg [3]    : pair
-  Description: Create a pairs entry.
+  Description: Create a pair entry. refseq dna/pep pairs usually
   Return type:
   Exceptions : confess if INSERT fails
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1954,9 +1834,7 @@ sub _add_pair {
 
   my $pair_sth = $self->dbi->prepare_cached('INSERT INTO pairs VALUES(?,?,?)');
 
-  ######################################
   # Add the pair and confess if it fails
-  ######################################
   $pair_sth->execute( $source_id, $accession, $pair ) or
     confess "$source_id\t$\t$accession\t$pair\n";
 
@@ -1973,7 +1851,6 @@ sub _add_pair {
   Return type: integer
   Exceptions :confess if INSERT fails
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -1998,9 +1875,7 @@ sub _add_primary_xref {
   Arg [2]    : sequence
   Description: Update primary_xref sequence for matching xref_id
   Return type:
-  Exceptions : none
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -2024,7 +1899,6 @@ sub _update_primary_xref_sequence {
   Return type:
   Exceptions : confess on a failed UPDATE
   Caller     : internal
-  Status     : Stable
 
 =cut
 
@@ -2048,7 +1922,6 @@ sub _update_xref_label {
   Return type:
   Exceptions : confess on a failed UPDATE
   Caller     : internal
-  Status     : Stable
 
 =cut
 
