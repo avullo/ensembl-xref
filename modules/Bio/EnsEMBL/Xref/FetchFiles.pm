@@ -267,6 +267,7 @@ sub get_ftp {
   croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() ) if !$state;
 
   my ($filename, $path, $extras) = fileparse( $uri->path() ); # fileparse is a bit safer than dirname
+  $path = '/'.$path;
   $state = $ftp->cwd( $path );
 
   if (!$state) {
