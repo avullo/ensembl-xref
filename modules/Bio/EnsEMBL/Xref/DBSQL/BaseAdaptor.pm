@@ -56,6 +56,15 @@ my %xref_dependent_mapped;
 
 my $verbose;
 
+=head2 new
+  Arg [1]    : proto
+  Arg [2]    : arguments
+  Description: Initialisation class for the dbi connection
+  Return type: self
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub new {
   my ( $proto, %args ) = @_;
 
@@ -72,30 +81,50 @@ sub new {
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
-}
+} ## end sub new
 
+
+=head2 new
+  Description: Getter/Setter for the dbc object
+  Return type: db_connection
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub dbc {
   my ( $self, $arg ) = @_;
   ( defined $arg ) && ( $self->{_dbc} = $arg );
   return $self->{_dbc};
-}
+} ## end sub dbc
 
-##################################
-# Getter/Setter for the dbi object
-##################################
+
+=head2 new
+  Description: Getter/Setter for the dbi object
+  Return type: db_handle
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub dbi {
   my $self = shift;
 
   return $self->dbc->db_handle;
-}
+} ## end sub dbi
 
-#######################################################################
-# Given a file name, returns a IO::Handle object.  Supports most common
-# compression formats, e.g. zip, gzip, bzip2, lzma, xz.  If the given
-# file name doesn't correspond to an existing file, the routine will
-# try to add '.gz' to the file name or to remove any .'Z' or '.gz' and
-# try again.  Throws on failure.
-#######################################################################
+
+
+=head2 get_filehandle
+  Arg [1]    : file name
+  Description: Given a file name, returns a IO::Handle object.  Supports most common
+               compression formats, e.g. zip, gzip, bzip2, lzma, xz.  If the given
+               file name doesn't correspond to an existing file, the routine will
+               try to add '.gz' to the file name or to remove any .'Z' or '.gz' and
+               try again.  Throws on failure.
+  Return type: filehandle
+  Exceptions : confesses if not found
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_filehandle {
   my ( $self, $file_name ) = @_;
 
@@ -124,21 +153,22 @@ sub get_filehandle {
     || confess("Can not open file '$file_name'");
 
   if ($verbose) {
-    print "Reading from '$file_name'...\n" ||
-      croak 'Could not print out message';
+    print "Reading from '$file_name'...\n";
   }
 
   return $io;
 } ## end sub get_filehandle
 
-#############################################
-# Get source ID for a particular source name
-#
-# Arg[1] source name
-# Arg[2] priority description
-#
-# Returns source_id, or throws if not found
-#############################################
+
+=head2 get_source_id_for_source_name
+  Arg [1]    : source name
+  Arg [2]    : priority description
+  Description: Gets the source ID for a given source name
+  Return type: integer
+  Exceptions : confesses if not found
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_source_id_for_source_name {
   my ( $self, $source_name, $priority_desc) = @_;
 
@@ -167,14 +197,17 @@ sub get_source_id_for_source_name {
   return $source_id;
 } ## end sub get_source_id_for_source_name
 
-############################################################
-# Get a set of source IDs matching a source name pattern
-#
-# Adds % to each end of the source name and doe a like query
-# to find all the matching source names source_ids.
-#
-# Returns an empty list if none found.
-############################################################
+
+=head2 get_source_ids_for_source_name_pattern
+  Arg [1]    : source name
+  Description: Get a set of source IDs matching a source name pattern
+               Adds % to each end of the source name and doe a like query to find
+               all the matching source names source_ids.
+  Return type: array
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_source_ids_for_source_name_pattern {
 
   my ( $self, $source_name) = @_;
@@ -190,12 +223,17 @@ sub get_source_ids_for_source_name_pattern {
   }
 
   return @sources;
+} ## end sub get_source_ids_for_source_name_pattern
 
-}
 
-###############################
-# From a source_id get the name
-###############################
+=head2 get_source_name_for_source_id
+  Arg [1]    : source id
+  Description: Gets the source name for a given source ID
+  Return type: string
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_source_name_for_source_id {
   my ( $self, $source_id ) = @_;
   my $source_name;
@@ -219,12 +257,19 @@ sub get_source_name_for_source_id {
   }
 
   return $source_name;
-}
+} ## end sub get_source_name_for_source_id
 
-####################################################
-# Get a hash to go from accession of a dependent xref
-# to master_xref_id for all of source names given
-#####################################################
+
+=head2 get_valid_xrefs_for_dependencies
+  Arg [1]    : dependent name
+  Arg [2]    : reverse ordered source name list
+  Description: Get a hash to go from accession of a dependent xref to master_xref_id
+               for all of source names given
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_valid_xrefs_for_dependencies {
   my ( $self, $dependent_name, @reverse_ordered_source_list ) = @_;
 
@@ -268,10 +313,17 @@ DSS
   return \%dependent_2_xref;
 } ## end sub get_valid_xrefs_for_dependencies
 
-####################################################
-# Get a hash to go from accession of a direct xref
-# to master_xref_id for all of source names given
-#####################################################
+
+=head2 get_valid_xrefs_for_direct_xrefs
+  Arg [1]    : direct name
+  Arg [2]    : separator
+  Description: Get a hash to go from accession of a direct xref to master_xref_id
+               for all of source names given
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_valid_xrefs_for_direct_xrefs {
   my ( $self, $direct_name, $separator ) = @_;
 
@@ -323,10 +375,17 @@ GDS
   return \%direct_2_xref;
 } ## end sub get_valid_xrefs_for_direct_xrefs
 
-#############################################
-# Get a hash of label to acc for a particular
-# source name and species_id
-#############################################
+
+=head2 label_to_acc
+  Arg [1]    : source name
+  Arg [2]    : species id
+  Description: Get a hash of label to acc for a particular source name and
+               species_id
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub label_to_acc {
 
   my ( $self, $source_name, $species_id ) = @_;
@@ -371,14 +430,19 @@ sub label_to_acc {
   return \%valid_codes;
 } ## end sub label_to_acc
 
-####################################################
-# get_valid_codes
-#
-# hash of accession to array of xrefs.
-# This is an array becouse more than one entry can
-# exist. i.e. for uniprot and refseq we have direct
-# and sequence match sets and we need to give both.
-####################################################
+
+=head2 get_valid_codes
+  Arg [1]    : source name
+  Arg [2]    : species id
+  Description: Hash of accession to array of xrefs.
+               This is an array becouse more than one entry can exist. i.e. for
+               uniprot and refseq we have direct and sequence match sets and we
+               need to give both.
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_valid_codes {
 
   my ( $self, $source_name, $species_id ) = @_;
@@ -407,9 +471,15 @@ sub get_valid_codes {
   return \%valid_codes;
 } ## end sub get_valid_codes
 
-##############################
-# Upload xrefs to the database
-##############################
+
+=head2 upload_xref_object_graphs
+  Arg [1]    : Array of xrefs
+  Description: Upload xrefs to the database and associated data to the database
+  Return type:
+  Exceptions : confess if accession of source ID are not provided
+  Caller     : internal
+  Status     : Stable
+=cut
 sub upload_xref_object_graphs {
   my ( $self, $rxrefs ) = @_;
 
@@ -484,11 +554,18 @@ sub upload_xref_object_graphs {
   return;
 } ## end sub upload_xref_object_graphs
 
-######################################################################################
-# Add direct xref to the table XXX_direct_xref. (XXX -> Gene.Transcript or Translation
-# Xref has to exist already, this module just adds ot yo the direct_xref table.
-# $direct_xref is a reference to an array of hash objects.
-######################################################################################
+
+=head2 upload_direct_xrefs
+  Arg [1]    : Array of direct xrefsxrefs
+  Description: Add direct xref to the table XXX_direct_xref. (XXX -> Gene,
+               Transcript or Translation. Xref has to exist already, this module
+               just adds ot yo the direct_xref table.
+               $direct_xref is a reference to an array of hash objects.
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub upload_direct_xrefs {
   my ( $self, $direct_xref ) = @_;
   for my $dr ( @{$direct_xref} ) {
@@ -520,9 +597,16 @@ sub upload_direct_xrefs {
   return;
 } ## end sub upload_direct_xrefs
 
-###############################################
-# Insert into the meta table the key and value.
-###############################################
+
+=head2 add_meta_pair
+  Arg [1]    : key
+  Arg [2]    : value
+  Description: Insert into the meta table the key and value.
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_meta_pair {
 
   my ( $self, $key, $value ) = @_;
@@ -532,11 +616,16 @@ sub add_meta_pair {
   $sth->execute( $key, $value );
 
   return;
-}
+} ## end sub add_meta_pair
 
-#################################################
-# Create a hash of all the source names for xrefs
-#################################################
+
+=head2 get_xref_sources
+  Description: Create a hash of all the source names for xrefs
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_xref_sources {
 
   my $self = shift;
@@ -553,11 +642,16 @@ sub get_xref_sources {
 
 
   return %sourcename_to_sourceid;
-}
+} ## end sub get_xref_sources
 
-########################################################################
-# Create and return a hash that that goes from species_id to taxonomy_id
-########################################################################
+
+=head2 species_id2taxonomy
+  Description: Create and return a hash that that goes from species_id to taxonomy_id
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub species_id2taxonomy {
 
   my $self = shift;
@@ -579,11 +673,16 @@ sub species_id2taxonomy {
   }
 
   return %species_id2taxonomy;
-}
+} ## end sub species_id2taxonomy
 
-#########################################################################
-# Create and return a hash that that goes from species_id to species name
-#########################################################################
+
+=head2 species_id2name
+  Description: Create and return a hash that that goes from species_id to species name
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub species_id2name {
   my $self = shift;
 
@@ -613,10 +712,17 @@ sub species_id2name {
   return %species_id2name;
 } ## end sub species_id2name
 
-###########################################################################
-# If there was an error, an xref with the same acc & source already exists.
-# If so, find its ID, otherwise get ID of xref just inserted
-###########################################################################
+
+=head2 get_xref_id
+  Arg [1]    : xref entry
+  Description: Get the xref internal id
+               If there was an error, an xref with the same acc & source already
+               exists. If so, find its ID, otherwise get ID of xref just inserted
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_xref_id {
   my ( $self, $arg_ref ) = @_;
   my $sth = $arg_ref->{sth} ||
@@ -632,12 +738,18 @@ sub get_xref_id {
   my $id = $self->get_xref( $acc, $source, $species );
 
   return $id;
-}
+} ## end sub get_xref_id
 
-##################################################################
-# If primary xref already exists for a partiuclar xref_id return 1
-# else return 0;
-##################################################################
+
+=head2 primary_xref_id_exists
+  Arg [1]    : xref_id
+  Description: If primary xref already exists for a partiuclar xref_id return 1
+               else return 0
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub primary_xref_id_exists {
 
   my ( $self, $xref_id ) = @_;
@@ -654,12 +766,17 @@ sub primary_xref_id_exists {
   $sth->finish();
 
   return $exists;
+} ## end sub primary_xref_id_exists
 
-}
 
-############################################
-# Get the tax id for a particular species id
-############################################
+=head2 get_taxonomy_from_species_id
+  Arg [1]    : species ID
+  Description: Get the taxon id for a particular species id
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_taxonomy_from_species_id {
   my ( $self, $species_id) = @_;
   my %hash;
@@ -672,11 +789,19 @@ sub get_taxonomy_from_species_id {
   }
 
   return \%hash;
-}
+} ## end sub get_taxonomy_from_species_id
 
-#################################################
-# xref_ids for a given stable id and linkage_xref
-#################################################
+
+=head2 get_direct_xref
+  Arg [1]    : stable ID
+  Arg [2]    : ensembl object type (Gene, Transcript, Translation)
+  Arg [3]    : linked xref id
+  Description: xref_ids for a given stable id and linkage_xref
+  Return type: array or integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_direct_xref {
   my ( $self, $stable_id, $type, $link ) = @_;
 
@@ -728,10 +853,18 @@ sub get_direct_xref {
   return;
 } ## end sub get_direct_xref
 
-###################################################################
-# return the xref_id for a particular accession, source and species
-# if not found return undef;
-###################################################################
+
+=head2 get_xref
+  Arg [1]    : accession
+  Arg [2]    : source ID
+  Arg [3]    : species ID
+  Description: return the xref_id for a particular accession, source and species
+               if not found return undef
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_xref {
   my ( $self, $acc, $source, $species_id ) = @_;
 
@@ -755,15 +888,21 @@ sub get_xref {
     return $row[0];
   }
 
-
-
   return;
-}
+} ## end sub get_xref
 
-###################################################################
-# return the object_xref_id for a particular xref_id, ensembl_id and ensembl_object_type
-# if not found return undef;
-###################################################################
+
+=head2 get_object_xref
+  Arg [1]    : xref ID
+  Arg [2]    : ensembl ID
+  Arg [3]    : ensembl object type (Gene, Transcript, Translation)
+  Description: return the object_xref_id for a particular xref_id, ensembl_id
+               and ensembl_object_type. If not found return undef
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_object_xref {
   my ( $self, $xref_id, $ensembl_id, $object_type ) = @_;
 
@@ -783,13 +922,19 @@ sub get_object_xref {
   }
 
   return;
-}
+} ## end sub get_object_xref
 
-###########################################################
-# Create an xref..
-# If it already exists it return that xrefs xref_id
-# else creates it and return the new xre_id
-###########################################################
+
+=head2 add_xref
+  Arg [1]    : xref
+  Description: Create an xref
+               If it already exists it return that xrefs xref_id else creates it
+               and return the new xref_id
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -844,12 +989,17 @@ sub add_xref {
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
 
-###########################################################
-# Create an object_xref..
-# If it already exists it return the object_xref_id
-# else creates it and returns the new object_xref_id
-###########################################################
 
+=head2 add_object_xref
+  Arg [1]    : xref
+  Description: Create an object_xref
+               If it already exists it return the object_xref_id else creates it
+               and returns the new object_xref_id
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_object_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -884,10 +1034,15 @@ sub add_object_xref {
   return $add_object_xref_sth->{'mysql_insertid'};
 } ## end sub add_object_xref
 
-###########################################################
-# Create an identity_xref
-###########################################################
 
+=head2 add_identity_xref
+  Arg [1]    : xref object
+  Description: Create an identity_xref
+  Return type:
+  Exceptions : Throw is execution fails
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_identity_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -917,10 +1072,17 @@ sub add_identity_xref {
   return;
 } ## end sub add_identity_xref
 
-###################################################################
-# Create new xref if needed and add as a direct xref to a stable_id
-# Note that a corresponding method for dependent xrefs is called add_dependent_xref()
-###################################################################
+
+=head2 add_to_direct_xrefs
+  Arg [1]    : xref object
+  Description: Create new xref if needed and add as a direct xref to a stable_id
+               Note that a corresponding method for dependent xrefs is called
+               add_dependent_xref()
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_to_direct_xrefs {
   my ( $self, $arg_ref ) = @_;
 
@@ -968,11 +1130,22 @@ AXX
   return;
 } ## end sub add_to_direct_xrefs
 
-##################################################################
-# Add a single record to the direct_xref table.
-# Note that an xref must already have been added to the xref table
-# Note that a corresponding method for dependent xrefs is called add_dependent_xref_maponly()
-##################################################################
+
+=head2 add_direct_xref
+  Arg [1]    : xref ID
+  Arg [2]    : ensembl stable ID
+  Arg [3]    : ensembl object type (Gene, Transcript, Translation)
+  Arg [4]    : linkage type
+  Arg [5]    : updated info type
+  Description: Add a single record to the direct_xref table.
+               Note that an xref must already have been added to the xref table
+               Note that a corresponding method for dependent xrefs is called
+               add_dependent_xref_maponly()
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_direct_xref {
   my ( $self, $general_xref_id, $ensembl_stable_id, $ensembl_type,
        $linkage_type, $update_info_type )
@@ -1006,9 +1179,15 @@ sub add_direct_xref {
   return;
 } ## end sub add_direct_xref
 
-##################################################################
-# Add multiple records to the direct_xref table.
-##################################################################
+
+=head2 add_multiple_direct_xrefs
+  Arg [1]    : xref object
+  Description: Add multiple records to the direct_xref table.
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_multiple_direct_xrefs {
   my ( $self, $xref ) = @_;
 
@@ -1032,10 +1211,17 @@ sub add_multiple_direct_xrefs {
   return;
 } ## sub add_multiple_direct_xrefs
 
-##########################################################
-# Create/Add xref and add it as a dependency of the master
-# Note that a corresponding method for direct xrefs is called add_to_direct_xrefs()
-##########################################################
+
+=head2 add_dependent_xref
+  Arg [1]    : dependent xref
+  Description: Create/Add xref and add it as a dependency of the master
+               Note that a corresponding method for direct xrefs is called
+               add_to_direct_xrefs()
+  Return type: integer
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_dependent_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -1087,12 +1273,21 @@ IXR
   return $dependent_id;
 } ## end sub add_dependent_xref
 
-##################################################################
-# Add a single record to the dependent_xref table.
-# Note that an xref must already have been added to the xref table
-# Note that a corresponding method for direct xrefs is called add_direct_xref()
-##################################################################
 
+=head2 add_dependent_xref_maponly
+  Arg [1]    : dependent xref ID
+  Arg [2]    : dependent source ID
+  Arg [3]    : master xref ID
+  Arg [4]    : master source ID
+  Arg [5]    : update info type
+  Description: Add a single record to the dependent_xref table.
+               Note that an xref must already have been added to the xref table
+               Note that a corresponding method for direct xrefs is called add_direct_xref()
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_dependent_xref_maponly {
   my ( $self, $dependent_id, $dependent_source_id, $master_id,
        $master_source_id, $update_info_type )
@@ -1128,9 +1323,16 @@ ADX
   return;
 } ## end sub add_dependent_xref_maponly
 
-#########################################################################
-# Add dependent xrefs to the xref table aong with dependent xref mappings
-#########################################################################
+
+=head2 add_multiple_dependent_xrefs
+  Arg [1]    : xref ID
+  Arg [2]    : xref
+  Description: Add dependent xrefs to the xref table aong with dependent xref mappings
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_multiple_dependent_xrefs {
   my ( $self, $xref_id, $xref ) = @_;
 
@@ -1167,13 +1369,22 @@ sub add_multiple_dependent_xrefs {
   }    # foreach dep
 
   return;
-}
+} ## end sub add_multiple_dependent_xrefs
 
-##################################################################
-# Add synonyms for a particular accession for one or more sources.
-# This is for priority xrefs where we have more than one source
-# but want to write synonyms for each with the same accession
-##################################################################
+
+=head2 add_to_syn_for_mult_sources
+  Arg [1]    : accession
+  Arg [2]    : source IDs
+  Arg [3]    : synonym
+  Arg [4]    : species ID
+  Description: Add synonyms for a particular accession for one or more sources.
+               This is for priority xrefs where we have more than one source
+               but want to write synonyms for each with the same accession
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_to_syn_for_mult_sources {
   my ( $self, $acc, $sources, $syn, $species_id ) = @_;
 
@@ -1186,11 +1397,20 @@ sub add_to_syn_for_mult_sources {
   }
 
   return;
-}
+} ## end sub add_to_syn_for_mult_sources
 
-##########################################################
-# Add synomyn for an xref given by accession and source_id
-##########################################################
+
+=head2 add_to_syn
+  Arg [1]    : accession
+  Arg [2]    : source id
+  Arg [3]    : synonym
+  Arg [4]    : species ID
+  Description: Add synomyn for an xref given by accession and source_id
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_to_syn {
   my ( $self, $acc, $source_id, $syn, $species_id ) = @_;
 
@@ -1199,30 +1419,44 @@ sub add_to_syn {
     $self->add_synonym( $xref_id, $syn );
   }
   else {
-    carp( "Could not find acc $acc in " .
-          "xref table source = $source_id of species $species_id\n" );
+    confedd( "Could not find acc $acc in " .
+             "xref table source = $source_id of species $species_id\n" );
   }
 
   return;
-}
+} ## end sub add_to_syn
 
-##########################################
-# Add synomyn for an xref given by xref_id
-##########################################
+
+=head2 add_synonym
+  Arg [1]    : xref ID
+  Arg [2]    : synonym
+  Description: Add synomyn for an xref given by xref_id
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_synonym {
   my ( $self, $xref_id, $syn ) = @_;
   my $add_synonym_sth =
     $self->dbi->prepare_cached(
       'INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
   $add_synonym_sth->execute( $xref_id, $syn ) or
-    croak( $self->dbi->errstr() . "\n $xref_id\n $syn\n\n" );
+    confess ( $self->dbi->errstr() . "\n $xref_id\n $syn\n\n" );
 
   return;
 } ## sub add_synonym
 
-####################################################
-# Add multiple synomyns for an xref given by xref_id
-####################################################
+
+=head2 add_multiple_synonyms
+  Arg [1]    : xref ID
+  Arg [2]    : synonyms
+  Description: Add multiple synomyns for an xref given by xref_id
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub add_multiple_synonyms {
   my ( $self, $xref_id, $synonyms ) = @_;
 
@@ -1233,11 +1467,18 @@ sub add_multiple_synonyms {
   return
 } ## sub add_multiple_synonyms
 
-########################################################
-# Create a hash that uses the label as a key
-# and the acc as the value. Also add synonyms for these
-# as keys.
-#######################################################
+
+=head2 get_label_to_acc
+  Arg [1]    : description
+  Arg [2]    : species ID
+  Arg [3]    : source priority description
+  Description: Create a hash that uses the label as a key and the acc as the
+               value. Also add synonyms for these as keys.
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_label_to_acc {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1297,10 +1538,18 @@ GLS
   return \%hash1;
 } ## end sub get_label_to_acc
 
-########################################################
-# Create a hash that uses the accession as a key
-# and the label as the value.
-#######################################################
+
+=head2 get_acc_to_label
+  Arg [1]    : description
+  Arg [2]    : species ID
+  Arg [3]    : source priority description
+  Description: Create a hash that uses the accession as a key and the label as
+               the value.
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_acc_to_label {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1332,11 +1581,18 @@ GLA
   return \%hash1;
 } ## end sub get_acc_to_label
 
-########################################################
-# Create a hash that uses the label as a key
-# and the desc as the value. Also add synonyms for these
-# as keys.
-#######################################################
+
+=head2 get_label_to_desc
+  Arg [1]    : description
+  Arg [2]    : species ID
+  Arg [3]    : source priority description
+  Description: Create a hash that uses the label as a key and the desc as the
+               value. Also add synonyms for these as keys.
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_label_to_desc {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1397,9 +1653,16 @@ GDS
   return \%hash1;
 } ## end sub get_label_to_desc
 
-########################################
-# Set release for a particular source_id.
-########################################
+
+=head2 set_release
+  Arg [1]    : source ID
+  Arg [2]    : ensembl release
+  Description: Set release for a particular source_id.
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub set_release {
   my ( $self, $source_id, $s_release ) = @_;
 
@@ -1413,12 +1676,18 @@ sub set_release {
   $sth->execute( $s_release, $source_id );
 
   return;
-}
+} ## end sub set_release
 
-#############################################################################
-# create a hash of all the dependent mapping that exist for a given source_id
-# Of the format {master_xref_id|dependent_xref_id}
-#############################################################################
+
+=head2 get_dependent_mappings
+  Arg [1]    : source_id
+  Description: create a hash of all the dependent mapping that exist for a given
+               source_id of the format {master_xref_id|dependent_xref_id}
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_dependent_mappings {
   my $self      = shift;
   my $source_id = shift;
@@ -1443,10 +1712,16 @@ GDM
   return;
 } ## end sub get_dependent_mappings
 
-##########################################################
-# Create a has that uses the accession and labels for keys
-# and an array of the synonyms as the vaules
-##########################################################
+
+=head2 get_ext_synonyms
+  Arg [1]    : source name
+  Description: Create a has that uses the accession and labels for keys and an
+               array of the synonyms as the values
+  Return type: hash
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_ext_synonyms {
   my $self        = shift;
   my $source_name = shift;
@@ -1482,21 +1757,25 @@ GES
 
 } ## end sub get_ext_synonyms
 
-######################################################################
-# Store data needed to beable to revert to same stage as after parsing
-######################################################################
+
+=head2 parsing_finished_store_data
+  Description: Store data needed to beable to revert to same stage as after parsing
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+  Notes      : Store max id for
+
+    gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
+    xref                                        xref_id
+    dependent_xref                              object_xref_id is all null
+    go_xref                                     object_xref_id
+    object_xref                                 object_xref_id
+    identity_xref                               object_xref_id
+=cut
 sub parsing_finished_store_data {
   my $self = shift;
-
-  # Store max id for
-
-  # gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
-
-  # xref                                        xref_id
-  # dependent_xref                              object_xref_id is all null
-  # go_xref                                     object_xref_id
-  # object_xref                                 object_xref_id
-  # identity_xref                               object_xref_id
 
   my %table_and_key = (
     'xref'        => 'SELECT MAX(xref_id) FROM xref',
@@ -1515,12 +1794,21 @@ sub parsing_finished_store_data {
   return;
 } ## end sub parsing_finished_store_data
 
+
+=head2 get_meta_value
+  Arg [1]    : key
+  Description: Get the last value from the meta data table that matches like the
+               meta data key value provided
+  Return type: integer or string
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub get_meta_value {
   my ( $self, $key ) = @_;
 
-  my $sth =
-    $self->dbi->prepare_cached(
-      'SELECT meta_value FROM meta WHERE meta_key LIKE ? ORDER BY meta_id' );
+  my $sth = $self->dbi->prepare_cached(
+    'SELECT meta_value FROM meta WHERE meta_key LIKE ? ORDER BY meta_id' );
   $sth->execute( $key );
   my $value;
   $sth->bind_columns( \$value );
@@ -1528,64 +1816,92 @@ sub get_meta_value {
   }
 
   return $value;
-}
+} ## end sub get_meta_value
 
-######################################
-# Update info_type of an existing xref
-######################################
+
+=head2 _update_xref_info_type
+  Arg [1]    : xref ID
+  Arg [2]    : info type
+  Description: Update info_type of an existing xref
+  Return type:
+  Exceptions : confess if UPDATE fails
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _update_xref_info_type {
   my ( $self, $xref_id, $info_type ) = @_;
 
-
-  my $sth =
-    $self->dbi->prepare_cached('UPDATE xref SET info_type=? WHERE xref_id=?');
+  my $sth = $self->dbi->prepare_cached(
+    'UPDATE xref SET info_type=? WHERE xref_id=?');
   if ( !$sth->execute( $info_type, $xref_id ) ) {
-    croak $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
+    confess $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
   }
 
   return;
-}
+} ## end sub _update_xref_info_type
 
 
-###########################################################
-# Create an primary_xref entry.
-###########################################################
+=head2 _add_pair
+  Arg [1]    : source ID
+  Arg [2]    : accession
+  Arg [3]    : pair
+  Description: Create a pairs entry.
+  Return type:
+  Exceptions : confess if INSERT fails
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _add_pair {
   my ( $self, $source_id, $accession, $pair ) = @_;
 
   my $pair_sth = $self->dbi->prepare_cached('INSERT INTO pairs VALUES(?,?,?)');
 
-  ####################################
-  # Add the xref and croak if it fails
-  ####################################
+  ######################################
+  # Add the pair and confess if it fails
+  ######################################
   $pair_sth->execute( $source_id, $accession, $pair ) or
     confess "$source_id\t$\t$accession\t$pair\n";
 
   return;
-} ## end sub _add_primary_xref
+} ## end sub _add_pair
 
 
-###########################################################
-# Create an primary_xref entry.
-###########################################################
+=head2 _add_primary_xref
+  Arg [1]    : xref ID
+  Arg [2]    : sequence
+  Arg [3]    : sequence type
+  Arg [4]    : status
+  Description: Create an primary_xref entry.
+  Return type: integer
+  Exceptions :confess if INSERT fails
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _add_primary_xref {
   my ( $self, $xref_id, $sequence, $sequence_type, $status ) = @_;
 
   my $add_primary_xref_sth =
     $self->dbi->prepare_cached( 'INSERT INTO primary_xref VALUES(?,?,?,?)' );
 
-  ####################################
-  # Add the xref and croak if it fails
-  ####################################
+  ######################################
+  # Add the xref and confess if it fails
+  ######################################
   $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
     confess "$xref_id\t$\t$sequence_type\t$status\n";
 
   return $add_primary_xref_sth->{'mysql_insertid'};
 } ## end sub _add_primary_xref
 
-###################################################
-# Update primary_xref sequence for matching xref_id
-###################################################
+
+=head2 _update_primary_xref_sequence
+  Arg [1]    : xref ID
+  Arg [2]    : sequence
+  Description: Update primary_xref sequence for matching xref_id
+  Return type:
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _update_primary_xref_sequence {
   my ( $self, $xref_id, $sequence ) = @_;
 
@@ -1598,9 +1914,16 @@ sub _update_primary_xref_sequence {
   return;
 } ## sub _update_primary_xref_sequence
 
-###################################################
-# Update primary_xref sequence for matching xref_id
-###################################################
+
+=head2 _update_xref_label
+  Arg [1]    : xref ID
+  Arg [2]    : label
+  Description: Update xref label for matching xref_id
+  Return type:
+  Exceptions : confess on a failed UPDATE
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _update_xref_label {
   my ( $self, $xref_id, $label ) = @_;
 
@@ -1613,9 +1936,16 @@ sub _update_xref_label {
   return;
 } ## sub _update_xref_label
 
-###################################################
-# Update primary_xref sequence for matching xref_id
-###################################################
+
+=head2 _update_xref_description
+  Arg [1]    : xref ID
+  Arg [2]    : description
+  Description: Update xref dfescription for matching xref_id
+  Return type:
+  Exceptions : confess on a failed UPDATE
+  Caller     : internal
+  Status     : Stable
+=cut
 sub _update_xref_description {
   my ( $self, $xref_id, $description ) = @_;
 
@@ -1623,7 +1953,7 @@ sub _update_xref_description {
     'UPDATE xref SET description=? WHERE xref_id=?');
 
   $sth->execute( $description, $xref_id ) or
-    croak $self->dbi->errstr() . "\n $xref_id\n $description\n\n";
+    confess $self->dbi->errstr() . "\n $xref_id\n $description\n\n";
 
   return;
 } ## sub _update_xref_description
