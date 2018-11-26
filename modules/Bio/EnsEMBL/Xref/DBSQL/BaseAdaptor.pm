@@ -32,7 +32,13 @@ Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor - A db adaptor for the xref database
 
 =head1 SYNOPSIS
 
+Base adaptor to provide SQL access to the xref database
+
 =head1 DESCRIPTION
+
+This is the base adaptor for loading xrefs into the species xref database during
+the xref parsing stage in production. The aim of the module is to reduce
+redundancy of code and keep the SQL to a constrained set of functions
 
 =cut
 
