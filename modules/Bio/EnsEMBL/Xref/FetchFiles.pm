@@ -326,7 +326,6 @@ sub list_ftp_files {
   }
   my $ftp_client = $self->get_ftp($uri);
   my @files;
-  print $ftp_client->pwd();
   @files = $ftp_client->ls()
     or confess sprintf "Cannot list content of FTP site %s at %s: %s", $uri->host, $uri->path, $ftp_client->message;
   $ftp_client->quit;
