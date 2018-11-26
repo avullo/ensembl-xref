@@ -64,21 +64,28 @@ isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ZFINDescParser' );
 $parser->run();
 
 ok(
- $db->schema->resultset('Xref')->check_direct_xref(
-  {
-   accession   => 'ZDB-GENE-030131-3003',
-   label       => 'hnf1bb',
-   description => 'HNF1 homeobox Bb',
-   source_id   => 149,
-   species_id  => 7955,
-   info_type   => 'MISC'
-  }
- ),
+	$db->schema->resultset('Xref')->check_direct_xref({
+    accession   => 'ZDB-GENE-030131-3003',
+    label       => 'hnf1bb',
+    description => 'HNF1 homeobox Bb',
+    source_id   => 149,
+    species_id  => 7955,
+    info_type   => 'MISC'
+  }),
  'Sample zebrafish direct Xref has been inserted'
 );
 
 # Test if all the rows were inserted
 is($db->schema->resultset('Xref')->count, 6, "All 6 rows were inserted");
+
+my $parser_no_file = Bio::EnsEMBL::Xref::Parser::ZFINDescParser->new(
+ source_id  => 149,
+ species_id => 7955,
+ files      => [],
+ xref_dba   => $xref_dba
+);
+
+throws_ok{ $parser_no_file->run() } qr/No file name/, 'No file provided throws error' ;
 
 done_testing();
 
