@@ -1153,9 +1153,10 @@ sub add_multiple_dependent_xrefs {
     # Add the linkage_annotation and source id it came from
     #
     $self->add_dependent_xref_maponly(
-      $xref_id, $dep_xref_id,
-      $dep{LINKAGE_ANNOTATION},
-      $dep{LINKAGE_SOURCE_ID} );
+      $dep_xref_id,
+      $dep{LINKAGE_SOURCE_ID},
+      $xref_id
+      $dep{LINKAGE_ANNOTATION} );
 
     #########################################################
     # if there are synonyms, add entries in the synonym table
