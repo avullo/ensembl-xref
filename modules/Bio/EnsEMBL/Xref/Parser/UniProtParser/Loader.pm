@@ -30,9 +30,11 @@ sub new {
   my ( $proto, $arg_ref ) = @_;
 
   my $self = {
-              'batch_size' => $arg_ref->{'batch_size'} // 1,
-              'xref_dba'   => $arg_ref->{'xref_dba'},
-            };
+    'batch_size'         => $arg_ref->{'batch_size'}         // 1,
+    'checkpoint_seconds' => $arg_ref->{'checkpoint_seconds'} // 0,
+    'xref_dba'           => $arg_ref->{'xref_dba'},
+    'last_flush'         => time(),
+  };
   my $class = ref $proto || $proto;
   bless $self, $class;
   $self->_clear_send_buffer();
@@ -83,8 +85,12 @@ sub load {
 
   $self->_add_to_send_buffer( $transformed_data );
 
-  if ( $self->{'send_backlog'} >= $self->{'batch_size'} ) {
+  my $current_time = time();
+  if ( ( $self->{'send_backlog'} >= $self->{'batch_size'} )
+       || ( $self->{'checkpoint_seconds'} > 0  )
+       && ( $current_time - $self->{'last_flush'} > $self->{'checkpoint_seconds'} ) ) {
     $self->flush();
+    $self->{'last_flush'} = $current_time;
   }
 
   return;

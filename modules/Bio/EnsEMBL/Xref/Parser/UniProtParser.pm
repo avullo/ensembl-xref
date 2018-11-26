@@ -30,7 +30,8 @@ use Readonly;
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
-Readonly my $DEFAULT_LOADER_BATCH_SIZE => 1000;
+Readonly my $DEFAULT_LOADER_BATCH_SIZE         => 1000;
+Readonly my $DEFAULT_LOADER_CHECKPOINT_SECONDS => 300;
 
 Readonly my %source_name_for_section => (
                                          'Swiss-Prot' => 'Uniprot/SWISSPROT',
@@ -51,6 +52,8 @@ sub run {
 
   my $loader_batch_size
     = $self->{loader_batch_size} // $DEFAULT_LOADER_BATCH_SIZE;
+  my $loader_checkpoint_seconds
+    = $self->{loader_checkpoint_seconds} // $DEFAULT_LOADER_CHECKPOINT_SECONDS;
 
   # Try to control where ETL modules can come from, just in case
   # someone does something really weird with configuration options.
@@ -76,8 +79,9 @@ sub run {
     'xref_dba'   => $xref_dba,
   });
   my $loader = $loader_class->new({
-    'batch_size' => $loader_batch_size,
-    'xref_dba'   => $xref_dba,
+    'batch_size'         => $loader_batch_size,
+    'checkpoint_seconds' => $loader_checkpoint_seconds,
+    'xref_dba'           => $xref_dba,
   });
 
   # Generate a map of existing dependent-xref links, which will be
