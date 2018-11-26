@@ -66,8 +66,8 @@ sub new {
                                           -HOST   => $args{host},
                                           -DBNAME => $args{dbname},
                                           -USER   => $args{user},
-                                          -PASS   => $args{pass} || '',
-                                          -PORT => $args{port} || '3306'
+                                          -PASS   => $args{pass} // '',
+                                          -PORT => $args{port} // '3306'
               ) );
   $self->verbose( $args{verbose} // 0 );
 
@@ -434,12 +434,12 @@ sub upload_xref_object_graphs {
     ########################################
     my $xref_id = $self->add_xref( (
       "acc"        => $xref->{ACCESSION},
-      "version"    => $xref->{VERSION} || 0,
-      "label"      => $xref->{LABEL}   || $xref->{ACCESSION},
+      "version"    => $xref->{VERSION} // 0,
+      "label"      => $xref->{LABEL}   // $xref->{ACCESSION},
       "desc"       => $xref->{DESCRIPTION},
       "source_id"  => $xref->{SOURCE_ID},
       "species_id" => $xref->{SPECIES_ID},
-      "info_type"  => $xref->{INFO_TYPE} || 'MISC' ),
+      "info_type"  => $xref->{INFO_TYPE} // 'MISC' ),
       "update_label" => 1, "update_desc" => 1 );
 
     #################################################################
@@ -684,11 +684,11 @@ sub get_direct_xref {
 
   my %sql_hash = (
     gene =>
-      "SELECT general_xref_id FROM gene_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
+      "SELECT general_xref_id FROM gene_direct_xref d WHERE ensembl_stable_id = ? AND linkage_xref ",
     transcript =>
-      "SELECT general_xref_id FROM transcript_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref ",
+      "SELECT general_xref_id FROM transcript_direct_xref d WHERE ensembl_stable_id = ? AND linkage_xref ",
     translation =>
-      "SELECT general_xref_id FROM translation_direct_xref d WHERE ensembl_stable_id = ? and linkage_xref "
+      "SELECT general_xref_id FROM translation_direct_xref d WHERE ensembl_stable_id = ? AND linkage_xref "
   );
 
   my $sql = $sql_hash{$type};
@@ -796,10 +796,10 @@ sub add_xref {
   my $acc          = $arg_ref->{acc} || croak 'add_xref needs aa acc';
   my $source_id    = $arg_ref->{source_id} || croak 'add_xref needs a source_id';
   my $species_id   = $arg_ref->{species_id} || croak 'add_xref needs a species_id';
-  my $label        = $arg_ref->{label} || $acc;
+  my $label        = $arg_ref->{label} // $acc;
   my $description  = $arg_ref->{desc};
-  my $version      = $arg_ref->{version} || 0;
-  my $info_type    = $arg_ref->{info_type} || 'MISC';
+  my $version      = $arg_ref->{version} // 0;
+  my $info_type    = $arg_ref->{info_type} // 'MISC';
   my $info_text    = $arg_ref->{info_text};
   my $update_label = $arg_ref->{update_label};
   my $update_desc  = $arg_ref->{update_desc};
@@ -836,7 +836,7 @@ sub add_xref {
   ####################################
   # Add the xref and croak if it fails
   ####################################
-  $add_xref_sth->execute( $acc, $version || 0, $label,
+  $add_xref_sth->execute( $acc, $version // 0, $label,
                           $description, $source_id, $species_id,
                           $info_type,   $info_text ) or
     confess "$acc\t$label\t\t$source_id\t$species_id\n";
@@ -934,11 +934,11 @@ sub add_to_direct_xrefs {
     croak('Need a source_id for this direct xref');
   my $species_id = $arg_ref->{species_id} ||
     croak('Need a species_id for this direct xref');
-  my $version = $arg_ref->{version} || 0;
-  my $label   = $arg_ref->{label}   || $acc;
+  my $version = $arg_ref->{version} // 0;
+  my $label   = $arg_ref->{label}   // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} || '';
+  my $info_text   = $arg_ref->{info_text} // '';
 
   my $sql = (<<'AXX');
   INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type, info_text)
@@ -1015,8 +1015,8 @@ sub add_multiple_direct_xrefs {
   foreach my $direct_xref ( @{ $xref->{DIRECT_XREFS} } ) {
     my $direct_xref_id = $self->add_xref( (
       "acc"        => $xref->{ACCESSION},
-      "version"    => $xref->{VERSION} || 0,
-      "label"      => $xref->{LABEL}   || $xref->{ACCESSION},
+      "version"    => $xref->{VERSION} // 0,
+      "label"      => $xref->{LABEL}   // $xref->{ACCESSION},
       "desc"       => $xref->{DESCRIPTION},
       "source_id"  => $direct_xref->{SOURCE_ID},
       "species_id" => $xref->{SPECIES_ID},
@@ -1043,11 +1043,11 @@ sub add_dependent_xref {
   my $acc         = $arg_ref->{acc} || confess 'Need an accession of this dependent xref';
   my $source_id   = $arg_ref->{source_id} || confess 'Need a source_id for this dependent xref';
   my $species_id  = $arg_ref->{species_id} || confess 'Need a species_id for this dependent xref';
-  my $version     = $arg_ref->{version} || 0;
-  my $label       = $arg_ref->{label}   || $acc;
+  my $version     = $arg_ref->{version} // 0;
+  my $label       = $arg_ref->{label}   // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} || '';
+  my $info_text   = $arg_ref->{info_text} // '';
 
   my $sql = (<<'IXR');
 INSERT INTO xref
@@ -1142,9 +1142,9 @@ sub add_multiple_dependent_xrefs {
     #################
     my $dep_xref_id = $self->add_xref( (
       "acc"        => $dep{ACCESSION},
-      "version"    => $dep{VERSION}     || 0,
-      "label"      => $dep{LABEL}       || $dep{ACCESSION},
-      "desc"       => $dep{DESCRIPTION} || $xref->{DESCRIPTION},
+      "version"    => $dep{VERSION}     // 1,
+      "label"      => $dep{LABEL}       // $dep{ACCESSION},
+      "desc"       => $dep{DESCRIPTION} // $xref->{DESCRIPTION},
       "source_id"  => $dep{SOURCE_ID},
       "species_id" => $dep{SPECIES_ID},
       "info_type"  => 'DEPENDENT' ) );
@@ -1490,13 +1490,13 @@ sub parsing_finished_store_data {
 
   # Store max id for
 
-# gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
+  # gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
 
-# xref                                        xref_id
-# dependent_xref                              object_xref_id is all null
-# go_xref                                     object_xref_id
-# object_xref                                 object_xref_id
-# identity_xref                               object_xref_id
+  # xref                                        xref_id
+  # dependent_xref                              object_xref_id is all null
+  # go_xref                                     object_xref_id
+  # object_xref                                 object_xref_id
+  # identity_xref                               object_xref_id
 
   my %table_and_key = (
     'xref'        => 'SELECT MAX(xref_id) FROM xref',
