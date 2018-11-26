@@ -255,7 +255,7 @@ ReturnType:   Net::FTP instance
 sub get_ftp {
   my ($self, $uri, $passive, $user, $pass) = @_;
   my $ftp;
-  $passive = ($passive) ? 1 : 0; # Sanitise potential passive options
+  $passive //= 1; # Default use of passive mode for FTP (better for tight firewalls)
   $user //= 'anonymous';
   $pass //= '-anonymous@';
 
