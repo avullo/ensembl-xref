@@ -267,7 +267,6 @@ sub get_ftp {
   croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() ) if !$state;
 
   my ($filename, $path, $extras) = fileparse( $uri->path() ); # fileparse is a bit safer than dirname
-  $path = '/'.$path;
   $state = $ftp->cwd( $path );
 
   if (!$state) {
@@ -326,16 +325,16 @@ sub list_ftp_files {
     $uri = URI->new($uri);
   }
   my $ftp_client = $self->get_ftp($uri);
-  my $files;
+  my @files;
   print $ftp_client->pwd();
-  $files = $ftp_client->ls()
+  @files = $ftp_client->ls()
     or confess sprintf "Cannot list content of FTP site %s at %s: %s", $uri->host, $uri->path, $ftp_client->message;
   $ftp_client->quit;
 
-  foreach my $name (@$files) {
+  foreach my $name (@files) {
     $name =~ s/$suffix//x;
   }
-  return $files;
+  return \@files;
 }
 
 1;
