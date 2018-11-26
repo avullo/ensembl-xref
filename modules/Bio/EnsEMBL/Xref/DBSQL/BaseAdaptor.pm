@@ -1363,7 +1363,7 @@ sub add_multiple_dependent_xrefs {
     $self->add_dependent_xref_maponly(
       $dep_xref_id,
       $dep{LINKAGE_SOURCE_ID},
-      $xref_id
+      $xref_id,
       $dep{LINKAGE_ANNOTATION} );
 
     #########################################################
