@@ -70,7 +70,9 @@ my $verbose;
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub new {
   my ( $proto, %args ) = @_;
 
@@ -96,7 +98,9 @@ sub new {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub dbc {
   my ( $self, $arg ) = @_;
   ( defined $arg ) && ( $self->{_dbc} = $arg );
@@ -110,7 +114,9 @@ sub dbc {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub dbi {
   my $self = shift;
 
@@ -130,7 +136,9 @@ sub dbi {
   Exceptions : confesses if not found
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_filehandle {
   my ( $self, $file_name ) = @_;
 
@@ -174,7 +182,9 @@ sub get_filehandle {
   Exceptions : confesses if not found
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_source_id_for_source_name {
   my ( $self, $source_name, $priority_desc) = @_;
 
@@ -213,7 +223,9 @@ sub get_source_id_for_source_name {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_source_ids_for_source_name_pattern {
 
   my ( $self, $source_name) = @_;
@@ -239,7 +251,9 @@ sub get_source_ids_for_source_name_pattern {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_source_name_for_source_id {
   my ( $self, $source_id ) = @_;
   my $source_name;
@@ -275,7 +289,9 @@ sub get_source_name_for_source_id {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_valid_xrefs_for_dependencies {
   my ( $self, $dependent_name, @reverse_ordered_source_list ) = @_;
 
@@ -329,7 +345,9 @@ DSS
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_valid_xrefs_for_direct_xrefs {
   my ( $self, $direct_name, $separator ) = @_;
 
@@ -391,7 +409,9 @@ GDS
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub label_to_acc {
 
   my ( $self, $source_name, $species_id ) = @_;
@@ -448,7 +468,9 @@ sub label_to_acc {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_valid_codes {
 
   my ( $self, $source_name, $species_id ) = @_;
@@ -485,7 +507,9 @@ sub get_valid_codes {
   Exceptions : confess if accession of source ID are not provided
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub upload_xref_object_graphs {
   my ( $self, $rxrefs ) = @_;
 
@@ -563,7 +587,7 @@ sub upload_xref_object_graphs {
 
 =head2 upload_direct_xrefs
   Arg [1]    : Array of direct xrefsxrefs
-  Description: Add direct xref to the table XXX_direct_xref. (XXX -> Gene,
+  Description: Add direct xref to the table XXX_direct_xref. (XXX -E<gt> Gene,
                Transcript or Translation. Xref has to exist already, this module
                just adds ot yo the direct_xref table.
                $direct_xref is a reference to an array of hash objects.
@@ -571,7 +595,9 @@ sub upload_xref_object_graphs {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub upload_direct_xrefs {
   my ( $self, $direct_xref ) = @_;
   for my $dr ( @{$direct_xref} ) {
@@ -612,7 +638,9 @@ sub upload_direct_xrefs {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_meta_pair {
 
   my ( $self, $key, $value ) = @_;
@@ -631,7 +659,9 @@ sub add_meta_pair {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_xref_sources {
 
   my $self = shift;
@@ -657,7 +687,9 @@ sub get_xref_sources {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub species_id2taxonomy {
 
   my $self = shift;
@@ -688,7 +720,9 @@ sub species_id2taxonomy {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub species_id2name {
   my $self = shift;
 
@@ -728,7 +762,9 @@ sub species_id2name {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_xref_id {
   my ( $self, $arg_ref ) = @_;
   my $sth = $arg_ref->{sth} ||
@@ -755,7 +791,9 @@ sub get_xref_id {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub primary_xref_id_exists {
 
   my ( $self, $xref_id ) = @_;
@@ -782,7 +820,9 @@ sub primary_xref_id_exists {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_taxonomy_from_species_id {
   my ( $self, $species_id) = @_;
   my %hash;
@@ -807,7 +847,9 @@ sub get_taxonomy_from_species_id {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_direct_xref {
   my ( $self, $stable_id, $type, $link ) = @_;
 
@@ -870,7 +912,9 @@ sub get_direct_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_xref {
   my ( $self, $acc, $source, $species_id ) = @_;
 
@@ -908,7 +952,9 @@ sub get_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_object_xref {
   my ( $self, $xref_id, $ensembl_id, $object_type ) = @_;
 
@@ -940,7 +986,9 @@ sub get_object_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -1005,7 +1053,9 @@ sub add_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_object_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -1048,7 +1098,9 @@ sub add_object_xref {
   Exceptions : Throw is execution fails
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_identity_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -1088,7 +1140,9 @@ sub add_identity_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_to_direct_xrefs {
   my ( $self, $arg_ref ) = @_;
 
@@ -1151,7 +1205,9 @@ AXX
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_direct_xref {
   my ( $self, $general_xref_id, $ensembl_stable_id, $ensembl_type,
        $linkage_type, $update_info_type )
@@ -1193,7 +1249,9 @@ sub add_direct_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_multiple_direct_xrefs {
   my ( $self, $xref ) = @_;
 
@@ -1227,7 +1285,9 @@ sub add_multiple_direct_xrefs {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_dependent_xref {
   my ( $self, $arg_ref ) = @_;
 
@@ -1293,7 +1353,9 @@ IXR
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_dependent_xref_maponly {
   my ( $self, $dependent_id, $dependent_source_id, $master_id,
        $master_source_id, $update_info_type )
@@ -1338,7 +1400,9 @@ ADX
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_multiple_dependent_xrefs {
   my ( $self, $xref_id, $xref ) = @_;
 
@@ -1390,7 +1454,9 @@ sub add_multiple_dependent_xrefs {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_to_syn_for_mult_sources {
   my ( $self, $acc, $sources, $syn, $species_id ) = @_;
 
@@ -1416,7 +1482,9 @@ sub add_to_syn_for_mult_sources {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_to_syn {
   my ( $self, $acc, $source_id, $syn, $species_id ) = @_;
 
@@ -1441,7 +1509,9 @@ sub add_to_syn {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_synonym {
   my ( $self, $xref_id, $syn ) = @_;
   my $add_synonym_sth =
@@ -1462,7 +1532,9 @@ sub add_synonym {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub add_multiple_synonyms {
   my ( $self, $xref_id, $synonyms ) = @_;
 
@@ -1484,7 +1556,9 @@ sub add_multiple_synonyms {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_label_to_acc {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1555,7 +1629,9 @@ GLS
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_acc_to_label {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1598,7 +1674,9 @@ GLA
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_label_to_desc {
   my ( $self, $name, $species_id, $prio_desc ) = @_;
   my %hash1 = ();
@@ -1668,7 +1746,9 @@ GDS
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub set_release {
   my ( $self, $source_id, $s_release ) = @_;
 
@@ -1693,7 +1773,9 @@ sub set_release {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_dependent_mappings {
   my $self      = shift;
   my $source_id = shift;
@@ -1727,7 +1809,9 @@ GDM
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_ext_synonyms {
   my $self        = shift;
   my $source_name = shift;
@@ -1779,7 +1863,9 @@ GES
     go_xref                                     object_xref_id
     object_xref                                 object_xref_id
     identity_xref                               object_xref_id
+
 =cut
+
 sub parsing_finished_store_data {
   my $self = shift;
 
@@ -1809,7 +1895,9 @@ sub parsing_finished_store_data {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub get_meta_value {
   my ( $self, $key ) = @_;
 
@@ -1833,7 +1921,9 @@ sub get_meta_value {
   Exceptions : confess if UPDATE fails
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _update_xref_info_type {
   my ( $self, $xref_id, $info_type ) = @_;
 
@@ -1856,7 +1946,9 @@ sub _update_xref_info_type {
   Exceptions : confess if INSERT fails
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _add_pair {
   my ( $self, $source_id, $accession, $pair ) = @_;
 
@@ -1882,7 +1974,9 @@ sub _add_pair {
   Exceptions :confess if INSERT fails
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _add_primary_xref {
   my ( $self, $xref_id, $sequence, $sequence_type, $status ) = @_;
 
@@ -1907,7 +2001,9 @@ sub _add_primary_xref {
   Exceptions : none
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _update_primary_xref_sequence {
   my ( $self, $xref_id, $sequence ) = @_;
 
@@ -1929,7 +2025,9 @@ sub _update_primary_xref_sequence {
   Exceptions : confess on a failed UPDATE
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _update_xref_label {
   my ( $self, $xref_id, $label ) = @_;
 
@@ -1951,7 +2049,9 @@ sub _update_xref_label {
   Exceptions : confess on a failed UPDATE
   Caller     : internal
   Status     : Stable
+
 =cut
+
 sub _update_xref_description {
   my ( $self, $xref_id, $description ) = @_;
 
