@@ -83,7 +83,7 @@ sub new {
                                           -HOST   => $args{host},
                                           -DBNAME => $args{dbname},
                                           -USER   => $args{user},
-                                          -PASS   => $args{pass} // '',
+                                          -PASS   => $args{pass} // q{},
                                           -PORT => $args{port} // '3306'
               ) );
   $self->verbose( $args{verbose} // 0 );
@@ -1160,7 +1160,7 @@ sub add_to_direct_xrefs {
   my $label   = $arg_ref->{label}   // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} // '';
+  my $info_text   = $arg_ref->{info_text} // q{};
 
   my $sql = (<<'AXX');
   INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type, info_text)
@@ -1299,7 +1299,7 @@ sub add_dependent_xref {
   my $label       = $arg_ref->{label}   // $acc;
   my $description = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} // '';
+  my $info_text   = $arg_ref->{info_text} // q{};
 
   my $sql = (<<'IXR');
 INSERT INTO xref
