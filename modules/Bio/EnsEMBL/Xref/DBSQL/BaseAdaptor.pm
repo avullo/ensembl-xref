@@ -180,6 +180,10 @@ sub get_filehandle {
 sub get_source_id_for_source_name {
   my ( $self, $source_name, $priority_desc) = @_;
 
+  if ( !defined $source_name ) {
+    confess 'source_name undefined';
+  }
+
   my $low_name = lc $source_name;
   my $sql = 'SELECT source_id FROM source WHERE LOWER(name)=?';
 
@@ -199,7 +203,11 @@ sub get_source_id_for_source_name {
     $source_id = $row[0];
   }
   else {
-    confess "No source_id for source_name='${source_name}', priority_desc='${priority_desc}'";
+    my $msg = "No source_id for source_name='${source_name}'";
+    if ( defined $priority_desc ) {
+      $msg .= "priority_desc='${priority_desc}'";
+    }
+    confess $msg;
   }
 
   return $source_id;
@@ -219,6 +227,10 @@ sub get_source_id_for_source_name {
 sub get_source_ids_for_source_name_pattern {
 
   my ( $self, $source_name) = @_;
+
+  if ( !defined $source_name ) {
+    confess 'source_name undefined';
+  }
 
   my $big_name = uc $source_name;
   my $sql = 'SELECT source_id FROM source WHERE UPPER(name) LIKE ?';
@@ -244,6 +256,11 @@ sub get_source_ids_for_source_name_pattern {
 
 sub get_source_name_for_source_id {
   my ( $self, $source_id ) = @_;
+
+  if ( !defined $source_id ) {
+    confess 'source_id undefined';
+  }
+
   my $source_name;
 
   my $sql = 'SELECT name FROM source WHERE source_id= ?';
