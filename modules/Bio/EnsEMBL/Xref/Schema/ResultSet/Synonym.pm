@@ -23,15 +23,19 @@ use warnings;
 
 use parent 'DBIx::Class::ResultSet';
 
+=head2
+Search for the given xref_id and synonym
+  {
+    xref_id => $params->{xref_id},
+    synonym => $params->{synonym},
+  }
+=cut
+
 sub check_synonym {
   my ( $self, $params ) = @_;
 
   my $hit = $self->find($params);
 
-  # {
-  #   xref_id => $params->{xref_id},
-  #   synonym => $params->{synonym},
-  # }
   return 1 if defined $hit;
   return;
 }
