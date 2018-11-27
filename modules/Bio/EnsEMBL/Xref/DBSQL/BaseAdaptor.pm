@@ -104,7 +104,7 @@ sub dbc {
 } ## end sub dbc
 
 
-=head2 new
+=head2 dbi
   Description: Getter/Setter for the dbi object
   Return type: DBI database handle
   Caller     : internal
@@ -770,7 +770,7 @@ sub primary_xref_id_exists {
 
   my $sth =
     $self->dbi->prepare_cached('SELECT xref_id FROM primary_xref WHERE xref_id=?');
-  $sth->execute($xref_id) or croak( $self->dbi->errstr() );
+  $sth->execute($xref_id) or confess $self->dbi->errstr();
   my @row    = $sth->fetchrow_array();
   my $result = $row[0];
   if ( defined $result ) { $exists = 1; }
@@ -982,11 +982,11 @@ sub add_xref {
       $truncmsg;
   }
 
-  # Add the xref and croak if it fails
+  # Add the xref and confess if it fails
   $add_xref_sth->execute( $acc, $version // 0, $label,
                           $description, $source_id, $species_id,
                           $info_type,   $info_text ) or
-    confess "$acc\t$label\t\t$source_id\t$species_id\n";
+    confess $self->dbi->errstr() . "\n $acc\t$label\t\t$source_id\t$species_id\n";
 
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
@@ -1006,11 +1006,11 @@ sub add_object_xref {
   my ( $self, $arg_ref ) = @_;
 
   my $xref_id = $arg_ref->{xref_id} ||
-    croak 'add_object_xref needs an xref_id';
+    confess 'add_object_xref needs an xref_id';
   my $ensembl_id = $arg_ref->{ensembl_id} ||
-    croak 'add_object_xref needs a ensembl_id';
+    confess 'add_object_xref needs a ensembl_id';
   my $object_type = $arg_ref->{object_type} ||
-    croak 'add_object_xref needs an object_type';
+    confess 'add_object_xref needs an object_type';
 
   # See if it already exists. It so return the xref_id for this one.
   my $object_xref_id =
@@ -1026,7 +1026,7 @@ sub add_object_xref {
   # Add the object_xref and confess if it fails
   $add_object_xref_sth->execute( $ensembl_id, $object_type, $xref_id )
     or
-    confess("$ensembl_id\t$object_type\t\t$xref_id\n");
+    confess $self->dbi->errstr() . "\n $ensembl_id\t$object_type\t\t$xref_id\n";
 
   return $add_object_xref_sth->{'mysql_insertid'};
 } ## end sub add_object_xref
@@ -1063,7 +1063,7 @@ sub add_identity_xref {
                                    $query_identity, $target_identity
     ) or
     confess(
-      "$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
+      $self->dbi->errstr() . "\n$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
 
   return;
 } ## end sub add_identity_xref
@@ -1112,7 +1112,8 @@ AXX
                             $label,     $description,
                             $source_id, $species_id,
                             'DIRECT',   $info_text ) or
-      confess("$acc\t$label\t\t$source_id\t$species_id\n");
+      confess(
+        $self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
   $direct_id = $self->get_xref( $acc, $source_id, $species_id );
@@ -1242,14 +1243,15 @@ IXR
     $add_xref_sth->execute( $acc,         $version,   $label,
                             $description, $source_id, $species_id,
                             'DEPENDENT',  $info_text ) or
-      confess("$acc\t$label\t\t$source_id\t$species_id\n");
+      confess(
+        $self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
   # Confess if we have failed to create/get the xref
   $dependent_id =
     $self->get_xref( $acc, $source_id, $species_id );
   if ( !( defined $dependent_id ) ) {
-    confess("$acc\t$label\t\t$source_id\t$species_id\n");
+    confess($self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
   }
 
   # Now add the dependency mapping
@@ -1295,8 +1297,8 @@ ADX
 
     $add_dependent_xref_sth->execute( $master_id, $dependent_id,
                             $master_source_id, $dependent_source_id ) ||
-      croak(
-"$master_id\t$dependent_id\t$master_source_id\t$dependent_source_id" );
+      confess(
+        $self->dbi->errstr() . "\n$master_id\t$dependent_id\t$master_source_id\t$dependent_source_id" );
 
     $xref_dependent_mapped{"$master_id|$dependent_id"} =
       $master_source_id;
@@ -1422,7 +1424,7 @@ sub add_synonym {
     $self->dbi->prepare_cached(
       'INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
   $add_synonym_sth->execute( $xref_id, $syn ) or
-    confess ( $self->dbi->errstr() . "\n $xref_id\n $syn\n\n" );
+    confess ( $self->dbi->errstr() . "\n $xref_id\n $syn\n\n" . $add_synonym_sth->errstr() . "\n" );
 
   return;
 } ## sub add_synonym
@@ -1692,7 +1694,7 @@ GDM
 
 =head2 get_ext_synonyms
   Arg [1]    : source name
-  Description: Create a has that uses the accession and labels for keys and an
+  Description: Create a hashref that uses the accession and labels for keys and an
                array of the synonyms as the values
   Return type: Hashref
   Caller     : internal
@@ -1836,7 +1838,7 @@ sub _add_pair {
 
   # Add the pair and confess if it fails
   $pair_sth->execute( $source_id, $accession, $pair ) or
-    confess "$source_id\t$\t$accession\t$pair\n";
+    confess $self->dbi->errstr() . "\n $source_id\t$\t$accession\t$pair\n";
 
   return;
 } ## end sub _add_pair
@@ -1864,7 +1866,7 @@ sub _add_primary_xref {
   # Add the xref and confess if it fails
   ######################################
   $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
-    confess "$xref_id\t$\t$sequence_type\t$status\n";
+    confess $self->dbi->errstr() . "\n $xref_id\t$\t$sequence_type\t$status\n";
 
   return $add_primary_xref_sth->{'mysql_insertid'};
 } ## end sub _add_primary_xref
