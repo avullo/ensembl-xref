@@ -936,8 +936,8 @@ sub get_object_xref {
 =head2 add_xref
   Arg [1]    : xref
   Description: Create an xref
-               If it already exists it return that xrefs xref_id else creates it
-               and return the new xref_id
+               If the cref already exists, return the matching xref_id else create
+               and return a new xref_id.
   Return type: integer
   Caller     : internal
 
