@@ -64,7 +64,7 @@ isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ZFINDescParser' );
 $parser->run();
 
 ok(
-	$db->schema->resultset('Xref')->check_direct_xref({
+  $db->schema->resultset('Xref')->check_direct_xref({
     accession   => 'ZDB-GENE-030131-3003',
     label       => 'hnf1bb',
     description => 'HNF1 homeobox Bb',
