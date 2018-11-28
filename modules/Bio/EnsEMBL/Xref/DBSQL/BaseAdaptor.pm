@@ -1223,9 +1223,9 @@ sub add_dependent_xref {
   my ( $self, $arg_ref ) = @_;
 
   my $master_xref = $arg_ref->{master_xref_id}  || confess('Need a master_xref_id on which this xref linked too');
-  my $acc         = $arg_ref->{acc}        || confess('Need an accession of this direct xref');
-  my $source_id   = $arg_ref->{source_id}  || confess('Need a source_id for this direct xref');
-  my $species_id  = $arg_ref->{species_id} || confess('Need a species_id for this direct xref');
+  my $acc         = $arg_ref->{acc}        || confess('Need an accession of this dependent xref');
+  my $source_id   = $arg_ref->{source_id}  || confess('Need a source_id for this dependent xref');
+  my $species_id  = $arg_ref->{species_id} || confess('Need a species_id for this dependent xref');
   my $version     = $arg_ref->{version}    // 0;
   my $label       = $arg_ref->{label}      // $acc;
   my $desc        = $arg_ref->{desc};
@@ -1590,10 +1590,7 @@ GDH
     $hash1{ $row[1] } = $row[0];
   }
 
-  ###########################
   # Also include the synonyms
-  ###########################
-
   my $syn_sql = (<<"GDS");
   SELECT xref.description, synonym.synonym
   FROM xref, source, synonym
@@ -1852,9 +1849,7 @@ sub _add_primary_xref {
   my $add_primary_xref_sth =
     $self->dbi->prepare_cached( 'INSERT INTO primary_xref VALUES(?,?,?,?)' );
 
-  ######################################
   # Add the xref and confess if it fails
-  ######################################
   $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
     confess $self->dbi->errstr() . "\n $xref_id\t$\t$sequence_type\t$status\n";
 

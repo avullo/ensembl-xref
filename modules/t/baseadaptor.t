@@ -89,7 +89,7 @@ my $fake_xref = {
   dumped => 'NO_DUMP_ANOTHER_PRIORITY'
 };
 
-my @xref_array_00 = ($fake_xref);
+my @xref_array_00 = ( $fake_xref );
 
 throws_ok { $xref_dba->upload_xref_object_graphs() } qr/Please give me some xrefs to load/, 'Throws with no arguments';
 throws_ok { $xref_dba->upload_xref_object_graphs( \@xref_array_00 ) } qr/Your xref does not have an accession-number/, 'Throws with bad accession';
@@ -309,5 +309,43 @@ ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ) );
 # add_direct_xref
 # Entry has already been added, so this test should be just for failing out
 ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ) );
+
+
+# add_multiple_direct_xrefs
+
+
+
+# add_dependent_xref
+my $new_xref_05 = {
+  master_xref_id => $xref_id_new,
+  type => 'Gene',
+  acc => 'XX123456',
+  version => 1,
+  label => 'DPNDT',
+  desc => 'Fake dependent xref',
+  species_id => '9606',
+  source_id => $source->source_id,
+  info_text => 'These are normally aligned',
+  update_label => 1,
+  update_desc => 1
+};
+
+throws_ok { $xref_dba->add_dependent_xref() }
+   qr/Need a master_xref_id on which this xref linked too/, 'Throws with no arguments';
+
+throws_ok { $xref_dba->add_dependent_xref(
+   { master_xref_id => $xref_id_new }
+) } qr/Need an accession of this dependent xref/, 'Throws with no arguments';
+
+throws_ok { $xref_dba->add_dependent_xref(
+   { master_xref_id => $xref_id_new, acc => 'XX123456' }
+) } qr/Need a source_id for this dependent xref/, 'Throws with no arguments';
+
+throws_ok { $xref_dba->add_dependent_xref(
+   { master_xref_id => $xref_id_new, acc => 'XX123456', source_id => $source->source_id }
+) } qr/Need a species_id for this dependent xref/, 'Throws with no arguments';
+
+my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_05 );
+
 
 done_testing();
