@@ -96,7 +96,7 @@ sub run {
   my $file_io = $xref_dba->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    confess "Can't open ZFIN file '$file'\n";
+    confess "Can't open ZFINDesc file '$file'\n";
   }
 
   my $input_file = Text::CSV->new({
@@ -131,7 +131,7 @@ sub run {
   $file_io->close();
 
   if ( $verbose ) {
-    print "$count ZFIN xrefs added, $withdrawn withdrawn entries ignored\n";
+    print "$count ZFINDesc xrefs added, $withdrawn withdrawn entries ignored\n";
   }
 
   return 0;

@@ -56,7 +56,8 @@ my $parser = Bio::EnsEMBL::Xref::Parser::ZFINDescParser->new(
  source_id  => 149,
  species_id => 7955,
  files      => ["$Bin/test-data/zfin_desc.txt"],
- xref_dba   => $xref_dba
+ xref_dba   => $xref_dba,
+ verbose    => 1
 );
 
 isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ZFINDescParser' );

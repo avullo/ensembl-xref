@@ -6,7 +6,6 @@ requires 'DBD::mysql';
 requires 'Digest::MD5';
 requires 'HTTP::Tiny';
 requires 'IO::Compress::Gzip';
-requires 'List::MoreUtils';
 requires 'Text::Glob';
 requires 'Text::CSV';
 requires 'URI::Escape';
