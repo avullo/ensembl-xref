@@ -93,7 +93,7 @@ sub run {
       empty_is_undef     => 1,
       allow_loose_quotes => 1,
     }
-  ) or croak "Cannot use file $file: " . Text::CSV->error_diag();
+  ) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   # expected columns
   my @expected_columns =
@@ -102,7 +102,7 @@ sub run {
   # read header
   my $header = $input_file->getline($mgi_io);
   if ( scalar @{$header} != scalar @expected_columns ) {
-    croak "input file $file has an incorrect number of columns";
+    confess "input file $file has an incorrect number of columns";
   }
   $input_file->column_names( \@expected_columns );
   while ( my $data = $input_file->getline_hr($mgi_io) ) {
@@ -133,7 +133,7 @@ sub run {
     }
   }
   $mgi_io->eof
-    or croak "Error parsing file $file: " . $input_file->error_diag();
+    or confess "Error parsing file $file: " . $input_file->error_diag();
   $mgi_io->close();
 
   if ($verbose) {
