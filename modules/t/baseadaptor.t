@@ -346,6 +346,87 @@ throws_ok { $xref_dba->add_dependent_xref(
 ) } qr/Need a species_id for this dependent xref/, 'Throws with no arguments';
 
 # my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_05 );
+# ok( defined $dependent_xref_id, "Dependent xref entry inserted - $dependent_xref_id" );
 
+
+# add_dependent_xref_maponly
+
+
+
+# add_multiple_dependent_xrefs
+
+
+
+# add_to_syn_for_mult_sources
+
+
+
+# add_to_syn
+throws_ok { $xref_dba->add_to_syn(
+   'XX01236', $source->source_id, 'fake_synonym', 9606
+) } qr/Could not find acc XX01236/, 'Throws with no matching accession';
+ok( !defined $xref_dba->add_to_syn( 'NM01236', $source->source_id, 'fake_synonym', 9606 ) );
+
+
+# add_synonym
+ok( !defined $xref_dba->add_synonym( $xref_id_new, 'fake_synonym' ) );
+
+
+# add_multiple_synonyms
+my @multi_syn_array = ( 'fs:000', 'fs:001', 'fs:002' );
+ok( !defined $xref_dba->add_multiple_synonyms( $xref_id_new, \@multi_syn_array ) );
+
+
+# get_label_to_acc
+
+
+
+# get_acc_to_label
+
+
+
+# get_label_to_desc
+
+
+
+# set_release
+
+
+
+# get_dependent_mappings
+
+
+
+# get_ext_synonyms
+
+
+
+# parsing_finished_store_data
+
+
+
+# get_meta_value
+
+
+
+# _update_xref_info_type
+
+
+
+# _add_pair
+
+
+
+# _add_primary_xref
+
+
+
+# _update_primary_xref_sequence
+
+
+
+# _update_xref_label - This should have already been coered by previous tests
+
+# _update_xref_description - This should have already been coered by previous tests
 
 done_testing();
