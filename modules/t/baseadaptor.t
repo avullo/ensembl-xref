@@ -345,7 +345,7 @@ throws_ok { $xref_dba->add_dependent_xref(
    { master_xref_id => $xref_id_new, acc => 'XX123456', source_id => $source->source_id }
 ) } qr/Need a species_id for this dependent xref/, 'Throws with no arguments';
 
-my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_05 );
+# my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_05 );
 
 
 done_testing();
