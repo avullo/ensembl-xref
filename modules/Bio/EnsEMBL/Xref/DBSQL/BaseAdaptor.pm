@@ -1099,44 +1099,31 @@ sub add_identity_xref {
 sub add_to_direct_xrefs {
   my ( $self, $arg_ref ) = @_;
 
-  my $stable_id = $arg_ref->{stable_id} ||
-    confess('Need a direct_xref on which this xref linked too');
-  my $type = $arg_ref->{type} ||
-    confess('Need a table type on which to add');
-  my $acc = $arg_ref->{acc} ||
-    confess('Need an accession of this direct xref');
-  my $source_id = $arg_ref->{source_id} ||
-    confess('Need a source_id for this direct xref');
-  my $species_id = $arg_ref->{species_id} ||
-    confess('Need a species_id for this direct xref');
-  my $version = $arg_ref->{version} // 0;
-  my $label   = $arg_ref->{label}   // $acc;
-  my $description = $arg_ref->{desc};
-  my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} // q{};
+  my $stable_id  = $arg_ref->{stable_id}  || confess('Need a direct_xref on which this xref linked too');
+  my $type       = $arg_ref->{type}       || confess('Need a table type on which to add');
+  my $acc        = $arg_ref->{acc}        || confess('Need an accession of this direct xref');
+  my $source_id  = $arg_ref->{source_id}  || confess('Need a source_id for this direct xref');
+  my $species_id = $arg_ref->{species_id} || confess('Need a species_id for this direct xref');
+  my $version    = $arg_ref->{version}    // 0;
+  my $label      = $arg_ref->{label}      // $acc;
+  my $desc       = $arg_ref->{desc};
+  my $linkage    = $arg_ref->{linkage};
+  my $info_text  = $arg_ref->{info_text}  // q{};
 
-  my $sql = (<<'AXX');
-  INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type, info_text)
-          VALUES (?,?,?,?,?,?,?,?)
-AXX
-  my $add_xref_sth = $self->dbi->prepare_cached($sql);
 
-  # If the acc already has an xrefs find it else cretae a new one
-  my $direct_id =
-    $self->get_xref( $acc, $source_id, $species_id );
-  if ( !( defined $direct_id ) ) {
-    $add_xref_sth->execute( $acc, $version || 0,
-                            $label,     $description,
-                            $source_id, $species_id,
-                            'DIRECT',   $info_text ) or
-      confess(
-        $self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
-  }
-
-  $direct_id = $self->get_xref( $acc, $source_id, $species_id );
+  my $direct_xref_id = $self->add_xref( {
+    acc => $acc,
+    source_id => $source_id,
+    species_id => $species_id,
+    label => $label,
+    desc => $desc,
+    version => $version,
+    info_type => 'DIRECT',
+    info_text => $info_text
+  } );
 
   # Now add the direct info
-  $self->add_direct_xref( $direct_id, $stable_id, $type, $linkage );
+  $self->add_direct_xref( $direct_xref_id, $stable_id, $type, $linkage );
   return;
 } ## end sub add_to_direct_xrefs
 

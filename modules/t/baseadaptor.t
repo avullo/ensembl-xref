@@ -269,4 +269,26 @@ ok(
       { object_xref_id => $object_xref_id, score => 1, target_identity => 1, query_identity => 1 } ),
    "Identity xref row added" );
 
+
+# add_to_direct_xrefs
+my $new_xref_04 = {
+  stable_id => 'NM01236',
+  type => 'Gene',
+  acc => 'NM01236',
+  version => 1,
+  label => 'NM01236.1',
+  desc => 'Fake RefSeq transcript',
+  species_id => '9606',
+  source_id => $source->source_id,
+  info_text => 'These are normally aligned',
+  update_label => 1,
+  update_desc => 1
+};
+throws_ok { $xref_dba->add_to_direct_xrefs() } qr/Need a direct_xref on which this xref linked too/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_to_direct_xrefs( { stable_id => 'NM01236' } ) } qr/Need a table type on which to add/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_to_direct_xrefs( { stable_id => 'NM01236', type => 'Gene' } ) } qr/Need an accession of this direct xref/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_to_direct_xrefs( { stable_id => 'NM01236', type => 'Gene', acc => 'NM01236' } ) } qr/Need a source_id for this direct xref/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_to_direct_xrefs( { stable_id => 'NM01236', type => 'Gene', acc => 'NM01236', source_id => $source->source_id } ) } qr/Need a species_id for this direct xref/, 'Throws with no arguments';
+ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ) );
+
 done_testing();
