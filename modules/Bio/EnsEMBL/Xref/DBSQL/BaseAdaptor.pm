@@ -1025,7 +1025,7 @@ sub add_object_xref {
   my $xref_id = $arg_ref->{xref_id} ||
     confess 'add_object_xref needs an xref_id';
   my $ensembl_id = $arg_ref->{ensembl_id} ||
-    confess 'add_object_xref needs a ensembl_id';
+    confess 'add_object_xref needs an ensembl_id';
   my $object_type = $arg_ref->{object_type} ||
     confess 'add_object_xref needs an object_type';
 

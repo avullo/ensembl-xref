@@ -203,4 +203,52 @@ ok( defined $xref_sources, 'There are sources in the db');
 
 # get_xref - Already tested for other loading functions
 
+
+# get_object_xref
+
+
+
+# add_xref
+# Test for xref that already exists
+my $new_xref_02 = {
+  acc => 'NM01235',
+  version => 1,
+  label => 'NM01235.1',
+  desc => 'Fake RefSeq transcript',
+  species_id => '9606',
+  source_id => $source->source_id,
+  info_type => 'DIRECT',
+  info_text => 'These are normally aligned',
+  update_label => 1,
+  update_desc => 1
+};
+my $xref_id_old = $xref_dba->add_xref($new_xref_02);
+ok( defined $xref_id_old, "NM01235 (xref_id: $xref_id_old) was loaded" );
+ok($xref_id_old == $xref_id, "NM01235 already existed in the db");
+
+# Test for a new xref
+my $new_xref_03 = {
+  acc => 'NM01236',
+  version => 1,
+  label => 'NM01236.1',
+  desc => 'Fake RefSeq transcript',
+  species_id => '9606',
+  source_id => $source->source_id,
+  info_type => 'DIRECT',
+  info_text => 'These are normally aligned',
+  update_label => 1,
+  update_desc => 1
+};
+my $xref_id_new = $xref_dba->add_xref($new_xref_03);
+ok( defined $xref_id_new, "NM01236 (xref_id: $xref_id_new) was loaded to the xref table" );
+
+
+# add_object_xref
+throws_ok { $xref_dba->add_object_xref() } qr/add_object_xref needs an xref_id/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_object_xref({xref_id => $xref_id}) } qr/add_object_xref needs an ensembl_id/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_object_xref({xref_id => $xref_id, ensembl_id => 1}) } qr/add_object_xref needs an object_type/, 'Throws with no arguments';
+
+my $object_xref_id = $xref_dba->add_object_xref({xref_id => $xref_id, ensembl_id => 1, object_type => 'Gene'});
+ok( defined $object_xref_id, "Object_xref entry inserted - $object_xref_id" );
+
 done_testing();
