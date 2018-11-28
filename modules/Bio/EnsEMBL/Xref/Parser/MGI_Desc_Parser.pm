@@ -80,7 +80,7 @@ sub run {
   my $mgi_io = $xref_dba->get_filehandle($file);
 
   if ( !defined $mgi_io ) {
-    croak "Could not open $file\n";
+    confess "Could not open $file\n";
   }
 
   my $xref_count = 0;
