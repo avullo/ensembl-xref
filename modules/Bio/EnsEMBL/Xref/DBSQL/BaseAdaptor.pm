@@ -1222,41 +1222,27 @@ sub add_multiple_direct_xrefs {
 sub add_dependent_xref {
   my ( $self, $arg_ref ) = @_;
 
-  my $master_xref = $arg_ref->{master_xref_id} || confess 'Need a master_xref_id on which this xref depends on';
-  my $acc         = $arg_ref->{acc} || confess 'Need an accession of this dependent xref';
-  my $source_id   = $arg_ref->{source_id} || confess 'Need a source_id for this dependent xref';
-  my $species_id  = $arg_ref->{species_id} || confess 'Need a species_id for this dependent xref';
-  my $version     = $arg_ref->{version} // 0;
-  my $label       = $arg_ref->{label}   // $acc;
-  my $description = $arg_ref->{desc};
+  my $master_xref = $arg_ref->{master_xref_id}  || confess('Need a master_xref_id on which this xref linked too');
+  my $acc         = $arg_ref->{acc}        || confess('Need an accession of this direct xref');
+  my $source_id   = $arg_ref->{source_id}  || confess('Need a source_id for this direct xref');
+  my $species_id  = $arg_ref->{species_id} || confess('Need a species_id for this direct xref');
+  my $version     = $arg_ref->{version}    // 0;
+  my $label       = $arg_ref->{label}      // $acc;
+  my $desc        = $arg_ref->{desc};
   my $linkage     = $arg_ref->{linkage};
-  my $info_text   = $arg_ref->{info_text} // q{};
+  my $info_text   = $arg_ref->{info_text}  // q{};
 
-  my $sql = (<<'IXR');
-INSERT INTO xref
-  (accession,version,label,description,source_id,species_id, info_type, info_text)
-  VALUES (?,?,?,?,?,?,?,?)
-IXR
-  my $add_xref_sth = $self->dbi->prepare_cached($sql);
 
-  # Does the xref already exist. If so get its xref_id
-  # else create it and get the new xref_id
-  my $dependent_id =
-    $self->get_xref( $acc, $source_id, $species_id );
-  if ( !( defined $dependent_id ) ) {
-    $add_xref_sth->execute( $acc,         $version,   $label,
-                            $description, $source_id, $species_id,
-                            'DEPENDENT',  $info_text ) or
-      confess(
-        $self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
-  }
-
-  # Confess if we have failed to create/get the xref
-  $dependent_id =
-    $self->get_xref( $acc, $source_id, $species_id );
-  if ( !( defined $dependent_id ) ) {
-    confess($self->dbi->errstr() . "\n$acc\t$label\t\t$source_id\t$species_id\n");
-  }
+  my $dependent_xref_id = $self->add_xref( {
+    acc => $acc,
+    source_id => $source_id,
+    species_id => $species_id,
+    label => $label,
+    desc => $desc,
+    version => $version,
+    info_type => 'DEPENDENT',
+    info_text => $info_text
+  } );
 
   # Now add the dependency mapping
   $self->add_dependent_xref_maponly( $dependent_id, $source_id,
