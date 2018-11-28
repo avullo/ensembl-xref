@@ -1112,14 +1112,14 @@ sub add_to_direct_xrefs {
 
 
   my $direct_xref_id = $self->add_xref( {
-    acc => $acc,
-    source_id => $source_id,
+    acc        => $acc,
+    source_id  => $source_id,
     species_id => $species_id,
-    label => $label,
-    desc => $desc,
-    version => $version,
-    info_type => 'DIRECT',
-    info_text => $info_text
+    label      => $label,
+    desc       => $desc,
+    version    => $version,
+    info_type  => 'DIRECT',
+    info_text  => $info_text
   } );
 
   # Now add the direct info
@@ -1234,21 +1234,21 @@ sub add_dependent_xref {
 
 
   my $dependent_xref_id = $self->add_xref( {
-    acc => $acc,
-    source_id => $source_id,
+    acc        => $acc,
+    source_id  => $source_id,
     species_id => $species_id,
-    label => $label,
-    desc => $desc,
-    version => $version,
-    info_type => 'DEPENDENT',
-    info_text => $info_text
+    label      => $label,
+    desc       => $desc,
+    version    => $version,
+    info_type  => 'DEPENDENT',
+    info_text  => $info_text
   } );
 
   # Now add the dependency mapping
-  $self->add_dependent_xref_maponly( $dependent_id, $source_id,
+  $self->add_dependent_xref_maponly( $dependent_xref_id, $source_id,
                                      $master_xref, $linkage );
 
-  return $dependent_id;
+  return $dependent_xref_id;
 } ## end sub add_dependent_xref
 
 

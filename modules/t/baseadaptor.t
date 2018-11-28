@@ -305,4 +305,9 @@ throws_ok { $xref_dba->add_to_direct_xrefs(
 
 ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ) );
 
+
+# add_direct_xref
+# Entry has already been added, so this test should be just for failing out
+ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ) );
+
 done_testing();
