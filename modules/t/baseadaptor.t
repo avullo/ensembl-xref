@@ -222,7 +222,7 @@ my $new_xref_02 = {
   update_label => 1,
   update_desc => 1
 };
-my $xref_id_old = $xref_dba->add_xref($new_xref_02);
+my $xref_id_old = $xref_dba->add_xref( $new_xref_02 );
 ok( defined $xref_id_old, "NM01235 (xref_id: $xref_id_old) was loaded" );
 ok($xref_id_old == $xref_id, "NM01235 already existed in the db");
 
@@ -239,16 +239,34 @@ my $new_xref_03 = {
   update_label => 1,
   update_desc => 1
 };
-my $xref_id_new = $xref_dba->add_xref($new_xref_03);
+my $xref_id_new = $xref_dba->add_xref( $new_xref_03 );
 ok( defined $xref_id_new, "NM01236 (xref_id: $xref_id_new) was loaded to the xref table" );
 
 
 # add_object_xref
 throws_ok { $xref_dba->add_object_xref() } qr/add_object_xref needs an xref_id/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_object_xref({xref_id => $xref_id}) } qr/add_object_xref needs an ensembl_id/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_object_xref({xref_id => $xref_id, ensembl_id => 1}) } qr/add_object_xref needs an object_type/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_object_xref( { xref_id => $xref_id } ) } qr/add_object_xref needs an ensembl_id/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_object_xref( { xref_id => $xref_id, ensembl_id => 1 } ) } qr/add_object_xref needs an object_type/, 'Throws with no arguments';
 
-my $object_xref_id = $xref_dba->add_object_xref({xref_id => $xref_id, ensembl_id => 1, object_type => 'Gene'});
+my $object_xref_id = $xref_dba->add_object_xref( { xref_id => $xref_id, ensembl_id => 1, object_type => 'Gene' } );
 ok( defined $object_xref_id, "Object_xref entry inserted - $object_xref_id" );
+
+
+# add_identity_xref
+throws_ok { $xref_dba->add_identity_xref() } qr/add_identity_xref needs an object_xref_id/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_identity_xref(
+   { object_xref_id => $object_xref_id }
+) } qr/add_identity_xref needs a score/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_identity_xref(
+   { object_xref_id => $object_xref_id, score => 1 }
+) } qr/add_identity_xref needs a target_identity/, 'Throws with no arguments';
+throws_ok { $xref_dba->add_identity_xref(
+   { object_xref_id => $object_xref_id, score => 1, target_identity => 1 }
+) } qr/add_identity_xref needs a query_identity/, 'Throws with no arguments';
+
+ok(
+   !defined $xref_dba->add_identity_xref(
+      { object_xref_id => $object_xref_id, score => 1, target_identity => 1, query_identity => 1 } ),
+   "Identity xref row added" );
 
 done_testing();

@@ -1071,7 +1071,7 @@ sub add_identity_xref {
     confess 'add_identity_xref needs a query_identity';
 
   my $add_identity_xref_sth =
-    $self->dbi->prepare_( 'INSERT INTO identity_xref ' .
+    $self->dbi->prepare_cached( 'INSERT INTO identity_xref ' .
            '(object_xref_id, score, query_identity, target_identity) ' .
            'VALUES(?,?,?,?)' );
 
