@@ -549,17 +549,17 @@ sub upload_xref_object_graphs {
 
     # Create entry in xref table and note ID
     my $xref_id = $self->add_xref( {
-      "acc"        => $xref->{ACCESSION},
-      "version"    => $xref->{VERSION} // 0,
-      "label"      => $xref->{LABEL}   // $xref->{ACCESSION},
-      "desc"       => $xref->{DESCRIPTION},
-      "source_id"  => $xref->{SOURCE_ID},
-      "species_id" => $xref->{SPECIES_ID},
-      "info_type"  => $xref->{INFO_TYPE},
+      "acc"          => $xref->{ACCESSION},
+      "version"      => $xref->{VERSION} // 0,
+      "label"        => $xref->{LABEL}   // $xref->{ACCESSION},
+      "desc"         => $xref->{DESCRIPTION},
+      "source_id"    => $xref->{SOURCE_ID},
+      "species_id"   => $xref->{SPECIES_ID},
+      "info_type"    => $xref->{INFO_TYPE},
       "update_label" => 1, "update_desc" => 1 } );
 
     # If there are any direct_xrefs, add these to the relevant tables
-    $self->add_multiple_direct_xrefs( $xref );
+    $self->add_multiple_direct_xrefs( @{ $xref->{DIRECT_XREFS} } );
 
     # create entry in primary_xref table with sequence; if this is a "cumulative"
     # entry it may already exist, and require an UPDATE rather than an INSERT

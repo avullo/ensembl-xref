@@ -177,8 +177,7 @@ my $xref_id = $xref_dba->get_xref('NM01235', $source->source_id, 9606);
 ok( defined $xref_id, "NM01235 (xref_id: $xref_id) was added to the xref table" );
 
 
-# # upload_direct_xrefs
-# throws_ok { $xref_dba->upload_direct_xrefs( \@xref_array_02 ) } qr/Problem Could not find accession/, 'Throws with bad accession';
+# upload_direct_xrefs - Testing later with the other direct_xref functions
 
 
 # add_meta_pair
@@ -317,6 +316,11 @@ ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ) );
 # get_valid_xrefs_for_direct_xrefs
 my %valid_direct_xrefs = %{ $xref_dba->get_valid_xrefs_for_direct_xrefs( 'RefSeq', ',' ) };
 is( $valid_direct_xrefs{ 'NM01236' }, '3,NM01236,Gene,', 'get_valid_xrefs_for_direct_xrefs' );
+
+
+
+# upload_direct_xrefs
+throws_ok { $xref_dba->upload_direct_xrefs( \@xref_array_02 ) } qr/Problem Could not find accession/, 'Throws with bad accession';
 
 
 # add_multiple_direct_xrefs
