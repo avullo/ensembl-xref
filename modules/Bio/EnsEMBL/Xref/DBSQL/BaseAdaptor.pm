@@ -390,7 +390,7 @@ TDS
            'TYPE',
            d.linkage_xref,
            x1.accession
-    FROM Translation_direct_xref d, xref x1
+    FROM translation_direct_xref d, xref x1
     WHERE x1.xref_id = d.general_xref_id AND
           x1.source_id=?
 PDS
