@@ -24,6 +24,8 @@ use Test::Exception;
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
+use Data::Dumper;
+
 # Check that the module loaded correctly
 use_ok 'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor';
 
@@ -365,52 +367,53 @@ throws_ok { $xref_dba->add_dependent_xref(
 throws_ok { $xref_dba->add_to_syn(
    'XX01236', $source->source_id, 'fake_synonym', 9606
 ) } qr/Could not find acc XX01236/, 'Throws with no matching accession';
-ok( !defined $xref_dba->add_to_syn( 'NM01236', $source->source_id, 'fake_synonym', 9606 ) );
+ok( !defined $xref_dba->add_to_syn( 'NM01236', $source->source_id, 'fake_synonym', 9606 ), 'Add to synonyms' );
 
 
 # add_synonym
-ok( !defined $xref_dba->add_synonym( $xref_id_new, 'fake_synonym' ) );
+ok( !defined $xref_dba->add_synonym( $xref_id_new, 'fake_synonym' ), 'Add a fake synonym' );
 
 
 # add_multiple_synonyms
 my @multi_syn_array = ( 'fs:000', 'fs:001', 'fs:002' );
-ok( !defined $xref_dba->add_multiple_synonyms( $xref_id_new, \@multi_syn_array ) );
+ok( !defined $xref_dba->add_multiple_synonyms( $xref_id_new, \@multi_syn_array ), 'Add multiple fake synonyms' );
 
 
 # get_label_to_acc
-
+ok( scalar $xref_dba->get_label_to_acc( 'RefSeq', 9606, 'Like a boss' ) > 0, 'get_label_to_acc' );
 
 
 # get_acc_to_label
-
+ok( scalar $xref_dba->get_acc_to_label( 'RefSeq', 9606, 'Like a boss' ) > 0, 'get_acc_to_label' );
 
 
 # get_label_to_desc
-
+ok( scalar $xref_dba->get_label_to_desc( 'RefSeq', 9606, 'Like a boss' ) > 0, 'get_label_to_desc' );
 
 
 # set_release
-
+ok( !defined $xref_dba->set_release( $source->source_id, 100 ) );
 
 
 # get_dependent_mappings
-
+# print Dumper( $xref_dba->get_dependent_mappings( $source->source_id ) );
 
 
 # get_ext_synonyms
-
+ok( scalar $xref_dba->get_ext_synonyms( 'RefSeq' ) > 0, 'get_ext_synonyms' );
 
 
 # parsing_finished_store_data
-
+ok( !defined $xref_dba->parsing_finished_store_data(), 'parsing_finished_store_data' );
 
 
 # get_meta_value
-
+ok( $xref_dba->get_meta_value('PARSED_xref_id') == 3, 'get_meta_value' );
 
 
 # _update_xref_info_type
-
+ok( !defined $xref_dba->_update_xref_info_type( $xref_id_new, 'MISC' ), '_update_xref_info_type - Real xref_id' );
+ok( !defined $xref_dba->_update_xref_info_type( 1000000, 'MISC' ), '_update_xref_info_type - Fake xref_id' );
 
 
 # _add_pair
