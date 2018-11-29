@@ -32,6 +32,8 @@ use_ok 'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor';
 my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my %config = %{ $db->config };
 
+my %search_conditions;
+
 my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   host   => $config{host},
   dbname => $config{db},
@@ -412,20 +414,34 @@ ok( $xref_dba->get_meta_value('PARSED_xref_id') == 3, 'get_meta_value' );
 
 
 # _update_xref_info_type
-ok( !defined $xref_dba->_update_xref_info_type( $xref_id_new, 'MISC' ), '_update_xref_info_type - Real xref_id' );
-ok( !defined $xref_dba->_update_xref_info_type( 1000000, 'MISC' ), '_update_xref_info_type - Fake xref_id' );
+ok( !defined $xref_dba->_update_xref_info_type( $xref_id_new, 'PROBE' ), '_update_xref_info_type - Real xref_id' );
+
+%search_conditions = ( xref_id => $xref_id_new );
+is( _check_db( $db, 'Xref', \%search_conditions )->info_type, 'PROBE', 'info_type updated' );
+
+ok( !defined $xref_dba->_update_xref_info_type( 1000000, 'PROBE' ), '_update_xref_info_type - Fake xref_id' );
 
 
 # _add_pair
+ok( !defined $xref_dba->_add_pair( $source->source_id, 'NM01236', 'NT01236' ), '_add_pair' );
 
-
+%search_conditions = ( source_id => $source->source_id );
+ok( defined _check_db( $db, 'Pair', \%search_conditions ), 'Data loaded' );
 
 # _add_primary_xref
+ok( defined $xref_dba->_add_primary_xref( $xref_id_new, 'GATACCA', 'dna', 'experimental' ), '_add_primary_xref');
 
+%search_conditions = ( status => 'experimental' );
+ok( defined _check_db( $db, 'PrimaryXref', \%search_conditions ), 'Data loaded' );
 
+%search_conditions = ( xref_id => $xref_id_new );
+is( _check_db( $db, 'PrimaryXref', \%search_conditions )->sequence, 'GATACCA', 'Sequence loaded' );
 
 # _update_primary_xref_sequence
+ok( !defined $xref_dba->_update_primary_xref_sequence( $xref_id_new, 'CTATGGT' ), '_update_primary_xref_sequence');
 
+%search_conditions = ( xref_id => $xref_id_new );
+is( _check_db( $db, 'PrimaryXref', \%search_conditions )->sequence, 'CTATGGT', 'Sequence updated' );
 
 
 # _update_xref_label - This should have already been coered by previous tests
@@ -433,3 +449,13 @@ ok( !defined $xref_dba->_update_xref_info_type( 1000000, 'MISC' ), '_update_xref
 # _update_xref_description - This should have already been coered by previous tests
 
 done_testing();
+
+
+sub _check_db {
+   my ($db, $table, $search_conditions) = @_;
+
+   my $rs = $db->schema->resultset( $table )->search( $search_conditions );
+   return $rs->next;
+}
+
+

@@ -1821,7 +1821,8 @@ sub _update_xref_info_type {
 sub _add_pair {
   my ( $self, $source_id, $accession, $pair ) = @_;
 
-  my $pair_sth = $self->dbi->prepare_cached('INSERT INTO pairs VALUES(?,?,?)');
+  my $pair_sth = $self->dbi->prepare_cached(
+    'INSERT INTO pairs (source_id, accession1, accession2) VALUES(?,?,?)');
 
   # Add the pair and confess if it fails
   $pair_sth->execute( $source_id, $accession, $pair ) or
@@ -1847,11 +1848,11 @@ sub _add_primary_xref {
   my ( $self, $xref_id, $sequence, $sequence_type, $status ) = @_;
 
   my $add_primary_xref_sth =
-    $self->dbi->prepare_cached( 'INSERT INTO primary_xref VALUES(?,?,?,?)' );
+    $self->dbi->prepare_cached( 'INSERT INTO primary_xref VALUES (?,?,?,?)' );
 
   # Add the xref and confess if it fails
   $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
-    confess $self->dbi->errstr() . "\n $xref_id\t$\t$sequence_type\t$status\n";
+    confess $self->dbi->errstr() . "\n $xref_id\t$sequence_type\t$status\n";
 
   return $add_primary_xref_sth->{'mysql_insertid'};
 } ## end sub _add_primary_xref
