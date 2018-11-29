@@ -362,7 +362,7 @@ sub get_valid_xrefs_for_direct_xrefs {
     push @direct_sources, $row[0];
   }
 
-  my $gene_sql = (<<"GDS");
+  my $gene_sql = <<"GDS";
     SELECT d.general_xref_id,
            d.ensembl_stable_id,
            'Gene',
@@ -373,7 +373,7 @@ sub get_valid_xrefs_for_direct_xrefs {
           x1.source_id=?
 GDS
 
-  my $transcript_sql = (<<"TDS");
+  my $transcript_sql = <<"TDS";
     SELECT d.general_xref_id,
            d.ensembl_stable_id,
            'Transcript',
@@ -384,7 +384,7 @@ GDS
           x1.source_id=?
 TDS
 
-  my $translation_sql = (<<"PDS");
+  my $translation_sql = <<"PDS";
     SELECT d.general_xref_id,
            d.ensembl_stable_id,
            'TYPE',
@@ -395,11 +395,11 @@ TDS
           x1.source_id=?
 PDS
 
-  my %sql_hash = {
+  my %sql_hash = (
     "Gene" => $gene_sql,
     "Transcript" => $transcript_sql,
     "Translation" => $translation_sql
-  };
+  );
 
   my @sth;
   my $i = 0;
