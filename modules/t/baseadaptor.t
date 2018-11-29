@@ -315,7 +315,8 @@ ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ) );
 
 
 # get_valid_xrefs_for_direct_xrefs
-print Dumper( $xref_dba->get_valid_xrefs_for_direct_xrefs( 'RefSeq', ',' ) );
+my %valid_direct_xrefs = %{ $xref_dba->get_valid_xrefs_for_direct_xrefs( 'RefSeq', ',' ) };
+is( $valid_direct_xrefs{ 'NM01236' }, '3,NM01236,Gene,', 'get_valid_xrefs_for_direct_xrefs' );
 
 
 # add_multiple_direct_xrefs

@@ -396,9 +396,9 @@ TDS
 PDS
 
   my %sql_hash = (
-    "Gene" => $gene_sql,
-    "Transcript" => $transcript_sql,
-    "Translation" => $translation_sql
+    Gene => $gene_sql,
+    Transcript => $transcript_sql,
+    Translation => $translation_sql
   );
 
   my @sth;
@@ -413,6 +413,9 @@ PDS
       while ( my ( $gen_xref_id, $stable_id, $type, $link, $acc ) =
               $sth[$ii]->fetchrow_array() )
       {
+        if ( !defined $link ) {
+          $link = '';
+        }
         $direct_2_xref{$acc} =
           $gen_xref_id . $separator .
           $stable_id . $separator . $type . $separator . $link;
