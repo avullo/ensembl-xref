@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -38,7 +39,6 @@ use warnings;
 # returns a list of successfully downloaded local files or an empty list
 # if there was an error.
 
-
 use Carp;
 use DBI;
 use Digest::MD5 qw(md5_hex);
@@ -55,25 +55,23 @@ use URI::file;
 use Text::Glob qw( match_glob );
 use LWP::UserAgent;
 
-
 my $base_dir = File::Spec->curdir();
 
 sub new {
-    my ($proto) = @_;
+  my ($proto) = @_;
 
-    my $class = ref $proto || $proto;
-    return bless {}, $class;
+  my $class = ref $proto || $proto;
+  return bless {}, $class;
 }
 
 sub fetch_files {
-  my ($self, $arg_ref) = @_;
-
+  my ( $self, $arg_ref ) = @_;
 
   my $dest_dir         = $arg_ref->{dest_dir};
   my $user_uris        = $arg_ref->{user_uris};
   my $deletedownloaded = $arg_ref->{del_down};
   my $checkdownload    = $arg_ref->{chk_down};
-  my $verbose          = $arg_ref->{verbose} ;
+  my $verbose          = $arg_ref->{verbose};
 
   my @processed_files;
 
@@ -84,19 +82,22 @@ sub fetch_files {
 
     if ( $uri->scheme() eq 'script' ) {
       push( @processed_files, $user_uri );
-    } elsif ( $uri->scheme() eq 'file' ) {
+    }
+    elsif ( $uri->scheme() eq 'file' ) {
 
       # Deal with local files.
 
       $user_uri =~ s/file://x;
       if ( -s $user_uri ) {
         push( @processed_files, $user_uri );
-      } else {
+      }
+      else {
         printf( "==> Can not find file '%s' (or it is empty)\n",
                 $user_uri );
         return ();
       }
-    } elsif ( $uri->scheme() eq 'ftp' ) {
+    }
+    elsif ( $uri->scheme() eq 'ftp' ) {
       # Deal with FTP files.
 
       my $file_path = catfile( $dest_dir, basename( $uri->path() ) );
@@ -128,93 +129,97 @@ sub fetch_files {
                 $uri->host(), $file_path );
       }
 
-      my $ftp = $self->get_ftp($uri, 0);
-      if(!defined($ftp) or ! $ftp->can('ls') or !$ftp->ls()){
-	$ftp =  $self->get_ftp($uri, 1);
+      my $ftp = $self->get_ftp( $uri, 0 );
+      if ( !defined($ftp) || !$ftp->can('ls') || !$ftp->ls() ) {
+        $ftp = $self->get_ftp( $uri, 1 );
       }
       foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
-	      if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
-		  next;
-	      }
+        if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
+          next;
+        }
 
-	      $file_path = catfile( $dest_dir, basename($remote_file) );
+        $file_path = catfile( $dest_dir, basename($remote_file) );
 
-	      if ( $deletedownloaded && -e $file_path ) {
-		  if ($verbose) {
-		      printf( "Deleting '%s'\n", $file_path );
-		  }
-		  unlink($file_path);
-	      }
+        if ( $deletedownloaded && -e $file_path ) {
+          if ($verbose) {
+            printf( "Deleting '%s'\n", $file_path );
+          }
+          unlink($file_path);
+        }
 
-	      if ( $checkdownload && -s $file_path ) {
-		  if ($verbose) {
-		      printf( "File '%s' already exists\n", $file_path );
-		  }
-	      } else {
+        if ( $checkdownload && -s $file_path ) {
+          if ($verbose) {
+            printf( "File '%s' already exists\n", $file_path );
+          }
+        }
+        else {
 
-		  if ( -e $file_path ) { unlink($file_path) }
+          if ( -e $file_path ) { unlink($file_path) }
 
-		  if ( !-d dirname($file_path) ) {
-		      if ($verbose) {
-			  printf( "Creating directory '%s'\n",
-				  dirname($file_path) );
-		      }
-		      if ( !mkdir( dirname($file_path) ) ) {
-			  printf( "==> Can not create directory '%s': %s",
-				  dirname($file_path), $! );
-			  return ();
-		      }
-		  }
+          if ( !-d dirname($file_path) ) {
+            if ($verbose) {
+              printf( "Creating directory '%s'\n",
+                      dirname($file_path) );
+            }
+            if ( !mkdir( dirname($file_path) ) ) {
+              printf( "==> Can not create directory '%s': %s",
+                      dirname($file_path), $! );
+              return ();
+            }
+          }
 
-		  if ($verbose) {
-		      printf( "Fetching '%s' (size = %s)\n",
-			      $remote_file,
-			      $ftp->size($remote_file) || '(unknown)' );
-		      printf( "Local file is '%s'\n", $file_path );
-		  }
+          if ($verbose) {
+            printf( "Fetching '%s' (size = %s)\n",
+                    $remote_file,
+                    $ftp->size($remote_file) || '(unknown)' );
+            printf( "Local file is '%s'\n", $file_path );
+          }
 
-		  if ( !$ftp->get( $remote_file, $file_path ) ) {
-		      printf( "==> Could not get '%s': %s\n",
-			      basename( $uri->path() ), $ftp->message() );
-		      return ();
-		  }
-	      } ## end else [ if ( $checkdownload &&...)]
+          if ( !$ftp->get( $remote_file, $file_path ) ) {
+            printf( "==> Could not get '%s': %s\n",
+                    basename( $uri->path() ), $ftp->message() );
+            return ();
+          }
+        } ## end else [ if ( $checkdownload &&...)]
 
-	      if ( $file_path =~ /\.(gz|Z)$/x ) {
-		  # Read from zcat pipe
-		  #
-		  my $cmd = "gzip -t $file_path";
-		  if ( system($cmd) != 0 ) {
-		      printf( "system command '%s' failed: %s - "
-			      . "Checking of gzip file failed - "
-			      . "FILE CORRUPTED ?\n\n",
-			      $cmd, $? );
+        if ( $file_path =~ /\.(gz|Z)$/x ) {
+          # Read from zcat pipe
+          #
+          my $cmd = "gzip -t $file_path";
+          if ( system($cmd) != 0 ) {
+            printf( "system command '%s' failed: %s - " .
+                      "Checking of gzip file failed - " .
+                      "FILE CORRUPTED ?\n\n",
+                    $cmd, $? );
 
-		      if ( -e $file_path ) {
-			  if ($verbose) {
-			      printf( "Deleting '%s'\n", $file_path );
-			  }
-			  unlink($file_path);
-		      }
-		      return ();
-		  } else {
-		      if ($verbose) {
-			  printf( "'%s' passed (gzip -t) corruption test.\n",
-				  $file_path );
-		      }
-		  }
-	      }
-	      push( @processed_files, $file_path );
+            if ( -e $file_path ) {
+              if ($verbose) {
+                printf( "Deleting '%s'\n", $file_path );
+              }
+              unlink($file_path);
+            }
+            return ();
+          }
+          else {
+            if ($verbose) {
+              printf( "'%s' passed (gzip -t) corruption test.\n",
+                      $file_path );
+            }
+          }
+        } ## end if ( $file_path =~ /\.(gz|Z)$/x)
+        push( @processed_files, $file_path );
 
       } ## end foreach my $remote_file ( (...))
-    if (!@processed_files) { printf ("No files found matching $uri") ; }
+      if ( !@processed_files ) {
+        printf("No files found matching $uri");
+      }
 
-
-    } elsif ( $uri->scheme() eq 'http' || $uri->scheme eq 'https') {
+    } ## end elsif ( $uri->scheme() eq... [ if ( $uri->scheme() eq...)])
+    elsif ( $uri->scheme() eq 'http' || $uri->scheme eq 'https' ) {
       # Deal with HTTP files.
 
-      my $filename = basename ($uri->path() );
-      if ($uri->path eq '') { $filename = "index.html"; }
+      my $filename = basename( $uri->path() );
+      if ( $uri->path eq '' ) { $filename = "index.html"; }
 
       my $file_path = catfile( $dest_dir, $filename );
 
@@ -258,7 +263,8 @@ sub fetch_files {
         if ($verbose) {
           printf( "File '%s' already exists\n", $file_path );
         }
-      } else {
+      }
+      else {
 
         if ($verbose) {
           printf( "Local file is '%s'\n", $file_path );
@@ -266,45 +272,47 @@ sub fetch_files {
 
         if ( -e $file_path ) { unlink($file_path) }
 
-        open OUT, ">$file_path" or die "Couldn't open file $file_path $!";
         my $http = HTTP::Tiny->new();
 
-        my $response = $http->get($uri->as_string());
+        my $response = $http->get( $uri->as_string() );
 
         if ( !$response->{success} ) {
           printf( "==> Could not get '%s': %s\n",
                   basename( $uri->path() ), $response->{content} );
           return ();
         }
-        print OUT $response->{content};
-        close OUT;
+        open my $file_handle, '>', $file_path or
+          confess "Couldn't open file $file_path $!";
+        print { $file_handle } $response->{content};
+        close $file_handle;
       }
 
       push( @processed_files, $file_path );
 
-    } elsif ( $uri->scheme() eq 'mysql' ) {
+    } ## end elsif ( $uri->scheme() eq... [ if ( $uri->scheme() eq...)])
+    elsif ( $uri->scheme() eq 'mysql' ) {
       # Just leave MySQL data untouched for now.
       push( @processed_files, $user_uri );
-    } else {
+    }
+    else {
       printf( "==> Unknown URI scheme '%s' in URI '%s'\n",
               $uri->scheme(), $uri->as_string() );
       return ();
     }
-  } ## end foreach my $user_uri (@user_uris)
+  } ## end foreach my $user_uri (@$user_uris)
 
   return @processed_files;
 } ## end sub fetch_files
 
-
-sub get_ftp{
-  my ($self, $uri, $passive) = @_;
+sub get_ftp {
+  my ( $self, $uri, $passive ) = @_;
   my $ftp;
 
-  if($passive){
-    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1);
+  if ($passive) {
+    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1 );
   }
-  else{
-    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0);
+  else {
+    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
   }
 
   if ( !defined($ftp) ) {
@@ -313,19 +321,18 @@ sub get_ftp{
   }
 
   if ( !$ftp->login( 'anonymous', '-anonymous@' ) ) {
-    printf( "==> Can not log in on FTP host: %s\n",
-	    $ftp->message() );
+    printf( "==> Can not log in on FTP host: %s\n", $ftp->message() );
     return ();
-	}
+  }
 
   if ( !$ftp->cwd( dirname( $uri->path() ) ) ) {
     printf( "== Can not change directory to '%s': %s\n",
-		  dirname( $uri->path() ), $ftp->message() );
+            dirname( $uri->path() ), $ftp->message() );
     return ();
   }
 
   $ftp->binary();
   return $ftp;
-}
+} ## end sub get_ftp
 
 1;

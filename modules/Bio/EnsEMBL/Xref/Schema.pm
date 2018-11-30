@@ -21,11 +21,11 @@ A DBIC schema base class used by Bio::EnsEMBL::Xref::DB
 
 =cut
 
-use utf8;
 package Bio::EnsEMBL::Xref::Schema;
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Schema';
 

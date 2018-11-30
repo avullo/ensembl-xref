@@ -26,7 +26,7 @@ Convenience methods prevent having to delve into DBIC guts for common activities
 =head1 SYNOPSIS
 
 my $testdb = Bio::EnsEMBL::Xref::Test::TestDB->new(
-  config_file => 'filename_if_not_default.conf', 
+  config_file => 'filename_if_not_default.conf',
   reuse => 1 # This prevents the test DB cleanup, so you can debug database content
 );
 
@@ -37,6 +37,7 @@ package Bio::EnsEMBL::Xref::Test::TestDB;
 use strict;
 use warnings;
 use Moose;
+use namespace::autoclean;
 
 extends 'Bio::EnsEMBL::Xref::DB';
 
@@ -62,6 +63,7 @@ around '_init_config' => sub {
   }
   # return $proto_config;
   $self->config($proto_config);
+  return;
 };
 
 
@@ -74,6 +76,7 @@ sub DEMOLISH {
       $self->schema->storage->dbh->do('drop database '.$self->config->{db});
     }
   }
+  return;
 }
 
 __PACKAGE__->meta->make_immutable;
