@@ -35,6 +35,52 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
 
 
+
+
+=head2 run
+
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $m2g_parser->run({ ... });
+  Description: Extract mappings between OMIM genes and other gene
+               identifiers from a tab-delimited file downloaded from
+               the DBASS Web site, then insert corresponding links
+               into the xref database:
+                - for entries mapped to Ensembl genes, we create
+                  gene_direct_xref links;
+                - otherwise, if an entry is mapped to an EntrezGene ID
+                  that exists in the xref database we creare a
+                  dependent_xref link.
+               In either case we update info_type of OMIM xrefs
+               accordingly.
+
+               DEPENDENCIES: This parser must be run after:
+                - MIMParser - without existing OMIM entries this
+                  parser does nothing;
+                - EntrezGeneParser - otherwise there will be no
+                  dependent-xref links.
+
+               mim2gene.txt begins with several lines of comments
+               which start with a hash; the last of these comment
+               lines contains a tab-separated list of column names.
+
+               The rest of the file are the following columns:
+                1) OMIM number
+                2) OMIM entry type
+                3) EntrezGene ID
+                4) HGNC gene symbol
+                5) Ensembl gene ID
+               The former two are mandatory, the latter can be empty
+               strings.
+
+  Return type: boolean. Note that it should only ever return 0,
+               indicating success; all errors should produce an
+               exception instead.
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
+
 sub run {
   my ( $self ) = @_;
   my $general_source_id = $self->{source_id};
