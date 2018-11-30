@@ -846,8 +846,8 @@ sub get_direct_xref {
       "SELECT general_xref_id FROM translation_direct_xref d WHERE ensembl_stable_id = ? AND linkage_xref "
   );
 
-  my $sql = $sql_hash{$type};
-  my @sql_params = ($stable_id);
+  my $sql = $sql_hash{ $type };
+  my @sql_params = ( $stable_id );
   if ( defined $link ) {
     $sql .= '= ?';
     push @sql_params, $link;
@@ -1170,7 +1170,7 @@ sub add_direct_xref {
     translation => 'INSERT INTO translation_direct_xref VALUES (?,?,?)'
   );
 
-  my $add_direct_xref_sth = $self->dbi->prepare_cached( $sql_hash{ $ensembl_type } );
+  my $add_direct_xref_sth = $self->dbi->prepare_cached( $sql_hash{ lc $ensembl_type } );
 
   $add_direct_xref_sth->execute( $general_xref_id, $ensembl_stable_id,
                                  $linkage_type );

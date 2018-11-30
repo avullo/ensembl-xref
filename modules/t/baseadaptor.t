@@ -317,7 +317,7 @@ ok(
 # add_to_direct_xrefs
 my $new_xref_04 = {
   stable_id    => 'NM01236',
-  type         => 'Gene',
+  type         => 'gene',
   acc          => 'NM01236',
   version      => 1,
   label        => 'NM01236.1',
@@ -367,7 +367,7 @@ my $new_xref_05 = {
   SPECIES_ID  => '9606',
   SOURCE_ID   => $source->source_id,
   STABLE_ID => 'NM01235',
-  ENSEMBL_TYPE => 'Transcript',
+  ENSEMBL_TYPE => 'transcript',
   LINKAGE_XREF => 'PROBE',
   SOURCE => 'RefSeq'
 };
