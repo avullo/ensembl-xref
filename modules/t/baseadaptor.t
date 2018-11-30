@@ -320,7 +320,18 @@ is( $valid_direct_xrefs{ 'NM01236' }, '3,NM01236,Gene,', 'get_valid_xrefs_for_di
 
 
 # upload_direct_xrefs
-throws_ok { $xref_dba->upload_direct_xrefs( \@xref_array_02 ) } qr/Problem Could not find accession/, 'Throws with bad accession';
+my $new_xref_05 = {
+  ACCESSION   => 'NM01235',
+  SPECIES_ID  => '9606',
+  SOURCE_ID   => $source->source_id,
+  ENSEMBL_STABLE_ID => 'NM01235',
+  ENSEMBL_TYPE => 'Transcript',
+  LINKAGE_XREF => 'PROBE',
+  SOURCE => 'RefSeq'
+};
+
+my @xref_array_03 = ( $new_xref_05 );
+ok( !defined $xref_dba->upload_direct_xrefs( \@xref_array_03 ), 'upload_direct_xrefs' );
 
 
 # add_multiple_direct_xrefs
@@ -328,7 +339,7 @@ throws_ok { $xref_dba->upload_direct_xrefs( \@xref_array_02 ) } qr/Problem Could
 
 
 # add_dependent_xref
-my $new_xref_05 = {
+my $new_xref_06 = {
   master_xref_id => $xref_id_new,
   type => 'Gene',
   acc => 'XX123456',
@@ -358,7 +369,7 @@ throws_ok { $xref_dba->add_dependent_xref(
    { master_xref_id => $xref_id_new, acc => 'XX123456', source_id => $source->source_id }
 ) } qr/Need a species_id for this dependent xref/, 'Throws with no arguments';
 
-my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_05 );
+my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_06 );
 ok( defined $dependent_xref_id, "Dependent xref entry inserted - $dependent_xref_id" );
 
 
