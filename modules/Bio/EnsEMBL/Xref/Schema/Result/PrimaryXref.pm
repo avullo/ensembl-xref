@@ -68,7 +68,7 @@ __PACKAGE__->add_columns(
   "xref_id",
   { data_type => "integer", extra => { unsigned => 1 }, is_nullable => 0 },
   "sequence",
-  { accessor => undef, data_type => "mediumtext", is_nullable => 1 },
+  { data_type => "mediumtext", is_nullable => 1 },
   "sequence_type",
   {
     data_type => "enum",
