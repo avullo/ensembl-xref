@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -14,21 +15,29 @@ See the NOTICE file distributed with this work for additional information
    See the License for the specific language governing permissions and
    limitations under the License.
 
-
-=head1 DESCRIPTION
-
-A DBIC schema base class used by Bio::EnsEMBL::Xref::DB
-
 =cut
 
-package Bio::EnsEMBL::Xref::Schema;
-
+package Bio::EnsEMBL::Xref::Schema::ResultSet::Synonym;
 use strict;
 use warnings;
-use utf8;
 
-use base 'DBIx::Class::Schema';
+use parent 'DBIx::Class::ResultSet';
 
-__PACKAGE__->load_namespaces;
+=head2
+Search for the given xref_id and synonym
+  {
+    xref_id => $params->{xref_id},
+    synonym => $params->{synonym},
+  }
+=cut
+
+sub check_synonym {
+  my ( $self, $params ) = @_;
+
+  my $hit = $self->find($params);
+
+  return 1 if defined $hit;
+  return;
+}
 
 1;

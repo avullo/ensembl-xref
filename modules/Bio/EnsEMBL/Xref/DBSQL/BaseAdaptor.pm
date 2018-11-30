@@ -62,12 +62,12 @@ sub new {
   my $self = bless {}, $class;
 
   $self->dbc( Bio::EnsEMBL::DBSQL::DBConnection->new(
-                                          -HOST   => $args{host},
-                                          -DBNAME => $args{dbname},
-                                          -USER   => $args{user},
-                                          -PASS   => $args{pass} || '',
-                                          -PORT => $args{port} || '3306'
-              ) );
+    -HOST   => $args{host},
+    -DBNAME => $args{dbname},
+    -USER   => $args{user},
+    -PASS   => $args{pass} || '',
+    -PORT => $args{port} || '3306'
+  ) );
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
@@ -101,7 +101,7 @@ sub get_filehandle {
 
   my $io = undef;
 
-  if ( !( defined $file_name ) or $file_name eq '' ) {
+  if ( !( defined $file_name ) || $file_name eq '' ) {
     confess "No file name";
   }
   my $alt_file_name = $file_name;
@@ -445,7 +445,7 @@ sub upload_xref_object_graphs {
     }
 
     #################################################################################
-# Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
+    # Start of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
     my $xref_sth = $self->dbi->prepare(
 'INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type) VALUES(?,?,?,?,?,?,?)'
@@ -476,7 +476,7 @@ sub upload_xref_object_graphs {
     $xref_sth->{PrintError} = 0;
 
     #################################################################################
-# End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
+    # End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
     #################################################################################
 
     foreach my $xref ( @{$rxrefs} ) {
@@ -556,8 +556,8 @@ sub upload_xref_object_graphs {
       }
 
       #############################################################################
-# create entry in primary_xref table with sequence; if this is a "cumulative"
-# entry it may already exist, and require an UPDATE rather than an INSERT
+      # create entry in primary_xref table with sequence; if this is a "cumulative"
+      # entry it may already exist, and require an UPDATE rather than an INSERT
       #############################################################################
       if ( defined $xref->{SEQUENCE} ) {
         $primary_xref_id_sth->execute($xref_id) or
@@ -586,7 +586,7 @@ sub upload_xref_object_graphs {
       }
 
       #######################################################################
-  # if there are dependent xrefs, add xrefs and dependent xrefs for them
+      # if there are dependent xrefs, add xrefs and dependent xrefs for them
       #######################################################################
       foreach my $depref ( @{ $xref->{DEPENDENT_XREFS} } ) {
         my %dep = %{$depref};
@@ -1246,7 +1246,7 @@ sub add_dependent_xref_maponly {
     = @_;
 
   my $sql = (<<'ADX');
-INSERT INTO dependent_xref 
+INSERT INTO dependent_xref
   (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
   VALUES (?,?,?,?)
 ADX
@@ -1361,8 +1361,8 @@ GLA
   ####################
 
   $sql = (<<"GLS");
-SELECT  xref.accession, synonym.synonym 
-  FROM xref, source, synonym 
+SELECT  xref.accession, synonym.synonym
+  FROM xref, source, synonym
     WHERE synonym.xref_id = xref.xref_id AND
           source.name like '$name%' AND
            xref.source_id = source.source_id
@@ -1426,9 +1426,9 @@ sub get_label_to_desc {
   my %hash1 = ();
 
   my $sql = (<<"GDH");
-  SELECT xref.description, xref.label 
-    FROM xref, source 
-      WHERE source.name LIKE '$name%' AND 
+  SELECT xref.description, xref.label
+    FROM xref, source
+      WHERE source.name LIKE '$name%' AND
             xref.source_id = source.source_id
 GDH
   if ( defined $prio_desc ) {
