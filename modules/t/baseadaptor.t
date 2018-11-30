@@ -130,13 +130,14 @@ is( $xref_dba->get_source_name_for_source_id($source->source_id), 'RefSeq', 'get
 # get_valid_xrefs_for_direct_xrefs - Tested later once direct xrefs are added
 
 
-
 # label_to_acc
-
+my %l2a_result = %{ $xref_dba->label_to_acc( 'RefSeq', 9606 ) };
+is( $l2a_result{ 'NM01234.1' }, 1, 'label_to_acc' );
 
 
 # get_valid_codes
-
+my %gvc_result = %{ $xref_dba->get_valid_codes( 'RefSeq', 9606 ) };
+is( $gvc_result{ 'NM01234' }[0], 1, 'get_valid_codes' );
 
 
 # Test to ensure that the code fails if there is no SOURCE_ID defined
@@ -181,7 +182,8 @@ ok( defined $xref_id, "NM01235 (xref_id: $xref_id) was added to the xref table" 
 
 
 # add_meta_pair
-
+ok( !defined $xref_dba->add_meta_pair( 'fake_key', 'fake_value' ), 'add_meta_pair' );
+is( _check_db( $db, 'Meta', { meta_key => 'fake_key' } )->meta_value, 'fake_value', 'Metadata pair added' );
 
 
 # get_xref_sources
@@ -189,23 +191,45 @@ my $xref_sources = $xref_dba->get_xref_sources();
 ok( defined $xref_sources, 'There are sources in the db');
 
 
-# species_id2taxonomy
+# species_id2taxonomy - There are tests ready for this in another branch
 
 
 
-# species_id2name
+# species_id2name - There are tests ready for this in another branch
 
 
 
 # get_xref_id
+throws_ok { $xref_dba->get_xref_id() } qr/Need an accession for get_xref_id/, 'get_xref_id - Throws with no arguments 1';
 
+throws_ok {
+   $xref_dba->get_xref_id( {
+      acc => 'NM01235'
+   } )
+} qr/Need a source_id for get_xref_id/, 'get_xref_id - Throws with no arguments 2';
+
+throws_ok {
+   $xref_dba->get_xref_id( {
+      acc       => 'NM01235',
+      source_id => $source->source_id
+   } )
+} qr/Need a species_id for get_xref_id/, 'get_xref_id - Throws with no arguments 3';
+
+is(
+   $xref_dba->get_xref_id( {
+      acc        => 'NM01235',
+      source_id  => $source->source_id,
+      species_id => 9606
+   } ),
+   2,
+   'get_xref_id'
+);
 
 
 # get_xref - Already tested for other loading functions
 
 
-# get_object_xref
-
+# get_object_xref - Testing later once values added
 
 
 # add_xref
@@ -245,30 +269,49 @@ is( _check_db( $db, 'Xref', { xref_id => $xref_id_new } )->accession, 'NM01236',
 
 
 # add_object_xref
-throws_ok { $xref_dba->add_object_xref() } qr/add_object_xref needs an xref_id/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_object_xref( { xref_id => $xref_id } ) } qr/add_object_xref needs an ensembl_id/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_object_xref( { xref_id => $xref_id, ensembl_id => 1 } ) } qr/add_object_xref needs an object_type/, 'Throws with no arguments';
+throws_ok {
+   $xref_dba->add_object_xref()
+} qr/add_object_xref needs an xref_id/, 'add_object_xref - Throws with no arguments 1';
+
+throws_ok {
+   $xref_dba->add_object_xref( { xref_id => $xref_id } )
+} qr/add_object_xref needs an ensembl_id/, 'add_object_xref - Throws with no arguments 2';
+
+throws_ok {
+   $xref_dba->add_object_xref( { xref_id => $xref_id, ensembl_id => 1 } )
+} qr/add_object_xref needs an object_type/, 'add_object_xref - Throws with no arguments 3';
 
 my $object_xref_id = $xref_dba->add_object_xref( { xref_id => $xref_id, ensembl_id => 1, object_type => 'Gene' } );
-ok( defined $object_xref_id, "Object_xref entry inserted - $object_xref_id" );
+ok( defined $object_xref_id, "add_object_xref - Object_xref entry inserted - $object_xref_id" );
+
+
+# get_object_xref
+ok( !defined $xref_dba->get_object_xref( 1000000, 'ENSFAKE000000000', 'Gene' ), 'get_object_xref - Fake' );
+is( $xref_dba->get_object_xref( $xref_id, 1, 'Gene' ), 1, 'get_object_xref - Real' );
 
 
 # add_identity_xref
-throws_ok { $xref_dba->add_identity_xref() } qr/add_identity_xref needs an object_xref_id/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_identity_xref(
-   { object_xref_id => $object_xref_id }
-) } qr/add_identity_xref needs a score/, 'Throws with no arguments';
-throws_ok { $xref_dba->add_identity_xref(
-   { object_xref_id => $object_xref_id, score => 1 }
-) } qr/add_identity_xref needs a target_identity/, 'Throws with no arguments';
+throws_ok {
+   $xref_dba->add_identity_xref()
+} qr/add_identity_xref needs an object_xref_id/, 'add_identity_xref - Throws with no arguments 1';
+
+throws_ok {
+   $xref_dba->add_identity_xref(
+      { object_xref_id => $object_xref_id } )
+} qr/add_identity_xref needs a score/, 'add_identity_xref - Throws with no arguments 2';
+
+throws_ok {
+   $xref_dba->add_identity_xref( { object_xref_id => $object_xref_id, score => 1 } )
+} qr/add_identity_xref needs a target_identity/, 'add_identity_xref - Throws with no arguments 3';
+
 throws_ok { $xref_dba->add_identity_xref(
    { object_xref_id => $object_xref_id, score => 1, target_identity => 1 }
-) } qr/add_identity_xref needs a query_identity/, 'Throws with no arguments';
+) } qr/add_identity_xref needs a query_identity/, 'add_identity_xref - Throws with no arguments 4';
 
 ok(
    !defined $xref_dba->add_identity_xref(
       { object_xref_id => $object_xref_id, score => 1, target_identity => 1, query_identity => 1 } ),
-   "Identity xref row added" );
+   "add_identity_xref - Identity xref row added" );
 
 
 # add_to_direct_xrefs
@@ -286,31 +329,31 @@ my $new_xref_04 = {
   update_desc  => 1
 };
 throws_ok { $xref_dba->add_to_direct_xrefs() }
-   qr/Need a direct_xref on which this xref linked too/, 'Throws with no arguments';
+   qr/Need a direct_xref on which this xref linked too/, 'add_to_direct_xrefs - Throws with no arguments 1';
 
 throws_ok { $xref_dba->add_to_direct_xrefs(
    { stable_id => 'NM01236' }
-) } qr/Need a table type on which to add/, 'Throws with no arguments';
+) } qr/Need a table type on which to add/, 'add_to_direct_xrefs - Throws with no arguments 2';
 
 throws_ok { $xref_dba->add_to_direct_xrefs(
    { stable_id => 'NM01236', type => 'Gene' }
-) } qr/Need an accession of this direct xref/, 'Throws with no arguments';
+) } qr/Need an accession of this direct xref/, 'add_to_direct_xrefs - Throws with no arguments 3';
 
 throws_ok { $xref_dba->add_to_direct_xrefs(
    { stable_id => 'NM01236', type => 'Gene', acc => 'NM01236' }
-) } qr/Need a source_id for this direct xref/, 'Throws with no arguments';
+) } qr/Need a source_id for this direct xref/, 'add_to_direct_xrefs - Throws with no arguments 4';
 
 throws_ok { $xref_dba->add_to_direct_xrefs(
    { stable_id => 'NM01236', type => 'Gene', acc => 'NM01236', source_id => $source->source_id }
-) } qr/Need a species_id for this direct xref/, 'Throws with no arguments';
+) } qr/Need a species_id for this direct xref/, 'add_to_direct_xrefs - Throws with no arguments 5';
 
-ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ) );
-is( _check_db( $db, 'Xref', { accession => 'NM01236' } )->accession, 'NM01236', 'Direct xref NM01236 has been loaded' );
+ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ), 'add_to_direct_xrefs' );
+is( _check_db( $db, 'Xref', { accession => 'NM01236' } )->accession, 'NM01236', 'add_to_direct_xrefs - Direct xref NM01236 has been loaded' );
 
 
 # add_direct_xref
 # Entry has already been added, so this test should be just for failing out
-ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ) );
+ok( !defined $xref_dba->add_direct_xref( $xref_id_new, 'NM01236', 'Gene' ), 'add_direct_xref' );
 
 
 # get_valid_xrefs_for_direct_xrefs
@@ -318,13 +361,12 @@ my %valid_direct_xrefs = %{ $xref_dba->get_valid_xrefs_for_direct_xrefs( 'RefSeq
 is( $valid_direct_xrefs{ 'NM01236' }, '3,NM01236,Gene,', 'get_valid_xrefs_for_direct_xrefs' );
 
 
-
 # upload_direct_xrefs
 my $new_xref_05 = {
   ACCESSION   => 'NM01235',
   SPECIES_ID  => '9606',
   SOURCE_ID   => $source->source_id,
-  ENSEMBL_STABLE_ID => 'NM01235',
+  STABLE_ID => 'NM01235',
   ENSEMBL_TYPE => 'Transcript',
   LINKAGE_XREF => 'PROBE',
   SOURCE => 'RefSeq'
@@ -335,7 +377,20 @@ ok( !defined $xref_dba->upload_direct_xrefs( \@xref_array_03 ), 'upload_direct_x
 
 
 # add_multiple_direct_xrefs
+my $new_direct_xref_00 = {
+  STABLE_ID    => 'NM01236',
+  ENSEMBL_TYPE => 'Gene',
+  ACCESSION    => 'DX01236',
+  VERSION      => 1,
+  LABEL        => 'DX01236.1',
+  DESCRIPTION  => 'Fake RefSeq transcript',
+  SPECIES_ID   => '9606',
+  SOURCE_ID    => $source->source_id,
+  INFO_TEXT    => 'These are normally aligned',
+};
 
+my @xref_array_05 = ( $new_direct_xref_00 );
+ok( !defined $xref_dba->add_multiple_direct_xrefs( \@xref_array_05 ), 'add_multiple_direct_xrefs' );
 
 
 # add_dependent_xref
@@ -355,22 +410,22 @@ my $new_xref_06 = {
 };
 
 throws_ok { $xref_dba->add_dependent_xref() }
-   qr/Need a master_xref_id on which this xref linked too/, 'Throws with no arguments';
+   qr/Need a master_xref_id on which this xref linked too/, 'add_dependent_xref - Throws with no arguments 1';
 
 throws_ok { $xref_dba->add_dependent_xref(
    { master_xref_id => $xref_id_new }
-) } qr/Need an accession of this dependent xref/, 'Throws with no arguments';
+) } qr/Need an accession of this dependent xref/, 'add_dependent_xref - Throws with no arguments 2';
 
 throws_ok { $xref_dba->add_dependent_xref(
    { master_xref_id => $xref_id_new, acc => 'XX123456' }
-) } qr/Need a source_id for this dependent xref/, 'Throws with no arguments';
+) } qr/Need a source_id for this dependent xref/, 'add_dependent_xref - Throws with no arguments 3';
 
 throws_ok { $xref_dba->add_dependent_xref(
    { master_xref_id => $xref_id_new, acc => 'XX123456', source_id => $source->source_id }
-) } qr/Need a species_id for this dependent xref/, 'Throws with no arguments';
+) } qr/Need a species_id for this dependent xref/, 'add_dependent_xref - Throws with no arguments 4';
 
 my $dependent_xref_id = $xref_dba->add_dependent_xref( $new_xref_06 );
-ok( defined $dependent_xref_id, "Dependent xref entry inserted - $dependent_xref_id" );
+ok( defined $dependent_xref_id, "add_dependent_xref - Dependent xref entry inserted - $dependent_xref_id" );
 
 
 # get_valid_xrefs_for_dependencies
@@ -382,11 +437,14 @@ is( $valid_dependent_xrefs{'XX123456'}, $xref_id_new, 'get_valid_xrefs_for_depen
 
 
 # add_multiple_dependent_xrefs
-
-
+my @xref_array_06 = ( $new_xref_06 );
+ok( !defined $xref_dba->add_multiple_dependent_xrefs( \@xref_array_06 ), 'add_multiple_dependent_xrefs' );
 
 # add_to_syn_for_mult_sources
-
+my @source_array = ( $source->source_id );
+ok(
+   !defined $xref_dba->add_to_syn_for_mult_sources( 'NM01234', \@source_array, 'fake_multi_synonym', 9606 ),
+   'add_to_syn_for_mult_sources' );
 
 
 # add_to_syn
@@ -434,7 +492,8 @@ ok( !defined $xref_dba->parsing_finished_store_data(), 'parsing_finished_store_d
 
 
 # get_meta_value
-ok( $xref_dba->get_meta_value('PARSED_xref_id') == 4, 'get_meta_value' );
+my $get_meta_value = $xref_dba->get_meta_value('PARSED_xref_id');
+ok( $xref_dba->get_meta_value('PARSED_xref_id') == 5, "get_meta_value ($get_meta_value)" );
 
 
 # _update_xref_info_type
