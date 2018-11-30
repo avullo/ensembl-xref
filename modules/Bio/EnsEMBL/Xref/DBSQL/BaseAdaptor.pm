@@ -30,9 +30,7 @@ limitations under the License.
 
 Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor - A db adaptor for the xref database
 
-=head1 SYNOPSIS
-
-Base adaptor to provide SQL access to the xref database
+=cut
 
 =head1 DESCRIPTION
 
