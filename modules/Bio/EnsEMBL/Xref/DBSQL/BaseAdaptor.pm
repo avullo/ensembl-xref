@@ -579,7 +579,7 @@ sub upload_xref_object_graphs {
     $self->add_multiple_synonyms( $xref_id, $xref->{SYNONYMS} );
 
     # if there are dependent xrefs, add xrefs and dependent xrefs for them
-    $self->add_multiple_dependent_xrefs( $xref_id, $xref );
+    $self->add_multiple_dependent_xrefs( $xref_id, $xref->{DEPENDENT_XREFS} );
 
     # Add the pair data. refseq dna/pep pairs usually
     if ( defined $xref->{PAIR} ) {
@@ -1318,9 +1318,9 @@ ADX
 =cut
 
 sub add_multiple_dependent_xrefs {
-  my ( $self, $xref_id, $xref ) = @_;
+  my ( $self, $xref_id, $dependent_xrefs ) = @_;
 
-  foreach my $depref ( @{ $xref->{DEPENDENT_XREFS} } ) {
+  foreach my $depref ( @{ $dependent_xrefs } ) {
     my %dep = %{$depref};
 
     # Insert the xref
@@ -1328,7 +1328,7 @@ sub add_multiple_dependent_xrefs {
       "acc"        => $dep{ACCESSION},
       "version"    => $dep{VERSION}     // 1,
       "label"      => $dep{LABEL}       // $dep{ACCESSION},
-      "desc"       => $dep{DESCRIPTION} // $xref->{DESCRIPTION},
+      "desc"       => $dep{DESCRIPTION},
       "source_id"  => $dep{SOURCE_ID},
       "species_id" => $dep{SPECIES_ID},
       "info_type"  => 'DEPENDENT' ) );
