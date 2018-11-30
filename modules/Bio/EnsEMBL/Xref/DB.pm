@@ -25,7 +25,7 @@ Convenience methods prevent having to delve into DBIC guts for common activities
 =head1 SYNOPSIS
 
 my $db = Bio::EnsEMBL::Xref::DB->new(
-  config => {  
+  config => {
     host => 'db.com',
     port => 3306,
     user => 'me',
@@ -43,7 +43,7 @@ $db = Bio::EnsEMBL::Xref::DB->new(
 my $dbh = $db->dbh; # $dbh is a DBI database handle borrowed for direct SQL
 $dbh->prepare('DROP TABLE dependent_xref');
 
-$db->create_db_row('Xref',{ 
+$db->create_db_row('Xref',{
   xref_id => 1,
   accession => 'YAY',
   description => 'Sample new Xref',
@@ -60,6 +60,7 @@ use strict;
 use warnings;
 
 use Moose;
+use namespace::autoclean;
 use Config::General;
 use Carp;
 use Bio::EnsEMBL::Xref::Schema;
@@ -92,18 +93,18 @@ sub _init_db {
   $opts{mysql_enable_utf8} = 1 if ($conf{driver} eq 'mysql');
   $opts{mysql_auto_reconnect} = 1 if ($conf{driver} eq 'mysql');
   $opts{sqlite_unicode} = 1 if($conf{driver} eq 'SQLite');
-  my $dsn; 
-  if ($conf{driver} eq 'SQLite') { 
-    $dsn = sprintf("dbi:%s:database=%s",$conf{driver},$conf{file}); 
+  my $dsn;
+  if ($conf{driver} eq 'SQLite') {
+    $dsn = sprintf("dbi:%s:database=%s",$conf{driver},$conf{file});
   } else {
     $dsn = sprintf("dbi:%s:database=%s;host=%s;port=%s",$conf{driver},$conf{db},$conf{host},$conf{port});
   }
-  
+
   my %deploy_opts = ();
   # Example deploy option $deploy_opts{add_drop_table} = 1;
   print STDERR 'Connecting: '.$dsn."\n";
   my $schema = Bio::EnsEMBL::Xref::Schema->connect($dsn, $conf{user},$conf{pass}, \%opts);
-  
+
   if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
     my $dbh = DBI->connect(sprintf("DBI:%s:database=;host=%s;port=%s",$conf{driver},$conf{host},$conf{port}),$conf{user},$conf{pass}, \%opts);
     $dbh->do('CREATE DATABASE '.$conf{db}.';');
@@ -127,7 +128,7 @@ sub _init_config {
     my %opts = $conf->getall();
     $self->config(\%opts);
   } else {
-    confess 'No config or config_file provided to new(). Cannot execute'; 
+    confess 'No config or config_file provided to new(). Cannot execute';
   }
 }
 
@@ -148,7 +149,7 @@ sub _validate_config {
     }
   }
   if (scalar @errors > 0) {
-    confess sprintf "%s \n%s", 
+    confess sprintf "%s \n%s",
       ($self->config_file) ? 'Missing options in '.$self->config_file. ': ' : 'Missing options in supplied config: ',
       join ';',@errors;
   }

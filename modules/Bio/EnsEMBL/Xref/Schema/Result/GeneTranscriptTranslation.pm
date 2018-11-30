@@ -15,7 +15,7 @@ See the NOTICE file distributed with this work for additional information
    limitations under the License.
 
 =cut
-use utf8;
+
 package Bio::EnsEMBL::Xref::Schema::Result::GeneTranscriptTranslation;
 
 =head1 NAME
@@ -26,6 +26,7 @@ Bio::EnsEMBL::Xref::Schema::Result::GeneTranscriptTranslation
 
 use strict;
 use warnings;
+use utf8;
 
 use base 'DBIx::Class::Core';
 

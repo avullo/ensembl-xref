@@ -78,12 +78,12 @@ sub new {
   my $self = bless {}, $class;
 
   $self->dbc( Bio::EnsEMBL::DBSQL::DBConnection->new(
-                                          -HOST   => $args{host},
-                                          -DBNAME => $args{dbname},
-                                          -USER   => $args{user},
-                                          -PASS   => $args{pass} // q{},
-                                          -PORT => $args{port} // '3306'
-              ) );
+    -HOST   => $args{host},
+    -DBNAME => $args{dbname},
+    -USER   => $args{user},
+    -PASS   => $args{pass} || '',
+    -PORT => $args{port} || '3306'
+  ) );
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
@@ -566,6 +566,7 @@ sub upload_xref_object_graphs {
     if ( defined $xref->{SEQUENCE} ) {
       if ( $self->primary_xref_id_exists($xref_id) ) {
         $self->_update_primary_xref_sequence( $xref->{SEQUENCE}, $xref_id );
+
       }
       else {
         $self->_add_primary_xref(
