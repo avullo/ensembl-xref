@@ -83,7 +83,7 @@ sub run {
         or ( !defined $species_id )
         or ( !defined $files ) )
     {
-        confess "Need to pass source_id, species_id, and files";
+        confess 'Need to pass source_id, species_id, and files';
     }
 
     my $file = shift @{$files};
@@ -96,7 +96,7 @@ sub run {
 
     my $input_file = Text::CSV->new(
         {
-            sep_char       => ",",
+            sep_char       => q{,},
             empty_is_undef => 1,
         }
     ) or confess "Cannot use file $file: " . Text::CSV->error_diag();
@@ -128,8 +128,7 @@ sub run {
         $parsed_count++;
     }    #end while
 
-    printf( "%d direct xrefs succesfully parsed\n", $parsed_count )
-      if ($verbose);
+    printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if ($verbose);
 
     $file_io->close();
 
