@@ -26,36 +26,60 @@ use Readonly;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-# This parser will read xrefs from a record file downloaded from the
-# OMIM Web site. They should be assigned to two different xref
-# sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
-# entries so the parser does not match them to Ensembl; this will be
-# taken care of when EntrezGene entries are matched.
-#
-# OMIM records are multiline. Each record begins with a specific tag
-# line and consists of a number of fields. Each field starts with its
-# own start-tag line (i.e. the data proper only appears after a
-# newline) and continues until the beginning of either the next field
-# in the same record, the next record, or the end-of-input tag. The
-# overall structure looks as follows:
-#
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   *FIELD* TX
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   ...
-#   *FIELD* CD
-#   *FIELD* ED
-#   *THEEND*
-#
-# All the data relevant to the parser can be found in the TI field.
+
+
+=head2 run
+
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $omim_parser->run({ ... });
+  Description: Extract Online Mendelian Inheritance in Man entries
+               from a text file downloaded from the OMIM Web site,
+               then insert corresponding xrefs into the xref
+               database. Note that all the xrefs produced by this
+               parser are unmapped and tagged as such; links of
+               appropriate type will be inserted by Mim2GeneParser.
+
+               OMIM entries can either represent a unique locus,
+               describe a disorder, or both. In Ensembl these are
+               assigned, respectively, to: the source MIM_GENE,
+               the source MIM_MORBID, or independently into both.
+
+               OMIM records are multiline. Each record begins with a
+               specific tag line and consists of a number of
+               fields. Each field starts with its own start-tag line
+               (i.e. the data proper only appears after a newline) and
+               continues until the beginning of either the next field
+               in the same record, the next record, or the
+               end-of-input tag. The overall structure looks as
+               follows:
+
+                 *RECORD*
+                 *FIELD* NO
+                 *FIELD* TI
+                 *FIELD* TX
+                 ...
+                 *RECORD*
+                 *FIELD* NO
+                 *FIELD* TI
+                 ...
+                 *RECORD*
+                 *FIELD* NO
+                 ...
+                 *FIELD* CD
+                 *FIELD* ED
+                 *THEEND*
+
+               All the data relevant to the parser can be found in the
+               TI field.
+
+  Return type: boolean. Note that it should only ever return 0,
+               indicating success; all errors should produce an
+               exception instead.
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
 
 
 sub run {
@@ -224,6 +248,21 @@ sub run {
 } ## end sub run
 
 
+=head2 extract_ti
+
+  Arg [1]    : String $input_record A single OMIM record
+  Example    : my $ti_string = extract_ti( $omim_record );
+  Description: Scan the provided record for the TI field and extract
+               its contents, regardless of where in the record that
+               field appears or the position of the record in the
+               file.
+  Return type: String
+  Exceptions : none
+  Caller     : MIMParser::run()
+  Status     : Stable
+
+=cut
+
 sub extract_ti {
   my ( $input_record ) = @_;
 
@@ -241,6 +280,24 @@ sub extract_ti {
   return $ti;
 }
 
+
+
+=head2 parse_ti
+
+  Arg [1]    : String $ti Contents of a single TI field
+  Example    : my ( $type_symbol, $omim_number, $description )
+                 = parse_ti( $ti_string );
+  Description: Extract the type symbol, the entry number and the
+               description from the contents of an OMIM record's TI
+               field. The description is *not* split into possible
+               individual components, we do however remove line breaks
+               from multiline entries.
+  Return type: Array
+  Exceptions : none
+  Caller     : MIMParser::run()
+  Status     : Stable
+
+=cut
 
 sub parse_ti {
   my ( $ti ) = @_;
