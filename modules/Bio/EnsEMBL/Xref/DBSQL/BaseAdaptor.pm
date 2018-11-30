@@ -1165,10 +1165,11 @@ sub add_direct_xref {
   }
 
   my %sql_hash = (
-    Gene => 'INSERT INTO gene_direct_xref VALUES (?,?,?)',
-    Transcript => 'INSERT INTO transcript_direct_xref VALUES (?,?,?)',
-    Translation => 'INSERT INTO translation_direct_xref VALUES (?,?,?)',
+    gene => 'INSERT INTO gene_direct_xref VALUES (?,?,?)',
+    transcript => 'INSERT INTO transcript_direct_xref VALUES (?,?,?)',
+    translation => 'INSERT INTO translation_direct_xref VALUES (?,?,?)'
   );
+
   my $add_direct_xref_sth = $self->dbi->prepare_cached( $sql_hash{ $ensembl_type } );
 
   $add_direct_xref_sth->execute( $general_xref_id, $ensembl_stable_id,
