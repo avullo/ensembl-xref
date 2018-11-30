@@ -615,7 +615,7 @@ sub upload_direct_xrefs {
     # If found add the direct xref else write error message
     if ($general_xref_id) {
       $self->add_direct_xref( $general_xref_id,
-                              $dr->{ENSEMBL_STABLE_ID},
+                              $dr->{STABLE_ID},
                               $dr->{ENSEMBL_TYPE},
                               $dr->{LINKAGE_XREF}
                             );
@@ -624,7 +624,7 @@ sub upload_direct_xrefs {
       print {*STDERR} 'Problem Could not find accession ' .
         $dr->{ACCESSION} . ' for source ' .
         $dr->{SOURCE} . ' so not able to add direct xref to ' .
-        $dr->{ENSEMBL_STABLE_ID} . "\n";
+        $dr->{STABLE_ID} . "\n";
     }
   } ## end for my $dr ( @{$direct_xref...})
   return;
@@ -758,15 +758,12 @@ sub species_id2name {
 
 sub get_xref_id {
   my ( $self, $arg_ref ) = @_;
-  my $sth = $arg_ref->{sth} ||
-    croak 'Need a statement handle for get_xref_id';
   my $acc = $arg_ref->{acc} ||
-    croak 'Need an accession for get_xref_id';
+    confess 'Need an accession for get_xref_id';
   my $source = $arg_ref->{source_id} ||
-    croak 'Need an source_id for get_xref_id';
+    confess 'Need a source_id for get_xref_id';
   my $species = $arg_ref->{species_id} ||
-    confess 'Need an species_id for get_xref_id';
-  my $error = $arg_ref->{error};
+    confess 'Need a species_id for get_xref_id';
 
   my $id = $self->get_xref( $acc, $source, $species );
 
@@ -942,7 +939,7 @@ sub get_object_xref {
   #
   # Find the object_xref_id using the sql above
   #
-  $get_object_xref_sth->execute( $xref_id, $ensembl_id, $object_type )
+  $get_object_xref_sth->execute( $xref_id, $object_type, $ensembl_id )
     or
     croak( $self->dbi->errstr() );
   if ( my @row = $get_object_xref_sth->fetchrow_array() ) {
@@ -990,10 +987,15 @@ sub add_xref {
     return $xref_id;
   }
 
+    my $sql = (<<"AXS");
+  INSERT INTO xref (
+    accession, version, label, description,
+    source_id, species_id, info_type, info_text)
+  VALUES (?,?,?,?,?,?,?,?)
+AXS
+
   my $add_xref_sth =
-    $self->dbi->prepare_cached( 'INSERT INTO xref ' .
-'(accession,version,label,description,source_id,species_id, info_type, info_text) '
-    . 'VALUES (?,?,?,?,?,?,?,?)' );
+    $self->dbi->prepare_cached( $sql );
 
   # If the description is more than 255 characters, chop it off and add
   # an indication that it has been truncated to the end of it.
@@ -1026,12 +1028,9 @@ sub add_xref {
 sub add_object_xref {
   my ( $self, $arg_ref ) = @_;
 
-  my $xref_id = $arg_ref->{xref_id} ||
-    confess 'add_object_xref needs an xref_id';
-  my $ensembl_id = $arg_ref->{ensembl_id} ||
-    confess 'add_object_xref needs an ensembl_id';
-  my $object_type = $arg_ref->{object_type} ||
-    confess 'add_object_xref needs an object_type';
+  my $xref_id = $arg_ref->{xref_id}         || confess 'add_object_xref needs an xref_id';
+  my $ensembl_id = $arg_ref->{ensembl_id}   || confess 'add_object_xref needs an ensembl_id';
+  my $object_type = $arg_ref->{object_type} || confess 'add_object_xref needs an object_type';
 
   # See if it already exists. It so return the xref_id for this one.
   my $object_xref_id =
@@ -1165,10 +1164,12 @@ sub add_direct_xref {
     return;
   }
 
-  $ensembl_type = lc($ensembl_type);
-  my $sql =
-    "INSERT INTO " . $ensembl_type . "_direct_xref VALUES (?,?,?)";
-  my $add_direct_xref_sth = $self->dbi->prepare_cached($sql);
+  my %sql_hash = (
+    Gene => 'INSERT INTO gene_direct_xref VALUES (?,?,?)',
+    Transcript => 'INSERT INTO transcript_direct_xref VALUES (?,?,?)',
+    Translation => 'INSERT INTO translation_direct_xref VALUES (?,?,?)',
+  );
+  my $add_direct_xref_sth = $self->dbi->prepare_cached( $sql_hash{ $ensembl_type } );
 
   $add_direct_xref_sth->execute( $general_xref_id, $ensembl_stable_id,
                                  $linkage_type );
@@ -1190,17 +1191,18 @@ sub add_direct_xref {
 =cut
 
 sub add_multiple_direct_xrefs {
-  my ( $self, $xref ) = @_;
+  my ( $self, $direct_xrefs ) = @_;
 
-  foreach my $direct_xref ( @{ $xref->{DIRECT_XREFS} } ) {
-    my $direct_xref_id = $self->add_xref( (
-      "acc"        => $xref->{ACCESSION},
-      "version"    => $xref->{VERSION} // 0,
-      "label"      => $xref->{LABEL}   // $xref->{ACCESSION},
-      "desc"       => $xref->{DESCRIPTION},
-      "source_id"  => $direct_xref->{SOURCE_ID},
-      "species_id" => $xref->{SPECIES_ID},
-      "info_type"  => $direct_xref->{LINKAGE_TYPE} ) );
+  foreach my $direct_xref ( @{ $direct_xrefs } ) {
+    my $direct_xref_id = $self->add_xref( {
+      acc        => $direct_xref->{ACCESSION},
+      version    => $direct_xref->{VERSION} // 0,
+      label      => $direct_xref->{LABEL}   // $direct_xref->{ACCESSION},
+      desc       => $direct_xref->{DESCRIPTION},
+      source_id  => $direct_xref->{SOURCE_ID},
+      species_id => $direct_xref->{SPECIES_ID},
+      info_text  => $direct_xref->{INFO_TEXT},
+      info_type  => $direct_xref->{LINKAGE_TYPE} } );
 
     $self->add_direct_xref( $direct_xref_id,
                             $direct_xref->{STABLE_ID},
