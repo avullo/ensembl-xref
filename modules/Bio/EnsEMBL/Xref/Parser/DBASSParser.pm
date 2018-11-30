@@ -31,19 +31,45 @@ use Text::CSV;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-# This parser will read direct xrefs from a comma-delimited file downloaded from the DBASS Web site.
-# The columns of the file should be the following:
-#
-# 1)    DBASS Gene ID
-# 2)    DBASS Gene Name
-# 3)    Ensembl Gene ID
-#
-# where 2) can be either a single name, a 'name/synonym' pair, or a 'name (synonym)' pair.
-# Column values, including empty strings, can be surrounded by pairs of double quotes.
 
 
 Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
 
+
+
+=head2 run
+
+  Arg [1]    : HashRef standard list of arguments from ParseSource
+  Example    : $dbass_parser->run({ ... });
+  Description: Extract DBASS3/DBASS5 entries from a comma-delimited
+               file downloaded from the DBASS Web site, then insert
+               corresponding xrefs and gene_direct_xref links into the
+               xref database.
+
+               The columns of the file should be the following:
+                1) DBASS Gene ID
+                2) DBASS Gene Name
+                3) Ensembl Gene ID
+               with the first line containing column names and all
+               subsequent ones containing entries proper. All column
+               values, including names from the header as well as any
+               empty strings, can be surrounded by pairs of double
+               quotes.
+
+               DBASS Gene Name can be either a single name, a
+               'name/synonym' pair, or a 'name (synonym)' pair.
+
+               Ensembl Gene ID can be an empty string, indicating an
+               unmapped entry.
+
+  Return type: boolean. Note that it should only ever return 0,
+               indicating success; all errors should produce an
+               exception instead.
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
 
 sub run {
   my ( $self ) = @_;
