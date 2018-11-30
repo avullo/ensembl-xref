@@ -94,7 +94,7 @@ sub run {
                        }msx );
     if ( $is_comment ) {
       if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
-           && ( ! is_header_file_valid( $line ) ) ) {
+           && ( ! is_file_header_valid( $line ) ) ) {
         confess "Malformed or unexpected header in Mim2Gene file '${filename}'";
       }
       next RECORD;
@@ -199,7 +199,7 @@ sub run {
 
 =cut
 
-sub is_header_file_valid {
+sub is_file_header_valid {
   my ( $header ) = @_;
 
   my @fields_ok;
