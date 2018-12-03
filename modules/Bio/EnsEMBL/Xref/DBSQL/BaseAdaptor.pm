@@ -230,12 +230,14 @@ sub get_source_ids_for_source_name_pattern {
     confess 'source_name undefined';
   }
 
-  my $big_name = uc $source_name;
-  my $sql = 'SELECT source_id FROM source WHERE UPPER(name) LIKE ?';
+  my $sth = $self->dbi->prepare_cached(
+    'SELECT source_id FROM source WHERE UPPER(name) LIKE ?'
+  );
 
-  my $sth = $self->dbi->prepare_cached($sql);
-  my @sources;
+  my $big_name = uc $source_name;
   $sth->execute("%${big_name}%");
+
+  my @sources;
   while ( my @row = $sth->fetchrow_array() ) {
     push @sources, $row[0];
   }
@@ -1812,7 +1814,7 @@ sub _update_xref_info_type {
 =head2 _add_pair
   Arg [1]    : source ID
   Arg [2]    : accession
-  Arg [3]    : pair
+  Arg [3]    : refseq dna/pep pair
   Description: Create a pair entry. refseq dna/pep pairs usually
   Return type:
   Exceptions : confess if INSERT fails
