@@ -142,7 +142,7 @@ sub _guess_config {
 =head2 new
   Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
   Description: Initialisae the loading of the configuration file.
-  Return type: undef
+  Return type: HashRef - $self->config
   Caller     : internal
 
 =cut
@@ -158,7 +158,7 @@ sub _init_config {
     confess 'No config or config_file provided to new(). Cannot execute';
   }
 
-  return;
+  return $self->config;
 }
 
 
