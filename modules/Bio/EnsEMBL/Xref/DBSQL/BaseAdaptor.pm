@@ -591,7 +591,7 @@ sub upload_xref_object_graphs {
 
 
 =head2 upload_direct_xrefs
-  Arg [1]    : Array of direct xrefsxrefs
+  Arg [1]    : Array of direct xrefs
   Description: Add direct xref to the table XXX_direct_xref. (XXX -E<gt> Gene,
                Transcript or Translation. Xref has to exist already, this module
                just adds ot yo the direct_xref table.
@@ -952,7 +952,7 @@ sub get_object_xref {
 =head2 add_xref
   Arg [1]    : xref
   Description: Create an xref
-               If the cref already exists, return the matching xref_id else create
+               If the xref already exists, return the matching xref_id else create
                and return a new xref_id.
   Return type: integer
   Caller     : internal
@@ -962,7 +962,7 @@ sub get_object_xref {
 sub add_xref {
   my ( $self, $arg_ref ) = @_;
 
-  my $acc          = $arg_ref->{acc} || confess 'add_xref needs aa acc';
+  my $acc          = $arg_ref->{acc} || confess 'add_xref needs an acc';
   my $source_id    = $arg_ref->{source_id} || confess 'add_xref needs a source_id';
   my $species_id   = $arg_ref->{species_id} || confess 'add_xref needs a species_id';
   my $label        = $arg_ref->{label} // $acc;
@@ -1193,7 +1193,10 @@ sub add_multiple_direct_xrefs {
   my ( $self, $direct_xrefs ) = @_;
 
   foreach my $direct_xref ( @{ $direct_xrefs } ) {
-    my $direct_xref_id = $self->add_xref( {
+    $self->add_to_direct_xrefs( {
+      stable_id  => $direct_xref->{STABLE_ID},
+      type       => $direct_xref->{ENSEMBL_TYPE},
+      linkage    => $direct_xref->{LINKAGE_TYPE},
       acc        => $direct_xref->{ACCESSION},
       version    => $direct_xref->{VERSION} // 0,
       label      => $direct_xref->{LABEL}   // $direct_xref->{ACCESSION},
@@ -1202,12 +1205,6 @@ sub add_multiple_direct_xrefs {
       species_id => $direct_xref->{SPECIES_ID},
       info_text  => $direct_xref->{INFO_TEXT},
       info_type  => $direct_xref->{LINKAGE_TYPE} } );
-
-    $self->add_direct_xref( $direct_xref_id,
-                            $direct_xref->{STABLE_ID},
-                            $direct_xref->{ENSEMBL_TYPE},
-                            $direct_xref->{LINKAGE_TYPE}
-                          );
   }
 
   return;

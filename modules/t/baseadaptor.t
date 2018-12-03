@@ -80,16 +80,7 @@ my $source = $db->schema->resultset('Source')->create({
 
 ok(defined $source->source_id, 'Was the source created in the DB?');
 
-my $xref = $source->create_related('xrefs', {
-  accession   => 'NM01234',
-  version     => 1,
-  label       => 'NM01234.1',
-  description => 'Fake RefSeq transcript',
-  species_id  => '9606',
-  info_type   => 'DIRECT',
-  info_text   => 'These are normally aligned',
-  dumped      => 'NO_DUMP_ANOTHER_PRIORITY'
-});
+my $xref = $source->create_related('xrefs', $fake_xref);
 
 my $rs = $db->schema->resultset('Xref')->search(
   { accession => 'NM01234'}
@@ -135,12 +126,6 @@ is(
 throws_ok { $xref_dba->get_source_name_for_source_id() } qr/source_id undefined/, 'Throws with no arguments';
 is( $xref_dba->get_source_name_for_source_id('fake_name'), -1, 'source not present in db' );
 is( $xref_dba->get_source_name_for_source_id($source->source_id), 'RefSeq', 'get_source_name_for_source_id' );
-
-
-# get_valid_xrefs_for_dependencies - Tested later once dependecny xrefs are added
-
-
-# get_valid_xrefs_for_direct_xrefs - Tested later once direct xrefs are added
 
 
 # label_to_acc
@@ -258,12 +243,6 @@ is(
    2,
    'get_xref_id'
 );
-
-
-# get_xref - Already tested for other loading functions
-
-
-# get_object_xref - Testing later once values added
 
 
 # add_xref
@@ -469,9 +448,6 @@ my %valid_dependent_xrefs = %{ $xref_dba->get_valid_xrefs_for_dependencies( 'Ref
 is( $valid_dependent_xrefs{'XX123456'}, $xref_id_new, 'get_valid_xrefs_for_dependencies' );
 
 
-# add_dependent_xref_maponly - Mostly tested as part of add_dependent_xref
-
-
 # add_multiple_dependent_xrefs
 my @xref_array_06 = ( $new_xref_06 );
 ok( !defined $xref_dba->add_multiple_dependent_xrefs( \@xref_array_06 ), 'add_multiple_dependent_xrefs' );
@@ -555,8 +531,10 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 
 
 # _update_xref_label - This should have already been covered by previous tests
+# Specific tests can be added later
 
 # _update_xref_description - This should have already been covered by previous tests
+# Specific tests can be added later
 
 done_testing();
 
