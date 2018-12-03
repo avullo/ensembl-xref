@@ -84,7 +84,7 @@ has config => (
 );
 
 
-=head2 new
+=head2 _init_db
   Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
   Description: Initialise the core database.
   Return type: schema
@@ -122,10 +122,10 @@ sub _init_db {
   $schema->deploy(\%deploy_opts) if $conf{create} == 1;
 
   return $schema;
-}
+} ## end sub _init_db
 
 
-=head2 new
+=head2 _guess_config
   Description: Don't want production use to guess at least at the moment.
                This mainly exists so TestDB can override and replace with a
                useful default
@@ -136,10 +136,10 @@ sub _init_db {
 
 sub _guess_config {
   return;
-}
+} ## end sub _guess_config
 
 
-=head2 new
+=head2 _init_config
   Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
   Description: Initialisae the loading of the configuration file.
   Return type: HashRef - $self->config
@@ -159,10 +159,10 @@ sub _init_config {
   }
 
   return $self->config;
-}
+} ## end sub _init_config
 
 
-=head2 new
+=head2 _validate_config
   Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
   Description: Configuration file parameter validation
   Return type: DBI database handle
@@ -191,10 +191,10 @@ sub _validate_config {
       ($self->config_file) ? 'Missing options in '.$self->config_file. ': ' : 'Missing options in supplied config: ',
       join ';',@errors;
   }
-}
+} ## end sub _validate_config
 
 
-=head2 new
+=head2 dbh
   Description: Shortcut for accessing a database handle directly. I get the
                impression we might be doing this a lot.
   Return type: DBI database handle
@@ -205,10 +205,10 @@ sub _validate_config {
 sub dbh {
   my $self = shift;
   return $self->schema->storage->dbh;
-}
+} ## end sub dbh
 
 
-=head2 new
+=head2 create_db_row
   Arg [1]    : model
   Arg [2]    : arguments : These should be key-value pairs matching the rows in
                            the table
@@ -224,7 +224,7 @@ sub create_db_row {
     $params
   );
   return $source;
-}
+} ## end sub create_db_row
 
 __PACKAGE__->meta->make_immutable;
 
