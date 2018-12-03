@@ -38,10 +38,10 @@ use Test::More;
 use Test::Warnings;
 use Bio::EnsEMBL::Test::TestUtils;
 
-if ( not $ENV{TEST_AUTHOR} ) {
-  my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';
-  plan( skip_all => $msg );
-}
+# if ( not $ENV{TEST_AUTHOR} ) {
+#   my $msg = 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';
+#   plan( skip_all => $msg );
+# }
 
 
 #chdir into the file's target & request cwd() which should be fully resolved now.
@@ -56,13 +56,24 @@ my $root = File::Spec->catdir($cur_dir, File::Spec->updir(),File::Spec->updir())
 my @source_files = map {all_source_code(File::Spec->catfile($root, $_))} qw(modules scripts sql docs);
 #Find all files & run
 foreach my $f (@source_files) {
-    next if $f =~ /modules\/t\/test-genome-DBs\//;
-    next if $f =~ /scripts\/synteny\/(apollo|BuildSynteny|SyntenyManifest.txt)/;
-    next if $f =~ /\/blib\//;
-    next if $f =~ /\/HALXS\.c$/;
-    next if $f =~ /\.conf\b/;
-    next if $f =~ /\/CLEAN\b/;
-    next if $f =~ /\.(tmpl|hash|nw|ctl|txt|html|textile)$/;
+    next if $f =~ m{
+      modules/t/test-genome-DBs/
+    }xm;
+
+    next if $f =~ m{
+      scripts/synteny/(?:apollo|BuildSynteny|SyntenyManifest.txt)
+    }xm;
+
+    next if $f =~ m{/blib/}xm;
+
+    next if $f =~ m{/HALXS\.c$}xm;
+
+    next if $f =~ m{\.conf\b}xm;
+
+    next if $f =~ m{/CLEAN\b}xm;
+
+    next if $f =~ m{\.(?:tmpl|hash|nw|ctl|txt|html|textile)$}xm;
+
     has_apache2_licence($f, 1);
 }
 
