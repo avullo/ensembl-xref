@@ -62,15 +62,15 @@ Readonly my %protein_id_extraction_recipe_for_database
       'EMBL'   => \&_get_protein_id_xref_from_embldb_xref,
     );
 sub _get_protein_id_xref_from_embldb_xref {
-  my ( $protein_id, $linkage_source_id, $source_id ) = @_;
+  my ( $embldb_extra_info, $linkage_source_id, $source_id ) = @_;
+
+  # For both EMBL and ChEMBL entries protein ID immediately follows
+  # their respective accessions i.e will be the first element of extra_info.
+  my $protein_id = $embldb_extra_info->[0];
 
   # Strip the version number, if any, from the protein ID. At the same
   # time, filter out entries with no ID - in which case the ID is a
   # lone hyphen.
-  # FIXME:
-  #  - are versioned primary IDs still a thing? There are no such
-  #    entries in the Swiss-Prot file
-  #  - ditto primary ID being absent
   my ( $unversioned_protein_id )
     = ( $protein_id =~ m{
                           \A
@@ -337,7 +337,7 @@ sub _make_links_from_crossreferences {
           # Entries for the source 'protein_id' are constructed from
           # crossreferences to other databases
           my $protein_id_xref
-            = $protein_id_xref_maker->( $dependent_ref->{'id'},
+            = $protein_id_xref_maker->( $dependent_ref->{'optional_info'},
                                         $xref_source_id,
                                         $dependent_sources->{$PROTEIN_ID_SOURCE_NAME}
                                      );
