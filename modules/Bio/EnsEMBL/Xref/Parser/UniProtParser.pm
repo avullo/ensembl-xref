@@ -124,10 +124,10 @@ sub run {
 
   # Extract release numbers from the release file, if provided
   if ( defined $release_file ) {
-    my $release_numbers = $self->_get_release_numbers_from_file( $release_file,
+    my $release_strings = $self->_get_release_strings_from_file( $release_file,
                                                                  $verbose );
-    $self->_set_release_numbers_on_uniprot_sources( $source_id_map,
-                                                    $release_numbers );
+    $self->_set_release_strings_on_uniprot_sources( $source_id_map,
+                                                    $release_strings );
   }
 
   return 0;
@@ -135,19 +135,19 @@ sub run {
 
 
 # Extract Swiss-Prot and TrEMBL release info from the release file
-sub _get_release_numbers_from_file {
+sub _get_release_strings_from_file {
   my ( $self, $release_file_name, $verbose ) = @_;
 
   my $xref_dba = $self->{xref_dba};
 
   my $release_io = $xref_dba->get_filehandle( $release_file_name );
-  my $release_numbers = {};
+  my $release_strings = {};
 
   while ( my $line = $release_io->getline() ) {
-    my ( $section, $release )
+    my ( $release, $section )
       = ( $line =~ m{
                       \A
-                      UniProtKB/
+                      ( UniProtKB/
                       (
                         Swiss-Prot
                       |
@@ -156,10 +156,10 @@ sub _get_release_numbers_from_file {
                       \s+
                       Release
                       \s+
-                      ( [^\n]+ )
+                      [^\n]+ )
                   }msx );
-    if ( defined $section ) {
-      $release_numbers->{ $source_name_for_section{$section} } = $release;
+    if ( defined $release ) {
+      $release_strings->{ $source_name_for_section{$section} } = $release;
       if ( $verbose ) {
         print "$section release is '$release'\n";
       }
@@ -168,18 +168,18 @@ sub _get_release_numbers_from_file {
 
   $release_io->close();
 
-  return $release_numbers;
+  return $release_strings;
 }
 
-sub _set_release_numbers_on_uniprot_sources {
-  my ( $self, $source_id_map, $release_numbers ) = @_;
+sub _set_release_strings_on_uniprot_sources {
+  my ( $self, $source_id_map, $release_strings ) = @_;
 
   my $xref_dba = $self->{xref_dba};
 
   foreach my $source ( keys %{ $source_id_map } ) {
     # Priority names are not important here, we only need source IDs
     foreach my $source_id ( values %{ $source_id_map->{$source} } ) {
-      $xref_dba->set_release( $source_id, $release_numbers->{$source} );
+      $xref_dba->set_release( $source_id, $release_strings->{$source} );
     }
   }
 
