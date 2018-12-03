@@ -50,14 +50,14 @@ ok( defined $xref_dba, 'BaseAdaptor handle returned');
 
 # upload_xref_object_graphs
 my $fake_xref = {
-  accession => 'NM01234',
-  version => 1,
-  label => 'NM01234.1',
+  accession   => 'NM01234',
+  version     => 1,
+  label       => 'NM01234.1',
   description => 'Fake RefSeq transcript',
-  species_id => '9606',
-  info_type => 'DIRECT',
-  info_text => 'These are normally aligned',
-  dumped => 'NO_DUMP_ANOTHER_PRIORITY'
+  species_id  => '9606',
+  info_type   => 'DIRECT',
+  info_text   => 'These are normally aligned',
+  dumped      => 'NO_DUMP_ANOTHER_PRIORITY'
 };
 
 my @xref_array_00 = ( $fake_xref );
@@ -71,26 +71,26 @@ throws_ok
 
 # Add an example source to the db
 my $source = $db->schema->resultset('Source')->create({
-  name => 'RefSeq',
-  status => 'KNOWN',
-  source_release => '38',
-  download => 'Y',
-  priority => 1,
+  name                 => 'RefSeq',
+  status               => 'KNOWN',
+  source_release       => '38',
+  download             => 'Y',
+  priority             => 1,
   priority_description => 'Like a boss',
-  ordered => 10
+  ordered              => 10
 });
 
 ok(defined $source->source_id, 'Was the source created in the DB?');
 
 my $xref = $source->create_related('xrefs', {
-  accession => 'NM01234',
-  version => 1,
-  label => 'NM01234.1',
+  accession   => 'NM01234',
+  version     => 1,
+  label       => 'NM01234.1',
   description => 'Fake RefSeq transcript',
-  species_id => '9606',
-  info_type => 'DIRECT',
-  info_text => 'These are normally aligned',
-  dumped => 'NO_DUMP_ANOTHER_PRIORITY'
+  species_id  => '9606',
+  info_type   => 'DIRECT',
+  info_text   => 'These are normally aligned',
+  dumped      => 'NO_DUMP_ANOTHER_PRIORITY'
 });
 
 my $rs = $db->schema->resultset('Xref')->search(
@@ -194,10 +194,10 @@ ok( defined $xref_sources, 'There are sources in the db');
 # species_id2taxonomy - There are tests ready for this in another branch
 # Add an example source to the db
 my $species = $db->schema->resultset('Species')->create({
-  species_id => 1,
+  species_id  => 1,
   taxonomy_id => 9606,
-  name => 'Homo sapiens',
-  aliases => 'Human'
+  name        => 'Homo sapiens',
+  aliases     => 'Human'
 });
 
 my %species_id2t = $xref_dba->species_id2taxonomy();
@@ -374,13 +374,13 @@ is( $valid_direct_xrefs{ 'NM01236' }, '3,NM01236,Gene,', 'get_valid_xrefs_for_di
 
 # upload_direct_xrefs
 my $new_xref_05 = {
-  ACCESSION   => 'NM01235',
-  SPECIES_ID  => '9606',
-  SOURCE_ID   => $source->source_id,
-  STABLE_ID => 'NM01235',
+  ACCESSION    => 'NM01235',
+  SPECIES_ID   => '9606',
+  SOURCE_ID    => $source->source_id,
+  STABLE_ID    => 'NM01235',
   ENSEMBL_TYPE => 'Transcript',
   LINKAGE_XREF => 'PROBE',
-  SOURCE => 'RefSeq'
+  SOURCE       => 'RefSeq'
 };
 
 my @xref_array_03 = ( $new_xref_05 );
@@ -407,17 +407,17 @@ ok( !defined $xref_dba->add_multiple_direct_xrefs( \@xref_array_05 ), 'add_multi
 # add_dependent_xref
 my $new_xref_06 = {
   master_xref_id => $xref_id_new,
-  type => 'Gene',
-  acc => 'XX123456',
-  version => 1,
-  label => 'DPNDT',
-  desc => 'Fake dependent xref',
-  species_id => '9606',
-  source_id => $source->source_id,
-  info_text => 'These are normally aligned',
-  linkage => $source->source_id,
-  update_label => 1,
-  update_desc => 1
+  type           => 'Gene',
+  acc            => 'XX123456',
+  version        => 1,
+  label          => 'DPNDT',
+  desc           => 'Fake dependent xref',
+  species_id     => '9606',
+  source_id      => $source->source_id,
+  info_text      => 'These are normally aligned',
+  linkage        => $source->source_id,
+  update_label   => 1,
+  update_desc    => 1
 };
 
 throws_ok { $xref_dba->add_dependent_xref() }
@@ -529,9 +529,9 @@ ok( !defined $xref_dba->_update_primary_xref_sequence( $xref_id_new, 'CTATGGT' )
 is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTATGGT', 'Sequence updated' );
 
 
-# _update_xref_label - This should have already been coered by previous tests
+# _update_xref_label - This should have already been covered by previous tests
 
-# _update_xref_description - This should have already been coered by previous tests
+# _update_xref_description - This should have already been covered by previous tests
 
 done_testing();
 
