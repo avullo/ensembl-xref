@@ -27,7 +27,7 @@ This parser will read and creates direct xrefs from a simple comma-delimited fil
 The database contains two types of antibody, their own HPA antibodies and Collaborator antibody (CAB) commercial antibodies.
 
  data_uri        = http://www.proteinatlas.org/download/xref.php
- 
+
 The columns of the file should be the following:
 
  1)  Antibody
@@ -49,6 +49,7 @@ The columns of the file should be the following:
   );
 
   $parser->run();
+
 =cut
 
 package Bio::EnsEMBL::Xref::Parser::HPAParser;
@@ -66,8 +67,9 @@ The run method does the actual parsing and creation of direct xrefs.
 Parser gets initialized as noted above and run is called from
 Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
 
-my $parser = Bio::EnsEMBL::Xref::Parser::HPAParser->new(..)
-$parser->run();
+my $parser = Bio::EnsEMBL::Xref::Parser::HPAParser-E<gt>new(..)
+$parser-E<gt>run();
+
 =cut
 
 sub run {
