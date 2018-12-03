@@ -55,7 +55,7 @@ foreach my $f (@source_files) {
     }xm;
 
     next if $f =~ m{
-      scripts/synteny/(?:apollo|BuildSynteny|SyntenyManifest.txt)
+      scripts/synteny/(?:apollo | BuildSynteny | SyntenyManifest.txt)
     }xm;
 
     next if $f =~ m{/blib/}xm;
@@ -66,7 +66,7 @@ foreach my $f (@source_files) {
 
     next if $f =~ m{/CLEAN\b}xm;
 
-    next if $f =~ m{\.(?:tmpl|hash|nw|ctl|txt|html|textile)$}xm;
+    next if $f =~ m{\.(?:tmpl | hash | nw | ctl | txt | html | textile)$}xm;
 
     has_apache2_licence($f, 1);
 }
