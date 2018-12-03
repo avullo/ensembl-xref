@@ -594,7 +594,7 @@ sub upload_xref_object_graphs {
   Arg [1]    : Array of direct xrefs
   Description: Add direct xref to the table XXX_direct_xref. (XXX -E<gt> Gene,
                Transcript or Translation. Xref has to exist already, this module
-               just adds ot yo the direct_xref table.
+               just adds to the direct_xref table.
                $direct_xref is a reference to an array of hash objects.
   Return type:
   Caller     : internal
