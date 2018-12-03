@@ -306,7 +306,8 @@ sub _make_links_from_crossreferences {
       foreach my $direct_ref ( @{ $entries } ) {
         my $xref_link
           = {
-             'STABLE_ID'    => $direct_ref->{'id'},
+             # We want translation ID and 'id' for these is TRANSCRIPT ID
+             'STABLE_ID'    => $direct_ref->{'optional_info'}->[0],
              'ENSEMBL_TYPE' => 'Translation',
              'LINKAGE_TYPE' => 'DIRECT',
              'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
