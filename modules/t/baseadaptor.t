@@ -207,7 +207,7 @@ is( $species_id2t{1}[0], 9606, 'species_id2taxonomy' );
 # species_id2name - There are tests ready for this in another branch
 my %species_id2n = $xref_dba->species_id2name();
 is( $species_id2n{1}[0], 'Homo sapiens', 'species_id2name' );
-is( $species_id2n{1}[0], 'Human', 'species_id2name' );
+is( $species_id2n{1}[1], 'Human', 'species_id2name' );
 
 
 # get_xref_id
