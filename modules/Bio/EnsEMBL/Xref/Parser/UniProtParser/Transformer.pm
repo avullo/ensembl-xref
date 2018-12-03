@@ -164,7 +164,7 @@ sub transform {
 
   # All other xref links come from crossreferences
   my ( $direct_xrefs, $dependent_xrefs )
-    = $self->_make_links_from_crossreferences( $accession, $source_id );
+    = $self->_make_links_from_crossreferences( $source_id );
   # Do not assign empty arrays to FOO_XREFS, current insertion code
   # doesn't like them.
   if ( scalar @{ $direct_xrefs } > 0 ) {
@@ -285,7 +285,7 @@ sub _get_source_id {
 # we additionally generate protein_id dependent xrefs from appropriate
 # sources, i.e. EMBL and ChEMBL at present.
 sub _make_links_from_crossreferences {
-  my ( $self, $xref_accession, $xref_source_id ) = @_;
+  my ( $self, $xref_source_id ) = @_;
 
   my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
   my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
@@ -322,7 +322,7 @@ sub _make_links_from_crossreferences {
       foreach my $dependent_ref ( @{ $entries } ) {
         my $xref_link
           = {
-             'ACCESSION'          => $xref_accession,
+             'ACCESSION'          => $dependent_ref->{'id'},
              'LINKAGE_ANNOTATION' => $dependent_source_id,
              'LINKAGE_SOURCE_ID'  => $xref_source_id,
              'SOURCE_ID'          => $dependent_source_id,
