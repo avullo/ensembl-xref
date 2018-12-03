@@ -24,8 +24,6 @@ use Test::Exception;
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
-use Data::Dumper;
-
 # Check that the module loaded correctly
 use_ok 'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor';
 
@@ -107,15 +105,30 @@ throws_ok { $xref_dba->get_filehandle('fake_file.tsv') } qr/Can not open file/, 
 
 
 # get_source_id_for_source_name
-throws_ok { $xref_dba->get_source_id_for_source_name() } qr/source_name undefined/, 'Throws with no arguments';
-throws_ok { $xref_dba->get_source_id_for_source_name('fake_name') } qr/No source_id/, 'Throws with no matching source_id';
-is( $xref_dba->get_source_id_for_source_name('RefSeq'), $source->source_id, 'get_source_id_for_source_name' );
+throws_ok
+  { $xref_dba->get_source_id_for_source_name() }
+  qr/source_name undefined/,
+  'get_source_id_for_source_name - Throws with no arguments';
+throws_ok
+  { $xref_dba->get_source_id_for_source_name('fake_name') }
+  qr/No source_id/,
+  'get_source_id_for_source_name - Throws with no matching source_id';
+is(
+  $xref_dba->get_source_id_for_source_name('RefSeq'),
+  $source->source_id, 'get_source_id_for_source_name' );
 
 
 # get_source_ids_for_source_name_pattern
-throws_ok { $xref_dba->get_source_ids_for_source_name_pattern() } qr/source_name undefined/, 'Throws with no arguments';
-ok( defined $xref_dba->get_source_ids_for_source_name_pattern('fake_name'), 'Array returned' );
-is( $xref_dba->get_source_ids_for_source_name_pattern('RefSeq'), $source->source_id, 'get_source_ids_for_source_name_pattern' );
+throws_ok
+  { $xref_dba->get_source_ids_for_source_name_pattern() }
+  qr/source_name undefined/,
+  'get_source_ids_for_source_name_pattern - Throws with no arguments';
+ok(
+  defined $xref_dba->get_source_ids_for_source_name_pattern('fake_name'),
+  'get_source_ids_for_source_name_pattern - Array returned' );
+is(
+  $xref_dba->get_source_ids_for_source_name_pattern('RefSeq'),
+  $source->source_id, 'get_source_ids_for_source_name_pattern' );
 
 
 # get_source_name_for_source_id
@@ -153,7 +166,10 @@ my $new_xref_00 = {
 
 my @xref_array_01 = ($new_xref_00);
 
-throws_ok { $xref_dba->upload_xref_object_graphs( \@xref_array_01 ) } qr/Your xref: NM01235 does not have a source-id/, 'Throws with no source ID';
+throws_ok
+  { $xref_dba->upload_xref_object_graphs( \@xref_array_01 ) }
+  qr/Your xref: NM01235 does not have a source-id/,
+  'upload_xref_object_graphs - Throws with no source ID';
 
 
 # Test that a valid xref hashref gets added to the db
@@ -170,8 +186,12 @@ my $new_xref_01 = {
 
 my @xref_array_02 = ( $new_xref_01 );
 
-ok( !defined $xref_dba->upload_xref_object_graphs( \@xref_array_02 ), "NM01235 was added to the xref table" );
-is( _check_db( $db, 'Xref', { accession => 'NM01235' } )->accession, 'NM01235', 'Xref loaded' );
+ok(
+  !defined $xref_dba->upload_xref_object_graphs( \@xref_array_02 ),
+  "upload_xref_object_graphs - NM01235 was added to the xref table" );
+is(
+  _check_db( $db, 'Xref', { accession => 'NM01235' } )->accession,
+  'NM01235', 'upload_xref_object_graphs - Xref loaded' );
 
 # get_xref
 my $xref_id = $xref_dba->get_xref('NM01235', $source->source_id, 9606);
@@ -211,7 +231,10 @@ is( $species_id2n{1}[1], 'Human', 'species_id2name' );
 
 
 # get_xref_id
-throws_ok { $xref_dba->get_xref_id() } qr/Need an accession for get_xref_id/, 'get_xref_id - Throws with no arguments 1';
+throws_ok
+  { $xref_dba->get_xref_id() }
+  qr/Need an accession for get_xref_id/,
+  'get_xref_id - Throws with no arguments 1';
 
 throws_ok {
    $xref_dba->get_xref_id( {
@@ -359,7 +382,9 @@ throws_ok { $xref_dba->add_to_direct_xrefs(
 ) } qr/Need a species_id for this direct xref/, 'add_to_direct_xrefs - Throws with no arguments 5';
 
 ok( !defined $xref_dba->add_to_direct_xrefs( $new_xref_04 ), 'add_to_direct_xrefs' );
-is( _check_db( $db, 'Xref', { accession => 'NM01236' } )->accession, 'NM01236', 'add_to_direct_xrefs - Direct xref NM01236 has been loaded' );
+is(
+  _check_db( $db, 'Xref', { accession => 'NM01236' } )->accession,
+  'NM01236', 'add_to_direct_xrefs - Direct xref NM01236 has been loaded' );
 
 
 # add_direct_xref
