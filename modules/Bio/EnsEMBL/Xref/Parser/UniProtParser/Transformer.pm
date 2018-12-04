@@ -24,43 +24,42 @@ use strict;
 use warnings;
 
 use Carp;
-use Readonly;
 
 
-Readonly my $PROTEIN_ID_SOURCE_NAME => 'protein_id';
-Readonly my $UNIPROT_GN_SOURCE_NAME => 'Uniprot_gn';
+my $PROTEIN_ID_SOURCE_NAME = 'protein_id';
+my $UNIPROT_GN_SOURCE_NAME = 'Uniprot_gn';
 
-Readonly my %whitelisted_crossreference_sources
-  => (
-      'ChEMBL'                => 1,
-      'EMBL'                  => 1,
-      'Ensembl'               => 1,
-      'MEROPS'                => 1,
-      'PDB'                   => 1,
-      $PROTEIN_ID_SOURCE_NAME => 1,
-      $UNIPROT_GN_SOURCE_NAME => 1,
-    );
+my %whitelisted_crossreference_sources
+  = (
+     'ChEMBL'                => 1,
+     'EMBL'                  => 1,
+     'Ensembl'               => 1,
+     'MEROPS'                => 1,
+     'PDB'                   => 1,
+     $PROTEIN_ID_SOURCE_NAME => 1,
+     $UNIPROT_GN_SOURCE_NAME => 1,
+   );
 
-Readonly my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD => 2;
-Readonly my %source_selection_criteria_for_status
-  => (
-      'Reviewed'   => [ 'Uniprot/SWISSPROT',
-                        sub {
-                          return 'sequence_mapped';
-                        }, ],
-      'Unreviewed' => [ 'Uniprot/SPTREMBL', sub {
-                          my ( $level ) = @_;
-                          return ( $level <= $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD ) ?
-                            'sequence_mapped' :
-                            "protein_evidence_gt_$MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD";
-                        }, ],
-    );
+my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD = 2;
+my %source_selection_criteria_for_status
+  = (
+     'Reviewed'   => [ 'Uniprot/SWISSPROT',
+                       sub {
+                         return 'sequence_mapped';
+                       }, ],
+     'Unreviewed' => [ 'Uniprot/SPTREMBL', sub {
+                         my ( $level ) = @_;
+                         return ( $level <= $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD ) ?
+                           'sequence_mapped' :
+                           "protein_evidence_gt_$MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD";
+                       }, ],
+   );
 
-Readonly my %protein_id_extraction_recipe_for_database
-  => (
-      'ChEMBL' => \&_get_protein_id_xref_from_embldb_xref,
-      'EMBL'   => \&_get_protein_id_xref_from_embldb_xref,
-    );
+my %protein_id_extraction_recipe_for_database
+  = (
+     'ChEMBL' => \&_get_protein_id_xref_from_embldb_xref,
+     'EMBL'   => \&_get_protein_id_xref_from_embldb_xref,
+   );
 sub _get_protein_id_xref_from_embldb_xref {
   my ( $embldb_extra_info, $linkage_source_id, $source_id ) = @_;
 
