@@ -223,22 +223,12 @@ sub get_uniprot_record {
   while ( my $file_line = $io->getline() ) {
     chomp $file_line;
 
-    my ( $prefix, $content )
-      = ( $file_line =~ m{ \A
-                           ([A-Z /]{2})  # prefix
-                           (?:
-                             \s{3}       # leading spaces are important in e.g. DE, FT
-                             (.+)        # content
-                           )?            # end-of-record line will not have any of this
-                           \z
-                       }msx );
-    if ( ! defined $prefix ) {
-      confess "Malformed prefix in line:\n\t${file_line}";
-    }
+    my $prefix = substr( $file_line, 0, 2 );
 
     if ( $prefix eq q{//} ) {
       # End of record, return what we have got so far
       $self->{'record'} = $uniprot_record;
+
       return 1;
     }
 
@@ -247,9 +237,8 @@ sub get_uniprot_record {
       next INPUT_LINE;
     }
 
-    if ( ! exists $uniprot_record->{$prefix} ) {
-      $uniprot_record->{$prefix} = [];
-    }
+    my $content = substr( $file_line, 5 );
+
     push @{ $uniprot_record->{$prefix} }, $content;
 
   }
