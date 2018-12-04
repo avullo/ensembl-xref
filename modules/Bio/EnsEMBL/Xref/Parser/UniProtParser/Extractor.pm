@@ -226,8 +226,6 @@ sub get_uniprot_record {
 
  INPUT_LINE:
   while ( my $file_line = $io->getline() ) {
-    chomp $file_line;
-
     my $prefix = substr( $file_line, 0, 2 );
 
     if ( $prefix eq q{//} ) {
@@ -242,7 +240,7 @@ sub get_uniprot_record {
       next INPUT_LINE;
     }
 
-    my $content = substr( $file_line, 5 );
+    chomp ( my $content = substr( $file_line, 5 ) );
 
     push @{ $uniprot_record->{$prefix} }, $content;
 
