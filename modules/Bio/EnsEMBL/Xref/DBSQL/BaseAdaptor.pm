@@ -68,6 +68,8 @@ sub new {
     -PASS   => $args{pass} || '',
     -PORT => $args{port} || '3306'
   ) );
+
+  $self->species( $args{species} );
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
@@ -77,6 +79,19 @@ sub dbc {
   my ( $self, $arg ) = @_;
   ( defined $arg ) && ( $self->{_dbc} = $arg );
   return $self->{_dbc};
+}
+
+
+=head2 dba
+  Description: Getter for the dba object
+  Return type: Bio::EnsEMBL::DBSQL::DBAdaptorAdaptor instance
+  Caller     : internal
+=cut
+
+sub dba {
+    my $self = shift;
+    my $dbc = $self->dbc;
+    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbconn => $dbc, -species => $self->species);
 }
 
 ##################################
@@ -1626,5 +1641,115 @@ sub _update_xref_info_type {
   return;
 }
 
-1;
 
+=head2 species
+
+  Arg [1]    : (optional) string $arg
+               The new value of the species
+  Example    : $species = $dba->species()
+  Description: Getter/Setter for the current species
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
+sub species{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_species} = $arg );
+  return $self->{_species};
+
+}
+
+=head2 protein_file
+
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl proteins
+  Example    : $file_name = $self->protein_file();
+  Description: Getter / Setter for the protien fasta file
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub protein_file{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_ens_prot_file} = $arg );
+  return $self->{_ens_prot_file};
+}
+
+=head2 dna_file
+
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl dna
+  Example    : $file_name = $self->dna_file();
+  Description: Getter / Setter for the protien ensembl fasta file
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub dna_file{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_ens_dna_file} = $arg );
+  return $self->{_ens_dna_file};
+}
+
+=head2 dir
+
+  Arg [1]    : (optional) string $arg
+               The new value of the dir used
+  Example    : $dir = $dba->dir()
+  Description: Getter/Setter for the directory used in the creation of fasta file
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
+sub dir {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_dir} = _process_dir($arg) );
+  return $self->{_dir};
+
+}
+
+=head2 _process_dir
+
+  Utility method to process the dir string
+
+=cut
+sub _process_dir {
+  my ($dir) = @_;
+
+  if($dir =~ "^\/" ) { # if it start with / then its not from pwd
+    if(! -d $dir){
+      die "directory does not exist $dir\n";
+    }
+  }
+  elsif($dir eq "."){
+    $dir = cwd();
+  }
+  elsif($dir =~ "^\.\/"){
+    my $tmp = $dir;
+    $dir = cwd() . "/" . substr( $tmp, 2 );
+    if(! -d $dir){
+      die "directory does not exist $dir\n";
+    }
+  }
+  else{
+    die "directory does not exist $dir\n";
+  }
+  return $dir;
+}
+
+
+1;
