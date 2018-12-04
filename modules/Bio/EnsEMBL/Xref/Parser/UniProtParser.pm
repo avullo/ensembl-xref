@@ -25,18 +25,17 @@ use warnings;
 
 use Carp;
 use Module::Load;
-use Readonly;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
-Readonly my $DEFAULT_LOADER_BATCH_SIZE         => 1000;
-Readonly my $DEFAULT_LOADER_CHECKPOINT_SECONDS => 300;
+my $DEFAULT_LOADER_BATCH_SIZE         = 1000;
+my $DEFAULT_LOADER_CHECKPOINT_SECONDS = 300;
 
-Readonly my %source_name_for_section => (
-                                         'Swiss-Prot' => 'Uniprot/SWISSPROT',
-                                         'TrEMBL'     => 'Uniprot/SPTREMBL',
-                                       );
+my %source_name_for_section = (
+  'Swiss-Prot' => 'Uniprot/SWISSPROT',
+  'TrEMBL'     => 'Uniprot/SPTREMBL',
+);
 
 
 sub run {

@@ -28,7 +28,6 @@ require 5.014_000;
 
 use Carp;
 use List::Util;
-use Readonly;
 use charnames ':full';
 
 
@@ -37,42 +36,41 @@ use charnames ':full';
 # ONE capture group, the isoform identifier.
 # Use named sequences for square brackets to avoid excessive
 # escaping as well as for better readability.
-Readonly my $QR_DR_ISOFORM_FIELD_PATTERN
-  => qr{
-         \s*
-         \N{LEFT SQUARE BRACKET}
-         \s*
-         ( [^\N{RIGHT SQUARE BRACKET}]+ )
-         \s*
-         \N{RIGHT SQUARE BRACKET}
-         \s*
-     }msx;
+my $QR_DR_ISOFORM_FIELD_PATTERN
+  = qr{
+        \s*
+        \N{LEFT SQUARE BRACKET}
+        \s*
+        ( [^\N{RIGHT SQUARE BRACKET}]+ )
+        \s*
+        \N{RIGHT SQUARE BRACKET}
+        \s*
+    }msx;
 
 # While processing ID fields, used to confirm that the status of an
 # entry matches an expected value. Declares NO capture groups.
-Readonly my $QR_ID_STATUS_FIELD
-  => qr{
-         (?: Unreviewed )
-       | (?: Reviewed )
-     }msx;
+my $QR_ID_STATUS_FIELD
+  = qr{
+        Unreviewed | Reviewed
+    }msx;
 
 # While processing OX fields i.e. taxonomy cross-references, used to
 # extract both the taxon code and the database qualifier. Declares TWO
 # capture groups: the database qualifier, and the taxonomic code.
-Readonly my $QR_OX_TAXON_DB_ENTRY
-  => qr{
-         # Database qualifier. Chances are the list of
-         # allowed characters will change should DBs
-         # other than NCBI ever become supported here.
-         ( [A-Za-z_]+ )
+my $QR_OX_TAXON_DB_ENTRY
+  = qr{
+        # Database qualifier. Chances are the list of
+        # allowed characters will change should DBs
+        # other than NCBI ever become supported here.
+        ( [A-Za-z_]+ )
 
-         \s*  # just in case
-         =
-         \s*  # same
+        \s*  # just in case
+        =
+        \s*  # same
 
-         # Taxon ID. This is almost certainly NCBI-specific.
-         ( [0-9]+ )
-     }msx;
+        # Taxon ID. This is almost certainly NCBI-specific.
+        ( [0-9]+ )
+    }msx;
 
 # While processing OX or DE fields, i.e. taxonomy cross-references or
 # descriptions, allows accounting for the fact some entries might be
@@ -80,23 +78,23 @@ Readonly my $QR_OX_TAXON_DB_ENTRY
 # declared in UniProt-KB User Manual yet frequently encountered in
 # data files.  Use named sequences for curly brackets to avoid
 # excessive escaping as well as for better readability.
-Readonly my $QR_OX_DE_EVIDENCE_CODE_LIST
-  => qr{
-         \N{LEFT CURLY BRACKET}
-         \s*
-         [^\N{RIGHT CURLY BRACKET}]+
-         \s*
-         \N{RIGHT CURLY BRACKET}
-         \s*
-     }msx;
+my $QR_OX_DE_EVIDENCE_CODE_LIST
+  = qr{
+        \N{LEFT CURLY BRACKET}
+        \s*
+        [^\N{RIGHT CURLY BRACKET}]+
+        \s*
+        \N{RIGHT CURLY BRACKET}
+        \s*
+    }msx;
 
 # Various field separators
-Readonly my $QR_SPLIT_CC_COMMENT_START
-  => qr{ \s* -!- \s* }msx;
-Readonly my $QR_SPLIT_COMMA_WITH_WHITESPACE
-  => qr{ \s* , \s* }msx;
-Readonly my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
-  => qr{ \s* ; \s* }msx;
+my $QR_SPLIT_CC_COMMENT_START
+  = qr{ \s* -!- \s* }msx;
+my $QR_SPLIT_COMMA_WITH_WHITESPACE
+  = qr{ \s* , \s* }msx;
+my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
+  = qr{ \s* ; \s* }msx;
 
 # To save memory and processing time, when we process a record we only
 # load into memory the fields we need. Conversely, the same list can
@@ -107,29 +105,28 @@ Readonly my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
 # describing publications - are not compatible with the current way of
 # processing.
 # Syntax: 1 is mandatory field, 0 - an optional one
-Readonly my %prefixes_of_interest
-  => (
-      'ID'  => 1,
-      'AC'  => 1,
-      'DE'  => 1,
-      'GN'  => 0,
-      'OX'  => 1,
-      'DR'  => 0,
-      'PE'  => 1,
-      'RG'  => 0,
-      'SQ'  => 1,
-      q{  } => 1,
-    );
+my %prefixes_of_interest
+  = (
+     'ID'  => 1,
+     'AC'  => 1,
+     'DE'  => 1,
+     'GN'  => 0,
+     'OX'  => 1,
+     'DR'  => 0,
+     'PE'  => 1,
+     'RG'  => 0,
+     'SQ'  => 1,
+     q{  } => 1,
+   );
 
 # Syntax: 0 for database qualifiers to be ignored, otherwise a
 # reference to a function translating taxon codes from the given
 # database into Ensembl taxonomy_ids.
-Readonly my %taxonomy_ids_from_taxdb_codes
-  => (
-      # NCBI taxon codes and Ensembl taxonomy IDs are identical
-      'NCBI_TaxID' => sub { return $_[0]; },
-    );
-
+my %taxonomy_ids_from_taxdb_codes
+  = (
+     # NCBI taxon codes and Ensembl taxonomy IDs are identical
+     'NCBI_TaxID' => sub { return $_[0]; },
+   );
 
 
 # FIXME: at the moment the extractor only handles one input file at a
