@@ -90,6 +90,14 @@ Readonly my $QR_OX_DE_EVIDENCE_CODE_LIST
          \s*
      }msx;
 
+# Various field separators
+Readonly my $QR_SPLIT_CC_COMMENT_START
+  => qr{ \s* -!- \s* }msx;
+Readonly my $QR_SPLIT_COMMA_WITH_WHITESPACE
+  => qr{ \s* , \s* }msx;
+Readonly my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
+  => qr{ \s* ; \s* }msx;
+
 # To save memory and processing time, when we process a record we only
 # load into memory the fields we need. Conversely, the same list can
 # later on be used that we have indeed encountered all the mandatory
@@ -301,7 +309,8 @@ sub _get_accession_numbers {
 
   my $ac_fields = $self->{'record'}->{'AC'};
   my @numbers
-    = split( qr{\s* ; \s*}msx, join( q{}, @{ $ac_fields } ) );
+    = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE,
+             join( q{}, @{ $ac_fields } ) );
   # FIXME: we should probably make this persist until a new record has
   # been loaded
 
@@ -328,7 +337,7 @@ sub _get_citation_groups {
 
   # FIXME: we should probably make this persist until a new record has
   # been loaded
-  my @citation_groups = split( qr{ \s*;\s* }msx,
+  my @citation_groups = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE,
                                join( q{}, @{ $rg_fields } ) );
 
   return \@citation_groups;
@@ -357,7 +366,7 @@ sub _get_comments {
 
   # FIXME: get rid of extra whitespace from the beginning of
   # continuation lines
-  my @topic_lines = split( qr{\s* -!- \s*}msx,
+  my @topic_lines = split( $QR_SPLIT_CC_COMMENT_START,
                            join( q{ }, @{ $cc_fields } )
                         );
   foreach my $line ( @topic_lines ) {
@@ -416,7 +425,8 @@ sub _get_database_crossreferences {
   my $crossreferences = {};
 
   foreach my $dr_line ( @{ $dr_fields } ) {
-    my ( $res_abbrev, $res_id, @opts ) = split( qr{ ;\s* }msx, $dr_line);
+    my ( $res_abbrev, $res_id, @opts )
+      = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE, $dr_line);
 
     my ( $last_opt, $isoform )
       = ( $opts[-1] =~ m{
@@ -572,7 +582,7 @@ sub _get_gene_names {
                                     }gmsx );
 
     while ( my ( $key, $value ) = splice( @entry_captures, 0, 2 ) ) {
-      my @split_value = split( qr{ \s*,\s* }msx, $value );
+      my @split_value = split( $QR_SPLIT_COMMA_WITH_WHITESPACE, $value );
 
       $parsed_entry->{$key}
         = ( $key eq 'Name' ) ? $value : \@split_value;
