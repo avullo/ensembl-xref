@@ -36,7 +36,6 @@ Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
 
 
 
-
 =head2 run
 
   Arg [1]    : HashRef standard list of arguments from ParseSource

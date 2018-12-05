@@ -32,7 +32,6 @@ use Text::CSV;
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
-
 Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
 
 
