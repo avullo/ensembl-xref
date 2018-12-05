@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -49,10 +50,10 @@ use URI::file;
 use Text::Glob qw( match_glob );
 
 sub new {
-    my ($proto) = @_;
+  my ($proto) = @_;
 
-    my $class = ref $proto || $proto;
-    return bless {}, $class;
+  my $class = ref $proto || $proto;
+  return bless {}, $class;
 }
 
 =head2 fetch_files
@@ -72,8 +73,7 @@ Returntype :  List of paths on the local file system
 =cut
 
 sub fetch_files {
-  my ($self, $arg_ref) = @_;
-
+  my ( $self, $arg_ref ) = @_;
   my $dest_dir         = $arg_ref->{dest_dir};
   my $user_uris        = $arg_ref->{user_uris};
   my $deletedownloaded = $arg_ref->{del_down};
@@ -183,7 +183,6 @@ sub ftp_handler {
   my @ftp_manifest = @{ $self->list_ftp_files($uri) };
 
   my @download_manifest; # A buffer of file paths
-
   my $ftp = $self->get_ftp($uri);
 
   foreach my $remote_file (@ftp_manifest) {
@@ -233,11 +232,9 @@ sub http_handler {
   my $response = $ua->get($uri_string, ':content_file' => $download_path);
   if (! $response->is_success) {
     confess "Failed when downloading $uri_string with response ".$response->status_line;
-  }
 
   return $download_path;
 }
-
 
 =head2 get_ftp
 
@@ -264,8 +261,10 @@ sub get_ftp {
   croak sprintf("Cannot open FTP connection: %s\n", $@) if !defined($ftp);
 
   my $state = $ftp->login( $user, $pass );
-  croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() ) if !$state;
-
+  if (!$state) {
+    croak sprintf( "Cannot log in on FTP host: %s\n", $ftp->message() );
+  }
+  
   my ($filename, $path, $extras) = fileparse( $uri->path() ); # fileparse is a bit safer than dirname
   $state = $ftp->cwd( $path );
 
@@ -275,7 +274,7 @@ sub get_ftp {
   
   $ftp->binary();
   return $ftp;
-}
+} ## end sub get_ftp
 
 
 =head2 check_download

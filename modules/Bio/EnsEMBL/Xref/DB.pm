@@ -25,7 +25,7 @@ Convenience methods prevent having to delve into DBIC guts for common activities
 =head1 SYNOPSIS
 
 my $db = Bio::EnsEMBL::Xref::DB->new(
-  config => {  
+  config => {
     host => 'db.com',
     port => 3306,
     user => 'me',
@@ -43,7 +43,7 @@ $db = Bio::EnsEMBL::Xref::DB->new(
 my $dbh = $db->dbh; # $dbh is a DBI database handle borrowed for direct SQL
 $dbh->prepare('DROP TABLE dependent_xref');
 
-$db->create_db_row('Xref',{ 
+$db->create_db_row('Xref',{
   xref_id => 1,
   accession => 'YAY',
   description => 'Sample new Xref',
@@ -60,6 +60,7 @@ use strict;
 use warnings;
 
 use Moose;
+use namespace::autoclean;
 use Config::General;
 use Carp;
 use Bio::EnsEMBL::Xref::Schema;
@@ -82,6 +83,15 @@ has config => (
   is => 'rw'
 );
 
+
+=head2 _init_db
+  Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
+  Description: Initialise the core database.
+  Return type: schema
+  Caller     : internal
+
+=cut
+
 sub _init_db {
   my $self = shift;
   print STDERR "Setting up schema\n";
@@ -92,18 +102,18 @@ sub _init_db {
   $opts{mysql_enable_utf8} = 1 if ($conf{driver} eq 'mysql');
   $opts{mysql_auto_reconnect} = 1 if ($conf{driver} eq 'mysql');
   $opts{sqlite_unicode} = 1 if($conf{driver} eq 'SQLite');
-  my $dsn; 
-  if ($conf{driver} eq 'SQLite') { 
-    $dsn = sprintf("dbi:%s:database=%s",$conf{driver},$conf{file}); 
+  my $dsn;
+  if ($conf{driver} eq 'SQLite') {
+    $dsn = sprintf("dbi:%s:database=%s",$conf{driver},$conf{file});
   } else {
     $dsn = sprintf("dbi:%s:database=%s;host=%s;port=%s",$conf{driver},$conf{db},$conf{host},$conf{port});
   }
-  
+
   my %deploy_opts = ();
   # Example deploy option $deploy_opts{add_drop_table} = 1;
   print STDERR 'Connecting: '.$dsn."\n";
   my $schema = Bio::EnsEMBL::Xref::Schema->connect($dsn, $conf{user},$conf{pass}, \%opts);
-  
+
   if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
     my $dbh = DBI->connect(sprintf("DBI:%s:database=;host=%s;port=%s",$conf{driver},$conf{host},$conf{port}),$conf{user},$conf{pass}, \%opts);
     $dbh->do('CREATE DATABASE '.$conf{db}.';');
@@ -112,24 +122,53 @@ sub _init_db {
   $schema->deploy(\%deploy_opts) if $conf{create} == 1;
 
   return $schema;
-}
+} ## end sub _init_db
 
-# Don't want production use to guess at least at the moment
-# This mainly exists so TestDB can override and replace with a useful default
+
+=head2 _guess_config
+  Description: Don't want production use to guess at least at the moment.
+               This mainly exists so TestDB can override and replace with a
+               useful default
+  Return type: undef
+  Caller     : internal
+
+=cut
+
 sub _guess_config {
   return;
-}
+} ## end sub _guess_config
+
+
+=head2 _init_config
+  Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
+  Description: Initialisae the loading of the configuration file.
+  Return type: HashRef - $self->config
+  Caller     : internal
+
+=cut
 
 sub _init_config {
   my $self = shift;
+
   if (defined $self->config_file) {
     my $conf = Config::General->new($self->config_file);
     my %opts = $conf->getall();
     $self->config(\%opts);
   } else {
-    confess 'No config or config_file provided to new(). Cannot execute'; 
+    confess 'No config or config_file provided to new(). Cannot execute';
   }
-}
+
+  return $self->config;
+} ## end sub _init_config
+
+
+=head2 _validate_config
+  Arg [1]    : HashRef of configuation parameters (driver, db, host, port, user, pass)
+  Description: Configuration file parameter validation
+  Return type: DBI database handle
+  Caller     : internal
+
+=cut
 
 sub _validate_config {
   my ($self,$config) = @_;
@@ -148,26 +187,44 @@ sub _validate_config {
     }
   }
   if (scalar @errors > 0) {
-    confess sprintf "%s \n%s", 
+    confess sprintf "%s \n%s",
       ($self->config_file) ? 'Missing options in '.$self->config_file. ': ' : 'Missing options in supplied config: ',
       join ';',@errors;
   }
-}
+} ## end sub _validate_config
 
-# Shortcut for accessing a database handle directly. I get the impression we might be doing this a lot.
+
+=head2 dbh
+  Description: Shortcut for accessing a database handle directly. I get the
+               impression we might be doing this a lot.
+  Return type: DBI database handle
+  Caller     : internal
+
+=cut
+
 sub dbh {
   my $self = shift;
   return $self->schema->storage->dbh;
-}
+} ## end sub dbh
 
-# Shortcut for creating things on the fly
+
+=head2 create_db_row
+  Arg [1]    : model
+  Arg [2]    : arguments : These should be key-value pairs matching the rows in
+                           the table
+  Description: Shortcut for creating things on the fly
+  Return type:
+  Caller     : internal
+
+=cut
+
 sub create_db_row {
   my ($self,$model, $params) = @_;
   my $source = $self->schema->resultset($model)->create(
     $params
   );
   return $source;
-}
+} ## end sub create_db_row
 
 __PACKAGE__->meta->make_immutable;
 
