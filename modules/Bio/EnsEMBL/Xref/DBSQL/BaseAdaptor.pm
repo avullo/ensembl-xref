@@ -207,6 +207,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
@@ -650,6 +651,48 @@ sub add_meta_pair {
 
   return;
 } ## end sub add_meta_pair
+
+=head2 _add_source_id
+  Arg [1]    : source_id
+  Arg [2]    : name
+  Description: Insert new entries in source table
+  Return type:
+  Caller     : Test
+
+=cut
+
+sub _add_source_id {
+
+  my ( $self, $source_id, $name) = @_;
+
+  my $sth = $self->dbi->prepare_cached(
+    'INSERT INTO source (source_id, name, ordered) VALUES (?, ?, 1)' );
+  $sth->execute( $source_id, $name);
+  $sth->finish();
+
+  return;
+} ## end sub _add_source_id
+
+=head2 _add_species_alias
+  Arg [1]    : species_id
+  Arg [2]    : alias
+  Description: Insert new entries in species table
+  Return type:
+  Caller     : Test
+
+=cut
+
+sub _add_species_alias {
+
+  my ( $self, $species_id, $alias) = @_;
+
+  my $sth = $self->dbi->prepare_cached(
+    'INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (?, ?, ?, ?)' );
+  $sth->execute( $species_id, $species_id, $alias, $alias);
+  $sth->finish();
+
+  return;
+} ## end sub _add_species_alias
 
 
 =head2 get_xref_sources
