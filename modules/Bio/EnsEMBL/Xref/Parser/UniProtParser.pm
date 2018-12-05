@@ -38,6 +38,66 @@ my %source_name_for_section = (
 );
 
 
+
+=head2 run
+
+  Arg [1]    : HashRef arguments for the parser:
+                - standard list of arguments from ParseSource
+                - extractor
+                   - name of class used to instantiate the extractor
+                - transformer
+                   - name of class used to instantiate the transformer
+                - loader
+                   - name of class used to instantiate the loader
+                - loader_batch_size
+                   - how many UniProt entries to process before
+                     submitting xrefs to the database
+                - loader_checkpoint_seconds
+                   - the maximum amount of seconds (modulo the time
+                     needed to process a single entry) xrefs are
+                     allowed to stay in the buffer before being
+                     submitted to the database regardless of the batch
+                     size
+  Example    : $uniprot_parser->run({ ... });
+  Description: Extract UniProt Knowledgebase entries from text files
+               downloaded from the UniProt Web site, then insert
+               corresponding xrefs and links into the xref
+               database. Both Swiss-Prot and TrEMBL files are
+               supported.
+
+               There will typically be multiple xrefs and links per
+               one UniProt-KB entry:
+                - basic xrefs created for each entry are
+                  sequence-matched to Ensembl;
+                - for entries with cross-references to Ensembl
+                  we create additional direct xrefs as well
+                  as corresponding translation_direct_xref links;
+                - for entries with cross-references to ChEMBL, EMBL,
+                  MEROPS or PDB (this is in principle extensible but
+                  for the time being the list of whitelisted
+                  cross-reference sources is hardcoded into
+                  Transformer ), we create dependent xrefs as well as
+                  corresponding dependent_xref links;
+                - if requested, special dependent xrefs and
+                  corresponding mappings can be created for protein
+                  IDs (extracted from ChEMBL and EMBL
+                  cross-references) and UniProt gene names (from
+                  dedicated fields).
+
+               UniProt-KB dat files are record-based, with individual
+               fields identified by prefixes. For details, please see
+               the UniProt Knowledgebase User Manual at
+               https://web.expasy.org/docs/userman.html .
+
+  Return type: boolean. Note that it should only ever return 0,
+               indicating success; all errors should produce an
+               exception instead.
+  Exceptions : throws on all processing errors
+  Caller     : ParseSource in the xref pipeline
+  Status     : Stable
+
+=cut
+
 sub run {
   my ( $self ) = @_;
 

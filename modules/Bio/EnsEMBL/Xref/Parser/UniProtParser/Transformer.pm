@@ -93,6 +93,23 @@ sub _get_protein_id_xref_from_embldb_xref {
 }
 
 
+=head2 new
+
+  Arg [1]    : HashRef arguments for the constructor:
+                - species_id
+                   - Ensembl ID of the species under
+                     consideration. Records pertaining to other
+                     species will be quietly ignored.
+                - xref_dba
+                   - DBAdaptor object passed from the xref pipeline
+  Description: Constructor.
+  Return type: Transformer object
+  Exceptions : throws on failure to load all required maps from the
+               database
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub new {
   my ( $proto, $arg_ref ) = @_;
@@ -111,6 +128,8 @@ sub new {
 }
 
 
+# Destructor. Makes sure the clean-up code gets executed regardless of
+# whether the user has explicitly called finish() or not.
 sub DESTROY {
   my ( $self ) = @_;
 
@@ -120,6 +139,17 @@ sub DESTROY {
 }
 
 
+=head2 finish
+
+  Description: Wrap-up routine. Does nothing at present, could
+               e.g. print statistics.
+  Return type: none
+  Exceptions : none
+  Caller     : destructor, UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub finish {
   my ( $self ) = @_;
 
@@ -127,8 +157,40 @@ sub finish {
 }
 
 
-# Transforms extracted record into form that can be consumed by
-# BaseAdaptor::upload_xref_object_graphs().
+=head2 transform
+
+  Arg [1]    : HashRef extracted_record Structured UniProt-KB record as
+               provided by an extractor
+
+  Description: Process extracted_record to create Ensembl xref
+               entries, in a form which can be consumed by a
+               loader. The only loader in existence so far passes its
+               input unmodified to
+               BaseAdaptor::upload_xref_object_graphs() so that's the
+               format we produce here.
+
+               For each UniProt-KB record matching the specified
+               species, this method produces:
+                - a primary xref and a corresponding sequence-match
+                  xref;
+                - one or more direct xrefs and corresponding links for
+                  records with Ensembl cross-references;
+                - one or more dependent xrefs and corresponding links
+                  for records with other cross-references and/or
+                  declared gene names;
+                - synonyms for each of the above, as needed.
+               with the exact list of cross-reference sources to
+               process defined in
+               %whitelisted_crossreference_sources. It also determines
+               the correct source ID for the record's evidence level.
+
+  Return type: HashRef
+  Exceptions : throws on processing errors
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub transform {
   my ( $self, $extracted_record ) = @_;
 
@@ -177,9 +239,21 @@ sub transform {
 }
 
 
-# Returns a hashref mapping source-name/priority pairs to source
-# IDs. Used by the steering code to e.g. handle the setting of release
-# numbers on sources.
+=head2 get_source_id_map
+
+  Description: Returns a map between source-name/priority pairs and
+               source IDs. This map is used both in the transformer
+               itself and e.g. in the steering code to handle the
+               setting of release numbers on sources, and it is more
+               resource-efficient to only retrieve it from the
+               database once - hence this method.
+  Return type: HashRef
+  Exceptions : throws if the relevant map does not exist
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub get_source_id_map {
   my ( $self ) = @_;
 

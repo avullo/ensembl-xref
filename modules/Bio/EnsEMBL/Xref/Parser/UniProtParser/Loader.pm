@@ -26,6 +26,29 @@ use warnings;
 use Carp;
 
 
+=head2 new
+
+  Arg [1]    : HashRef arguments for the constructor:
+                - batch_size
+                   - how many UniProt-KB records to accumulate in
+                     the send buffer before pushing them to the
+                     database. Defaults to 1 i.e. push every record
+                     individually.
+                - checkpoint_seconds
+                   - how often, in seconds, to push the contents of
+                     the send buffer to the database regardless of how
+                     many entries it contains. Defaults to 0
+                     i.e. disable this feature.
+                - xref_dba
+                   - DBAdaptor object passed from the xref pipeline
+  Description: Constructor.
+  Return type: Loader object
+  Exceptions : none
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub new {
   my ( $proto, $arg_ref ) = @_;
 
@@ -43,6 +66,8 @@ sub new {
 }
 
 
+# Destructor. Makes sure the clean-up code gets executed regardless of
+# whether the user has explicitly called finish() or not.
 sub DESTROY {
   my ( $self ) = @_;
 
@@ -51,6 +76,17 @@ sub DESTROY {
   return;
 }
 
+
+=head2 finish
+
+  Description: Wrap-up routine. At present, pushes to the database any
+               data still residing in the send buffer.
+  Return type: none
+  Exceptions : none
+  Caller     : destructor, UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub finish {
   my ( $self ) = @_;
@@ -61,6 +97,20 @@ sub finish {
 }
 
 
+=head2 flush
+
+  Description: Unconditionally push the contents of the send buffer to
+               the database, then empty the buffer. Meant primarily
+               for internal use but could in principle be called
+               explicitly as well.
+  Return type: none
+  Exceptions : throws upon errors having been returned by
+               $xref_dba->upload_xref_object_graphs()
+  Caller     : finish()
+  Status     : Stable
+
+=cut
+
 sub flush {
   my ( $self ) = @_;
 
@@ -70,11 +120,29 @@ sub flush {
     confess 'Failed to upload xref object graphs. Check for errors on STDOUT';
   }
 
+  # FIXME: we might want to run this even in the event of a
+  # failure. Note that simply copying this above the confession would
+  # not be enough, we should capture exception thrown by e.g. DBI as well.
   $self->_clear_send_buffer();
 
   return;
 }
 
+
+=head2 load
+
+  Arg [1]    : HashRef transformed_data UniProt-KB prepared by a
+               transformer to be ready to be inserted into the database
+  Description: Add transformed_data to the send buffer, then flush the
+               buffer if either it has reached the specified size or
+               the requested amount of time has passed since the last
+               flush.
+  Return type: none
+  Exceptions : none
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub load {
   my ( $self, $transformed_data ) = @_;
@@ -97,6 +165,26 @@ sub load {
 }
 
 
+=head2 prepare_source_for_dependent_xrefs
+
+  Arg [1]    : integer source_id Ensembl ID of the given xref source
+  Description: A thin wrapper around
+               BaseAdaptor::get_dependent_mappings(), which populates
+               a $xref_dba-internal map with existing dependent_xref
+               links in order to prevent insertion of duplicates in
+               the event of a parser being re-run on the same input
+               data. This method has been left to be called explicitly
+               rather than being embedded in BaseAdaptor
+               initialisation because generating such a map for all
+               sources would likely be a costly operation in both
+               memory and processing time.
+  Return type: none
+  Exceptions : none
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub prepare_source_for_dependent_xrefs {
   my ( $self, $source_id ) = @_;
 
@@ -108,6 +196,9 @@ sub prepare_source_for_dependent_xrefs {
 }
 
 
+# Add an entry to the send buffer and increment the related counter
+# (which we use in order not to repeatedly calculate array size, which
+# is a relatively costly operation) by one.
 sub _add_to_send_buffer {
   my ( $self, $entry ) = @_;
 
@@ -118,6 +209,8 @@ sub _add_to_send_buffer {
 }
 
 
+# Replace the send buffer with an empty array and zero out the size
+# counter.
 sub _clear_send_buffer {
   my ( $self ) = @_;
 

@@ -127,12 +127,27 @@ my %taxonomy_ids_from_taxdb_codes
    );
 
 
-# FIXME: at the moment the extractor only handles one input file at a
-# time for backwards compatibility with the old UniProtParser, that
-# said there is no reason for it not to be able to handle multiple
-# files. Should we want to support this, we should stop opening the
-# filehandle in the constructor because it would no longer be a fixed
-# property of the object.
+=head2 new
+
+  Arg [1]    : HashRef arguments for the constructor:
+                - ArrayRef file_names
+                   - list of names of files to process. Note that as
+                     with the old UniProtParser, and indeed most other
+                     parsers, only the first one will actually be used;
+                - species_id
+                   - Ensembl ID of the species under
+                     consideration. Records pertaining to other
+                     species will be quietly ignored.
+                - xref_dba
+                   - DBAdaptor object passed from the xref pipeline
+  Description: Constructor.
+  Return type: Extractor object
+  Exceptions : throws on failure to acquire the file handle
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub new {
   my ( $proto, $arg_ref ) = @_;
   my $file_names = $arg_ref->{'file_names'};
@@ -160,6 +175,8 @@ sub new {
 }
 
 
+# Destructor. Makes sure the clean-up code gets executed regardless of
+# whether the user has explicitly called finish() or not.
 sub DESTROY {
   my ( $self ) = @_;
 
@@ -168,6 +185,30 @@ sub DESTROY {
   return;
 }
 
+
+=head2 extract
+
+  Description: Extract information from the UniProt-KB record loaded
+               into memory by get_uniprot_record(), apply basic sanity
+               and metadata checks, and produce a key-value
+               representation of the record suitable for further
+               processing.
+
+               Note that the purpose of this method is purely to
+               provide an input format-independent representation of
+               provided data regardless of whether it has come from a
+               plain-text file (as it is the case here), an XML dump,
+               or directly from the database; anything beyond that
+               belongs to the transform stage. It also should
+               generally avoid performing actual retrieval of input
+               data.
+
+  Return type: HashRef
+  Exceptions : throws on processing errors
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub extract {
   my ( $self ) = @_;
@@ -198,6 +239,17 @@ sub extract {
 }
 
 
+=head2 finish
+
+  Description: Wrap-up routine. At the moment all it does is close the
+               file handle, could also e.g. print statistics.
+  Return type: none
+  Exceptions : none
+  Caller     : destructor, UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub finish {
   my ( $self ) = @_;
 
@@ -206,6 +258,45 @@ sub finish {
   return;
 }
 
+
+=head2 get_uniprot_record
+
+  Description: Load the next record from input, if any, into memory,
+               and indicate availability of new data through the
+               return value.
+
+               One thing that this method absolutely *must* do is
+               indicate if the input contains another *complete*
+               UniProt-KB record. Everything else, including whether
+               or not the record is actually retrieved, scheduled for
+               asynchronous retrieval or merely prepared for lazy
+               loading may depend on the specific input type, as long
+               there is a reasonable level of confidence that we
+               *will* eventually get a complete record.
+
+               In case of plain-text files processed by this
+               particular implementation, we have to read the input in
+               line by line because there is nothing in either the
+               format or the data that would allow us to skip
+               ahead. We do, however, avoid any processing other than
+               stripping trailing newline characters and minimal
+               "indexing" (see below), and even that is only performed
+               on lines we know we will need (see
+               %prefixes_of_interest above).
+
+               The output in this case is a hashref assigned to the
+               'record' property of the object, in which keys are
+               names of fields and values are arrayrefs containing
+               matching lines (minus the field name and the
+               three-blank separator) in the order they appeared in
+               the input file.
+
+  Return type: boolean 1 if a record has been loaded, 0 if end of input
+  Exceptions : throws on processing errors
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub get_uniprot_record {
   my ( $self ) = @_;
