@@ -169,15 +169,6 @@ sub DESTROY {
 }
 
 
-sub close_input {
-  my ( $self ) = @_;
-
-  $self->{'_io_handle'}->close();
-
-  return;
-}
-
-
 sub extract {
   my ( $self ) = @_;
 
@@ -210,7 +201,7 @@ sub extract {
 sub finish {
   my ( $self ) = @_;
 
-  $self->close_input();
+  $self->{'_io_handle'}->close();
 
   return;
 }
