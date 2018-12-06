@@ -42,7 +42,7 @@ also creates the synonyms extracted from the pipe seperated synonym_field
 -columns = [accession chromosome position start end strand label status marker marker_type feature_type synonym_field]
 
 example row:
-MGI:1926146	1	  23.44	43730602	43742564	+	1500015O10Rik	O	RIKEN cDNA 1500015O10 gene	Gene	protein coding gene	Ecrg4|augurin
+MGI:1926146E<9>1E<9>  23.44E<9>43730602E<9>43742564E<9>+E<9>1500015O10RikE<9>OE<9>RIKEN cDNA 1500015O10 geneE<9>GeneE<9>protein coding geneE<9>Ecrg4|augurin
 
 
 =head1 SYNOPSIS
@@ -73,6 +73,7 @@ Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
 
 my $parser = Bio::EnsEMBL::Xref::Parser::MGI_Desc_Parser->new(..)
 $parser->run();
+
 =cut
 
 sub run {
@@ -133,7 +134,7 @@ sub run {
     $xref_count++;
     my @synonyms;
     if ( defined( $acc_to_xref{$accession} ) ) {
-      @synonyms = split( /\|/, $data->{'synonym_field'} )
+      @synonyms = split( m/\|/xm, $data->{'synonym_field'} )
         if ( $data->{'synonym_field'} );
       foreach my $syn (@synonyms) {
         $xref_dba->add_synonym( $acc_to_xref{$accession}, $syn );

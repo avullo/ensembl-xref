@@ -67,6 +67,16 @@ my $default_ftp_server = 'ftp.ebi.ac.uk';
 my $default_ftp_dir =
   'pub/databases/microarray/data/atlas/bioentity_properties/ensembl';
 
+=head2
+The run method does the actual parsing and creation of xrefs and synonyms.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::MGI_Desc_Parser->new(..)
+$parser->run();
+
+=cut
+
 sub run {
 
   my ( $self, $ref_arg ) = @_;
@@ -82,7 +92,7 @@ sub run {
 
   # project could be ensembl or ensemblgenomes
   my $project;
-  if ( $file =~ /project[=][>](\S+?)[,]/ ) {
+  if ( $file =~ m/project[=][>](\S+?)[,]/xm ) {
     $project = $1;
   }
 
@@ -134,7 +144,10 @@ sub run {
     }
   }
 
-  print "Added $xref_count DIRECT xrefs\n" if ($verbose);
+  if ( $verbose ) {
+    print "Added $xref_count DIRECT xrefs\n";
+  }
+
   if ( !$xref_count ) {
    croak "No arrayexpress xref added\n";
   }
@@ -147,7 +160,7 @@ sub _get_gene_adaptor {
   my ( $self, $project, $species_name, $dba ) = @_;
 
   my $registry = "Bio::EnsEMBL::Registry";
-  
+
   my ($gene_adaptor);
 
   if ( defined $project && $project eq 'ensembl' ) {
@@ -179,7 +192,7 @@ sub _get_gene_adaptor {
     $gene_adaptor = $dba->get_GeneAdaptor();
   }
   else {
-    die( "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes" );
+    confess "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes";
   }
 
   return $gene_adaptor;
@@ -202,7 +215,7 @@ sub _get_species {
 
   my %species_lookup;
   foreach my $file (@files) {
-    my ($species) = split( /\./, $file );
+    my ($species) = split( m/\./xm, $file );
     $species_lookup{$species} = 1;
   }
   return \%species_lookup;

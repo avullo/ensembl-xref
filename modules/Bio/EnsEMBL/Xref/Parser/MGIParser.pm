@@ -33,7 +33,7 @@ Bio::EnsEMBL::Xref::Parser::MGIParser
 
 =head1 DESCRIPTION
 
-A parser class to parse the MGI (official) source, 
+A parser class to parse the MGI (official) source,
 creating a DIRECT xref between MGI accession and ensembl mouse gene stable id ENSMUSG*
 
 -species = mus_musculus
@@ -43,7 +43,7 @@ creating a DIRECT xref between MGI accession and ensembl mouse gene stable id EN
 -columns = [accession symbol name position chrom ens_gene_stableid] ##ignore other columns
 
 example row:
- MGI:1915941	1110028C15Rik	RIKEN cDNA 1110028C15 gene	33.61	1	ENSMUSG00000026004
+ MGI:1915941E<9>1110028C15RikE<9>RIKEN cDNA 1110028C15 geneE<9>33.61E<9>1E<9>ENSMUSG00000026004
 
 
 =head1 SYNOPSIS
@@ -67,6 +67,16 @@ use DBI;
 use Text::CSV;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
+
+=head2
+The run method does the actual parsing and creation of xrefs and synonyms.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::MGI_Desc_Parser->new(..)
+$parser->run();
+
+=cut
 
 sub run {
 
