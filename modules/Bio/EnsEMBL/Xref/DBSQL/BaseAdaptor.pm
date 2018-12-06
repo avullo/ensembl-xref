@@ -207,6 +207,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
@@ -241,6 +242,7 @@ sub get_source_ids_for_source_name_pattern {
   while ( my @row = $sth->fetchrow_array() ) {
     push @sources, $row[0];
   }
+  $sth->finish();
 
   return @sources;
 } ## end sub get_source_ids_for_source_name_pattern
@@ -334,6 +336,7 @@ DSS
       }
     }
   }
+  $sth->finish();
 
   return \%dependent_2_xref;
 } ## end sub get_valid_xrefs_for_dependencies
@@ -361,6 +364,7 @@ sub get_valid_xrefs_for_direct_xrefs {
   while ( my @row = $sth->fetchrow_array() ) {
     push @direct_sources, $row[0];
   }
+  $sth->finish();
 
   my $gene_sql = <<"GDS";
     SELECT d.general_xref_id,
@@ -420,6 +424,7 @@ PDS
           $gen_xref_id . $separator .
           $stable_id . $separator . $type . $separator . $link;
       }
+      $sth[$ii]->finish();
     }
   }
 
@@ -477,6 +482,7 @@ sub label_to_acc {
       }
     }
   }
+  $sth->finish();
 
   return \%valid_codes;
 } ## end sub label_to_acc
@@ -518,6 +524,7 @@ sub get_valid_codes {
       push @{ $valid_codes{ $row[0] } }, $row[1];
     }
   }
+  $sth->finish();
 
   return \%valid_codes;
 } ## end sub get_valid_codes
@@ -647,6 +654,7 @@ sub add_meta_pair {
   my $sth = $self->dbi->prepare_cached(
     'INSERT INTO meta (meta_key, meta_value, date) VALUES (?, ?, NOW())' );
   $sth->execute( $key, $value );
+  $sth->finish();
 
   return;
 } ## end sub add_meta_pair
@@ -672,6 +680,7 @@ sub get_xref_sources {
     my $source_id   = $row[1];
     $sourcename_to_sourceid{$source_name} = $source_id;
   }
+  $sth->finish();
 
 
   return %sourcename_to_sourceid;
@@ -704,6 +713,7 @@ sub species_id2taxonomy {
       $species_id2taxonomy{$species_id} = [$taxonomy_id];
     }
   }
+  $sth->finish();
 
   return %species_id2taxonomy;
 } ## end sub species_id2taxonomy
@@ -741,6 +751,7 @@ sub species_id2name {
       push @{ $species_id2name{$species_id} }, $name;
     }
   }
+  $sth->finish();
 
   return %species_id2name;
 } ## end sub species_id2name
@@ -817,6 +828,7 @@ sub get_taxonomy_from_species_id {
   while ( my @row = $sth->fetchrow_array() ) {
     $hash{ $row[0] } = 1;
   }
+  $sth->finish();
 
   return \%hash;
 } ## end sub get_taxonomy_from_species_id
@@ -1010,6 +1022,7 @@ AXS
                           $description, $source_id, $species_id,
                           $info_type,   $info_text ) or
     confess $self->dbi->errstr() . "\n $acc\t$label\t\t$source_id\t$species_id\n";
+  $add_xref_sth->finish();
 
   return $add_xref_sth->{'mysql_insertid'};
 } ## end sub add_xref
@@ -1047,6 +1060,7 @@ sub add_object_xref {
   $add_object_xref_sth->execute( $ensembl_id, $object_type, $xref_id )
     or
     confess $self->dbi->errstr() . "\n $ensembl_id\t$object_type\t\t$xref_id\n";
+  $add_object_xref_sth->finish();
 
   return $add_object_xref_sth->{'mysql_insertid'};
 } ## end sub add_object_xref
@@ -1084,6 +1098,7 @@ sub add_identity_xref {
     ) or
     confess(
       $self->dbi->errstr() . "\n$object_xref_id\t$score\t\t$query_identity\t$target_identity\n");
+  $add_identity_xref_sth->finish();
 
   return;
 } ## end sub add_identity_xref
@@ -1178,6 +1193,7 @@ sub add_direct_xref {
   if ( defined $update_info_type ) {
     $self->_update_xref_info_type( $general_xref_id, 'DIRECT');
   }
+  $add_direct_xref_sth->finish();
 
   return;
 } ## end sub add_direct_xref
@@ -1301,6 +1317,7 @@ ADX
   if ( defined $update_info_type ) {
     $self->_update_xref_info_type( $dependent_id, 'DEPENDENT' );
   }
+  $add_dependent_xref_sth->finish();
 
   return;
 } ## end sub add_dependent_xref_maponly
@@ -1419,6 +1436,7 @@ sub add_synonym {
       'INSERT IGNORE INTO synonym ( xref_id, synonym ) VALUES(?,?)');
   $add_synonym_sth->execute( $xref_id, $syn ) or
     confess ( $self->dbi->errstr() . "\n $xref_id\n $syn\n\n" . $add_synonym_sth->errstr() . "\n" );
+  $add_synonym_sth->finish();
 
   return;
 } ## sub add_synonym
@@ -1507,6 +1525,7 @@ GLS
   while ( my @row = $sub_sth->fetchrow_array() ) {
     $hash1{ $row[1] } = $row[0];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 } ## end sub get_label_to_acc
@@ -1550,6 +1569,7 @@ GLA
   while ( my @row = $sub_sth->fetchrow_array() ) {
     $hash1{ $row[0] } = $row[1];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 } ## end sub get_acc_to_label
@@ -1619,6 +1639,7 @@ GDS
   while ( my @row = $sub_sth->fetchrow_array() ) {
     $hash1{ $row[1] } = $row[0];
   }
+  $sub_sth->finish();
 
   return \%hash1;
 } ## end sub get_label_to_desc
@@ -1644,6 +1665,7 @@ sub set_release {
   }
 
   $sth->execute( $s_release, $source_id );
+  $sth->finish();
 
   return;
 } ## end sub set_release
@@ -1678,6 +1700,7 @@ GDM
   while ( $sth->fetch ) {
     $xref_dependent_mapped{"$master_xref|$dependent_xref"} = $linkage;
   }
+  $sth->finish();
 
   return;
 } ## end sub get_dependent_mappings
@@ -1722,6 +1745,7 @@ GES
     }
     $seen{ $acc . $separator . $syn } = 1;
   }
+  $sth->finish();
 
   return \%ext_syns;
 
@@ -1783,6 +1807,7 @@ sub get_meta_value {
   $sth->bind_columns( \$value );
   while ( $sth->fetch ) {    # get the last one
   }
+  $sth->finish();
 
   return $value;
 } ## end sub get_meta_value
@@ -1806,6 +1831,7 @@ sub _update_xref_info_type {
   if ( !$sth->execute( $info_type, $xref_id ) ) {
     confess $self->dbi->errstr() . "\n $xref_id\n $info_type\n\n";
   }
+  $sth->finish();
 
   return;
 } ## end sub _update_xref_info_type
@@ -1831,6 +1857,7 @@ sub _add_pair {
   # Add the pair and confess if it fails
   $pair_sth->execute( $source_id, $accession, $pair ) or
     confess $self->dbi->errstr() . "\n $source_id\t$\t$accession\t$pair\n";
+  $pair_sth->finish();
 
   return;
 } ## end sub _add_pair
@@ -1857,6 +1884,7 @@ sub _add_primary_xref {
   # Add the xref and confess if it fails
   $add_primary_xref_sth->execute( $xref_id, $sequence, $sequence_type, $status ) or
     confess $self->dbi->errstr() . "\n $xref_id\t$sequence_type\t$status\n";
+  $add_primary_xref_sth->finish();
 
   return $add_primary_xref_sth->{'mysql_insertid'};
 } ## end sub _add_primary_xref
@@ -1879,6 +1907,7 @@ sub _update_primary_xref_sequence {
 
   $sth->execute( $sequence, $xref_id ) or
     confess $self->dbi->errstr() . "\n $xref_id\n $sequence\n\n";
+  $sth->finish();
 
   return;
 } ## sub _update_primary_xref_sequence
@@ -1902,6 +1931,7 @@ sub _update_xref_label {
 
   $sth->execute( $label, $xref_id ) or
     confess $self->dbi->errstr() . "\n $xref_id\n $label\n\n";
+  $sth->finish();
 
   return;
 } ## sub _update_xref_label
@@ -1925,6 +1955,7 @@ sub _update_xref_description {
 
   $sth->execute( $description, $xref_id ) or
     confess $self->dbi->errstr() . "\n $xref_id\n $description\n\n";
+  $sth->finish();
 
   return;
 } ## sub _update_xref_description
