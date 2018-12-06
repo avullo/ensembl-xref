@@ -27,6 +27,15 @@ use Readonly;
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
+Readonly my $QR_TI_FIELD_TERMINATORS
+  => qr{
+         (?:                # The TI field spans from *FIELD* TI until:
+           [*]FIELD[*]      #  - the next field in same record, or
+         | [*]RECORD[*]     #  - the end of current record, or
+         | [*]THEEND[*]     #  - the end of input file
+         )
+     }msx;
+
 
 =head2 run
 
@@ -268,13 +277,10 @@ sub extract_ti {
 
   my ( $ti )
     = ( $input_record =~ m{
-                            [*]FIELD[*]\sTI\n  # The TI field spans from this tag until:
+                            [*]FIELD[*]\sTI\n
                             (.+?)              # (important: NON-greedy match)
                             \n?
-                            (?: [*]FIELD[*]    #  - the next field in same record, or
-                            | [*]THEEND[*]   #  - the end of input file, or
-                            | \z             #  - the end of current record
-                            )
+                            $QR_TI_FIELD_TERMINATORS
                         }msx );
 
   return $ti;
