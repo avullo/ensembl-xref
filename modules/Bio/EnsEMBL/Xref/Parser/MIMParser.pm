@@ -272,8 +272,8 @@ sub extract_ti {
                             (.+?)              # (important: NON-greedy match)
                             \n?
                             (?: [*]FIELD[*]    #  - the next field in same record, or
-                            | [*]THEEND[*]   #  - the end of input file, or
-                            | \z             #  - the end of current record
+                            | [*]RECORD[*]     #  - the end of current record, or
+                            | [*]THEEND[*]     #  - the end of input file
                             )
                         }msx );
 
