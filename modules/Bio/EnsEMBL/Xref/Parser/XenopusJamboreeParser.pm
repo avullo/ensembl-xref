@@ -62,7 +62,7 @@ use Text::CSV;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-=head2
+=head2 run
 The run method does the actual parsing and creation of xrefs and synonyms.
 Parser gets initialized as noted above and run is called from
 Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
@@ -126,12 +126,15 @@ sub run {
     if ($verbose);
 
   return 0;
-}
+} ## end sub run
 
 
-# Regex handles lines in the following desc formats
-# XB-GENE-940410E<9>unnamedE<9>Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14E<9>ENSXETG00000007206
-# XB-GENE-956173E<9>hba4E<9>alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3E<9>ENSXETG00000001141
+=head2 parse_description
+Regex handles lines in the following desc formats:
+XB-GENE-940410E<9>unnamedE<9>Putative ortholog of g2/mitotic-specific cyclin B3, 3 of 14E<9>ENSXETG00000007206
+XB-GENE-956173E<9>hba4E<9>alpha-T4 globin, Putative ortholog of hemoglobin alpha chain. [Source:Uniprot/SWISSPROT;Acc:P01922], 2 of 3E<9>ENSXETG00000001141
+
+=cut
 
 sub parse_description {
   my ( $self, $desc ) = @_;
@@ -142,6 +145,6 @@ sub parse_description {
   # Remove labels of type 5 of 14 from the description
   $desc =~ s/,\s+[0-9]+\s+of\s+[0-9]+//xms;
   return $desc;
-}
+} ## end sub parse_description
 
 1;

@@ -47,6 +47,12 @@ has reuse => (
   default => 0,
 );
 
+
+=head2 _guess_config
+  Default configuration file
+
+=cut
+
 sub _guess_config {
   return 'testdb.conf';
 }
@@ -66,6 +72,11 @@ around '_init_config' => sub {
   return;
 };
 
+
+=head2 DEMOLISH
+  Base function for the removal of test databases
+
+=cut
 
 sub DEMOLISH {
   my $self = shift;

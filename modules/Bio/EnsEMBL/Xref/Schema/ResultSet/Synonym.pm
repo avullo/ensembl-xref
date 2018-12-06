@@ -23,7 +23,8 @@ use warnings;
 
 use parent 'DBIx::Class::ResultSet';
 
-=head2
+
+=head2 check_synonym
 Search for the given xref_id and synonym
   {
     xref_id => $params->{xref_id},
@@ -38,6 +39,6 @@ sub check_synonym {
 
   return 1 if defined $hit;
   return;
-}
+} ## end sub check_synonym
 
 1;

@@ -34,10 +34,20 @@ Readonly my $DEFAULT_LOADER_BATCH_SIZE         => 1000;
 Readonly my $DEFAULT_LOADER_CHECKPOINT_SECONDS => 300;
 
 Readonly my %source_name_for_section => (
-                                         'Swiss-Prot' => 'Uniprot/SWISSPROT',
-                                         'TrEMBL'     => 'Uniprot/SPTREMBL',
-                                       );
+  'Swiss-Prot' => 'Uniprot/SWISSPROT',
+  'TrEMBL'     => 'Uniprot/SPTREMBL',
+);
 
+
+=head2 run
+The run method does the actual parsing and creation of direct xrefs.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::UniProtParser-E<gt>new(..)
+$parser-E<gt>run();
+
+=cut
 
 sub run {
   my ( $self ) = @_;
@@ -131,10 +141,16 @@ sub run {
   }
 
   return 0;
-}
+} ## end sub run
 
 
-# Extract Swiss-Prot and TrEMBL release info from the release file
+=head2 _get_release_numbers_from_file
+  Arg [1]    : release_file_name
+  Arg [2]    : verbose
+  Description: Extract Swiss-Prot and TrEMBL release info from the release file
+
+=cut
+
 sub _get_release_numbers_from_file {
   my ( $self, $release_file_name, $verbose ) = @_;
 
@@ -169,7 +185,15 @@ sub _get_release_numbers_from_file {
   $release_io->close();
 
   return $release_numbers;
-}
+} ## end sub _get_release_numbers_from_file
+
+
+=head2
+  Arg [1]    : Source ID Map
+  Arg [2]    : Release number
+  Description: Set the release number for the UniProt Source
+
+=cut
 
 sub _set_release_numbers_on_uniprot_sources {
   my ( $self, $source_id_map, $release_numbers ) = @_;
@@ -184,6 +208,6 @@ sub _set_release_numbers_on_uniprot_sources {
   }
 
   return;
-}
+} ## end sub _set_release_numbers_on_uniprot_sources
 
 1;

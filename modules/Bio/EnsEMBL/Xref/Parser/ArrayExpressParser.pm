@@ -72,8 +72,8 @@ The run method does the actual parsing and creation of xrefs and synonyms.
 Parser gets initialized as noted above and run is called from
 Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
 
-my $parser = Bio::EnsEMBL::Xref::Parser::MGI_Desc_Parser->new(..)
-$parser->run();
+my $parser = Bio::EnsEMBL::Xref::Parser::ArrayExpressParser-E<gt>new(..)
+$parser-E<gt>run();
 
 =cut
 

@@ -16,6 +16,51 @@ limitations under the License.
 
 =cut
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=cut
+
+=head1 DESCRIPTION
+
+This parser will read xrefs from a record file downloaded from the
+OMIM Web site. They should be assigned to two different xref
+sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
+entries so the parser does not match them to Ensembl; this will be
+taken care of when EntrezGene entries are matched.
+
+OMIM records are multiline. Each record begins with a specific tag
+line and consists of a number of fields. Each field starts with its
+own start-tag line (i.e. the data proper only appears after a
+newline) and continues until the beginning of either the next field
+in the same record, the next record, or the end-of-input tag. The
+overall structure looks as follows:
+
+  *RECORD*
+  *FIELD* NO
+  *FIELD* TI
+  *FIELD* TX
+  ...
+  *RECORD*
+  *FIELD* NO
+  *FIELD* TI
+  ...
+  *RECORD*
+  *FIELD* NO
+  ...
+  *FIELD* CD
+  *FIELD* ED
+  *THEEND*
+
+All the data relevant to the parser can be found in the TI field.
+
+=cut
+
 package Bio::EnsEMBL::Xref::Parser::MIMParser;
 
 use strict;
@@ -26,37 +71,15 @@ use Readonly;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-# This parser will read xrefs from a record file downloaded from the
-# OMIM Web site. They should be assigned to two different xref
-# sources: MIM_GENE and MIM_MORBID. MIM xrefs are linked to EntrezGene
-# entries so the parser does not match them to Ensembl; this will be
-# taken care of when EntrezGene entries are matched.
-#
-# OMIM records are multiline. Each record begins with a specific tag
-# line and consists of a number of fields. Each field starts with its
-# own start-tag line (i.e. the data proper only appears after a
-# newline) and continues until the beginning of either the next field
-# in the same record, the next record, or the end-of-input tag. The
-# overall structure looks as follows:
-#
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   *FIELD* TX
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   *FIELD* TI
-#   ...
-#   *RECORD*
-#   *FIELD* NO
-#   ...
-#   *FIELD* CD
-#   *FIELD* ED
-#   *THEEND*
-#
-# All the data relevant to the parser can be found in the TI field.
+=head2 run
+The run method does the actual parsing and creation of direct xrefs.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
 
+my $parser = Bio::EnsEMBL::Xref::Parser::HPAParser-E<gt>new(..)
+$parser-E<gt>run();
+
+=cut
 
 sub run {
 
@@ -224,6 +247,11 @@ sub run {
 } ## end sub run
 
 
+=head2 extract_ti
+Extract the TI tag fields from the records
+
+=cut
+
 sub extract_ti {
   my ( $input_record ) = @_;
 
@@ -239,8 +267,13 @@ sub extract_ti {
                         }msx );
 
   return $ti;
-}
+} ## end sub extract_ti
 
+
+=head2 parse_ti
+Extract the type, accession and description for the TI field.
+
+=cut
 
 sub parse_ti {
   my ( $ti ) = @_;
@@ -263,8 +296,6 @@ sub parse_ti {
                          }msx );
 
   return @captures;
-}
-
-
+} ## end sub parse_ti
 
 1;

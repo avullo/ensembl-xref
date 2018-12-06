@@ -22,6 +22,16 @@ use warnings;
 
 use parent 'DBIx::Class::ResultSet';
 
+
+=head2 check_direct_xref
+  Arg [1]    : HashRef of parameters
+                 $params->{accession},
+                 $params->{display_label},
+                 $params->{description}
+  Description:
+
+=cut
+
 sub check_direct_xref {
   my ($self,$params) = @_;
 
@@ -33,6 +43,6 @@ sub check_direct_xref {
   # }
   return 1 if defined $hit;
   return;
-}
+} ## end sub check_direct_xref
 
 1;

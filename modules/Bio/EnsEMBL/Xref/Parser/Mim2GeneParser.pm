@@ -16,6 +16,16 @@ limitations under the License.
 
 =cut
 
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=cut
+
 package Bio::EnsEMBL::Xref::Parser::Mim2GeneParser;
 
 # For non-destructive substitutions in regexps (/r flag)
@@ -34,6 +44,15 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
 
+=head2 run
+The run method does the actual parsing and creation of direct xrefs.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::Mim2GeneParser-E<gt>new(..)
+$parser-E<gt>run();
+
+=cut
 
 sub run {
   my ( $self ) = @_;
@@ -74,11 +93,11 @@ sub run {
   # Initialise all counters to 0 so that we needn't handle possible undefs
   # while printing the summary
   my %counters = (
-                  'all_entries'                          => 0,
-                  'dependent_on_entrez'                  => 0,
-                  'direct_ensembl'                       => 0,
-                  'missed_master'                        => 0,
-                  'missed_omim'                          => 0,
+                  'all_entries'         => 0,
+                  'dependent_on_entrez' => 0,
+                  'direct_ensembl'      => 0,
+                  'missed_master'       => 0,
+                  'missed_omim'         => 0,
                 );
 
  RECORD:
@@ -182,7 +201,7 @@ sub run {
 } ## end sub run
 
 
-=head2 is_file_header_valid
+=head2 is_header_file_valid
 
   Arg [1]    : String file header line
   Example    : if (!is_file_header_valid($header_line)) {
@@ -204,14 +223,13 @@ sub is_header_file_valid {
 
   my @fields_ok;
 
-  Readonly my @field_patterns
-    => (
-        qr{ \A [#]? \s* MIM[ ]Number }msx,
-        qr{ MIM[ ]Entry[ ]Type }msx,
-        qr{ Entrez[ ]Gene[ ]ID }msx,
-        qr{ Approved[ ]Gene[ ]Symbol }msx,
-        qr{ Ensembl[ ]Gene[ ]ID }msx,
-      );
+  Readonly my @field_patterns => (
+    qr{ \A [#]? \s* MIM[ ]Number }msx,
+    qr{ MIM[ ]Entry[ ]Type }msx,
+    qr{ Entrez[ ]Gene[ ]ID }msx,
+    qr{ Approved[ ]Gene[ ]Symbol }msx,
+    qr{ Ensembl[ ]Gene[ ]ID }msx,
+  );
 
   my $header_field;
   foreach my $pattern (@field_patterns) {
@@ -222,7 +240,7 @@ sub is_header_file_valid {
 
   # All fields must have matched
   return List::Util::all { $_ } @fields_ok;
-}
+} ## end sub is_header_file_valid
 
 
 =head2 process_xref_entry
@@ -258,12 +276,13 @@ sub process_xref_entry {
   else {
     foreach my $ent_id ( @{ $arg_ref->{'entrez_xrefs'} } ) {
       $arg_ref->{'counters'}->{'dependent_on_entrez'}++;
-      $xref_dba->add_dependent_xref_maponly( $arg_ref->{'mim_xref_id'},
-                                         $arg_ref->{'mim_source_id'},
-                                         $ent_id,
-                                         $arg_ref->{'entrez_source_id'},
-                                         1
-                                      );
+      $xref_dba->add_dependent_xref_maponly(
+        $arg_ref->{'mim_xref_id'},
+        $arg_ref->{'mim_source_id'},
+        $ent_id,
+        $arg_ref->{'entrez_source_id'},
+        1
+      );
     }
   }
 

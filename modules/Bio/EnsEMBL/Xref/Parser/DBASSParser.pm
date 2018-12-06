@@ -44,6 +44,15 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
 
+=head2 run
+The run method does the actual parsing and creation of xrefs and synonyms.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::BDASSParser-E<gt>new(..)
+$parser-E<gt>run();
+
+=cut
 
 sub run {
   my ( $self ) = @_;
@@ -185,7 +194,7 @@ sub is_file_header_valid {
 
   # All fields must be in order
   return List::Util::all { $_ } @fields_ok;
-}
+} ## end sub is_file_header_valid
 
 
 1;

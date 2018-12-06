@@ -22,6 +22,15 @@ use warnings;
 
 use parent 'DBIx::Class::ResultSet';
 
+
+=head2 fetch_dependent_xref
+  Arg []     : direct_accession
+  Arg []     : dependent_accession
+  Description: Fetch the dependent xref
+  Return     : DBIx::Class::ResultSet
+
+=cut
+
 sub fetch_dependent_xref {
   my ($self,$direct_accession,$dependent_accession) = @_;
 
@@ -31,8 +40,8 @@ sub fetch_dependent_xref {
     }, {
       join => [ 'master_xref','dependent_xref']
     });
-  
+
   return $hit;
-}
+} ## end sub fetch_dependent_xref
 
 1;
