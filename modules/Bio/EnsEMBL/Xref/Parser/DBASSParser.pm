@@ -83,7 +83,7 @@ sub run {
   my $filename = @{$files}[0];
   my $file_io = $xref_dba->get_filehandle($filename);
 
-  if ( ! is_file_header_valid( $csv->getline( $file_io ) ) ) {
+  if ( ! is_file_header_valid( $csv->header( $file_io ) ) ) {
     confess "Malformed or unexpected header in DBASS file '${filename}'";
   }
 
@@ -169,8 +169,8 @@ sub run {
 
 =head2 is_file_header_valid
 
-  Arg [1]    : String file header line
-  Example    : if (!is_file_header_valid($header_line)) {
+  Arg [1..N] : list of column names provided by Text::CSV::header()
+  Example    : if ( !is_file_header_valid( $csv->header( $fh ) ) ) {
                  confess 'Bad header';
                }
   Description: Verifies if the header of a DBASS file follows expected
@@ -183,21 +183,21 @@ sub run {
 =cut
 
 sub is_file_header_valid {
-  my ( $header ) = @_;
+  my ( @header ) = @_;
 
   # Don't bother with parsing column names if their number does not
   # match to begin with
-  if ( scalar @{ $header } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+  if ( scalar @header != $EXPECTED_NUMBER_OF_COLUMNS ) {
     return 0;
   }
 
-  my ( $dbass_end ) = ( $header->[0] =~ m{ DBASS (3|5) GeneID }msx );
+  my ( $dbass_end ) = ( $header[0] =~ m{ dbass (3|5) geneid }msx );
   return 0 unless defined $dbass_end;
 
-  my $dbass_name_ok = ( $header->[1] =~ m{ DBASS ${dbass_end} GeneName }msx );
+  my $dbass_name_ok = ( $header[1] =~ m{ dbass ${dbass_end} genename }msx );
   return 0 unless $dbass_name_ok;
 
-  my $ensembl_id_ok = ( $header->[2] eq 'EnsemblGeneNumber' );
+  my $ensembl_id_ok = ( $header[2] eq 'ensemblgenenumber' );
   return 0 unless $ensembl_id_ok;
 
   # If we have made it this far, all should be in order
