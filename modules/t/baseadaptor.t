@@ -108,6 +108,21 @@ is(
   $xref_dba->get_source_id_for_source_name('RefSeq'),
   $source->source_id, 'get_source_id_for_source_name' );
 
+# Add a second example source to the db
+my $source2 = $db->schema->resultset('Source')->create({
+  name                 => 'Second_fake_source',
+  status               => 'KNOWN',
+  source_release       => '38',
+  download             => 'Y',
+  priority             => 1,
+  priority_description => 'Like a boss',
+  ordered              => 10
+});
+
+is(
+  $xref_dba->get_source_id_for_source_name('RefSeq'),
+  $source->source_id, 'get_source_id_for_source_name' );
+
 
 # get_source_ids_for_source_name_pattern
 throws_ok
@@ -117,6 +132,7 @@ throws_ok
 ok(
   defined $xref_dba->get_source_ids_for_source_name_pattern('fake_name'),
   'get_source_ids_for_source_name_pattern - Array returned' );
+
 is(
   $xref_dba->get_source_ids_for_source_name_pattern('RefSeq'),
   $source->source_id, 'get_source_ids_for_source_name_pattern' );
