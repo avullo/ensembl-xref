@@ -25,7 +25,6 @@ use strict;
 use warnings;
 
 use Carp;
-use List::Util;
 use Readonly;
 use Text::CSV;
 
@@ -197,19 +196,17 @@ sub is_file_header_valid {
     return 0;
   }
 
-  my @fields_ok;
-
   my ( $dbass_end ) = ( $header->[0] =~ m{ DBASS (3|5) GeneID }msx );
-  push @fields_ok, defined $dbass_end;
+  return 0 unless defined $dbass_end;
 
   my $dbass_name_ok = ( $header->[1] =~ m{ DBASS ${dbass_end} GeneName }msx );
-  push @fields_ok, $dbass_name_ok;
+  return 0 unless $dbass_name_ok;
 
   my $ensembl_id_ok = ( $header->[2] eq 'EnsemblGeneNumber' );
-  push @fields_ok, $ensembl_id_ok;
+  return 0 unless $ensembl_id_ok;
 
-  # All fields must be in order
-  return List::Util::all { $_ } @fields_ok;
+  # If we have made it this far, all should be in order
+  return 1;
 }
 
 
