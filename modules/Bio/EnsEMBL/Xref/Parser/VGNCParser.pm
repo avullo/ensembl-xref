@@ -184,7 +184,7 @@ sub run {
   $file_io->close();
 
   if($verbose){
-    print "Loaded a total of $count xrefs\n";
+    print "Loaded a total of $count VGNC xrefs\n";
   }
 
   return 0; # successful
