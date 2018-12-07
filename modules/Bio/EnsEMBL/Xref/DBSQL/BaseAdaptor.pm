@@ -146,8 +146,8 @@ sub get_filehandle {
   }
 
   if ( !-e $file_name ) {
-    carp( "File '$file_name' does not exist, " .
-          "will try '$alt_file_name'" );
+    print "File $file_name does not exist, " .
+          "will try $alt_file_name\n";
     $file_name = $alt_file_name;
   }
 
@@ -272,12 +272,10 @@ sub get_source_name_for_source_id {
     $source_name = $row[0];
   }
   else {
-    carp
-"There is no entity with source-id  $source_id  in the source-table of the \n";
-    carp
-"xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n";
-    carp "and in the parser\n";
-    carp "Couldn't get source name for source ID $source_id\n";
+    print "There is no entity with source-id  $source_id  in the source-table of the \n";
+    print "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n";
+    print "and in the parser\n";
+    print "Couldn't get source name for source ID $source_id\n";
     $source_name = '-1';
   }
 

@@ -21,6 +21,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Warnings;
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
@@ -488,7 +489,7 @@ ok( scalar $xref_dba->get_label_to_desc( 'RefSeq', 9606, 'Like a boss' ) > 0, 'g
 
 
 # set_release
-ok( !defined $xref_dba->set_release( $source->source_id, 100 ) );
+ok( !defined $xref_dba->set_release( $source->source_id, 100 ), 'Set release without problems' );
 
 
 # get_dependent_mappings
