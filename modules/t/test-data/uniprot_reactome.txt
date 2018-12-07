@@ -8,3 +8,8 @@ A0A075B6P5	R-HSA-168249	https://reactome.org/PathwayBrowser/#/R-HSA-168249	Innat
 A0A075B6P5	R-HSA-168249	https://reactome.org/PathwayBrowser/#/R-HSA-168249	Innate Immune System	IEA	Homo sapiens
 A0A075B6P5	R-HSA-168256	https://reactome.org/PathwayBrowser/#/R-HSA-168256	Immune System	TAS	Homo sapiens
 A0A075B6P5	R-HSA-168256	https://reactome.org/PathwayBrowser/#/R-HSA-168256	Immune System	IEA	Homo sapiens
+A0A0A0MPA8	R-CFA-382551	https://reactome.org/PathwayBrowser/#/R-CFA-382551	Transport of small molecules	IEA	Canis familiaris
+A0A0A0MPA8	R-CFA-432047	https://reactome.org/PathwayBrowser/#/R-CFA-432047	Passive transport by Aquaporins	IEA	Canis familiaris
+A0A0A0MPA8	R-CFA-445717	https://reactome.org/PathwayBrowser/#/R-CFA-445717	Aquaporin-mediated transport	IEA	Canis familiaris
+A0A0A0MPA9	R-CFA-2672351	https://reactome.org/PathwayBrowser/#/R-CFA-2672351	Stimuli-sensing channels	IEA	Canis familiaris
+A0A0A0MPA9	R-CFA-382551	https://reactome.org/PathwayBrowser/#/R-CFA-382551	Transport of small molecules	IEA	Canis familiaris
