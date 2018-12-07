@@ -63,6 +63,7 @@ VGNC is the official naming source for some vertebrates species
     uniprot_ids
   ]
 
+Only columns listed in @required_columns are mandatory.
 
 =head1 SYNOPSIS
 
@@ -125,7 +126,7 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
-  }) or confess "Cannot use file $file: " . Text::CSV->error_diag;
+  }) or confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   # header must contain these columns
   my @required_columns = qw(
