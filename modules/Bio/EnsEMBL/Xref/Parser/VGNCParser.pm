@@ -82,7 +82,7 @@ use strict;
 use warnings;
 use Carp;
 use Text::CSV;
-use Smart::Comments;
+
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 =head2 run
@@ -119,7 +119,7 @@ sub run {
   my %species2tax = $xref_dba->species_id2taxonomy;
 
   my @tax_ids = @{$species2tax{$species_id}};
-  ### @tax_ids
+
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
   my $input_file = Text::CSV->new({
