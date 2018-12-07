@@ -28,6 +28,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Warnings;
 
 use Test::Perl::Critic (
     -severity => 3,
