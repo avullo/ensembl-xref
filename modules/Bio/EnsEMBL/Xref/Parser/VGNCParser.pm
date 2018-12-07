@@ -101,7 +101,7 @@ sub run {
   my $verbose      = $self->{verbose} // 0;
 
 
-  if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
   }
 
