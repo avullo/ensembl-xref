@@ -183,7 +183,7 @@ sub run {
   $input_file->eof or confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
-  if($verbose){
+  if ($verbose) {
     print "Loaded a total of $count VGNC xrefs\n";
   }
 
