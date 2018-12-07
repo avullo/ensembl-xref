@@ -30,6 +30,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Exception;
+use Test::Warnings;
 use FindBin '$Bin';
 use lib "$Bin/";
 
@@ -49,9 +50,24 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   port   => $config{port}
 );
 
-$xref_dba->_add_source_id(86, 'reactome_gene');
-$xref_dba->_add_source_id(87, 'reactome_transcript');
-$xref_dba->_add_species_alias(9606, 'homo_sapiens');
+my $species = $db->schema->resultset('Species')->create({
+  species_id  => 9606,
+  taxonomy_id => 9606,
+  name        => 'Homo sapiens',
+  aliases     => 'homo_sapiens'
+});
+
+my $reactome_gene_source = $db->schema->resultset('Source')->create({
+  source_id => 86,
+  name      => 'reactome_gene',
+  ordered   => 1
+});
+
+my $reactome_transcript_source = $db->schema->resultset('Source')->create({
+  source_id => 87,
+  name      => 'reactome_transcript',
+  ordered   => 1
+});
 
 use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser';
 
