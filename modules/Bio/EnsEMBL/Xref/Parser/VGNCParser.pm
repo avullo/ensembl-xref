@@ -125,7 +125,7 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
-  }) or confess "Cannot use file $file: ".Text::CSV->error_diag ();
+  }) or confess "Cannot use file $file: " . Text::CSV->error_diag;
 
   # header must contain these columns
   my @required_columns = qw(
