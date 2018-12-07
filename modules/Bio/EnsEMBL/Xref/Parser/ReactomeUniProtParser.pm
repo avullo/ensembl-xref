@@ -129,14 +129,17 @@ sub run {
       next;
     }
     if ( defined $uniprot{$data->{'uniprot_accession'}} ) {
-      $xref_dba->add_dependent_xref({
-        acc        => $data->{'accession'},
-        label      => $data->{'accession'},
-        desc       => $data->{'description'},
-        source_id  => $reactome_source_id,
-        species_id => $species_id,
-        info_type  => "DEPENDENT"
-      });
+      foreach my $master_xref_id (@{$uniprot{$data->{'uniprot_accession'}}} ) {
+        $xref_dba->add_dependent_xref({
+          acc            => $data->{'accession'},
+          label          => $data->{'accession'},
+          desc           => $data->{'description'},
+          master_xref_id => $master_xref_id, 
+          source_id      => $reactome_source_id,
+          species_id     => $species_id,
+          info_type      => "DEPENDENT"
+        });
+      }
     }
   }
 
