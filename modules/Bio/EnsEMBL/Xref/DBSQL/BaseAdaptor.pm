@@ -62,7 +62,7 @@ my $verbose;
 
 =head2 new
   Arg [1]    : proto
-  Arg [2]    : arguments : { host => string, dbname => string, user => string, pass => string, port => int}
+  Arg [2]    : arguments : { host => string, dbname => string, user => string, pass => string, port => int, group => string }
   Description: Initialisation class for the dbi connection
   Return type: self
   Caller     : internal
@@ -80,7 +80,8 @@ sub new {
     -DBNAME => $args{dbname},
     -USER   => $args{user},
     -PASS   => $args{pass} || '',
-    -PORT => $args{port} || '3306'
+    -PORT   => $args{port} || '3306',
+    -GROUP  => $args{group} || ''						     
   ) );
   $self->verbose( $args{verbose} // 0 );
 
@@ -164,6 +165,54 @@ sub get_filehandle {
   return $io;
 } ## end sub get_filehandle
 
+=head2 get_id_from_species_name
+
+  Arg [1]    : speciesname
+  Description: Gets the species ID for a given species name
+  Return type: integer
+  Exceptions : confesses if not found
+  Caller     : Bio::EnsEMBL::Xref::Mapper
+
+=cut
+
+sub get_id_from_species_name {
+  my ( $self, $name) = @_;
+
+  if ( !defined $name ) {
+    confess 'Undefined species name';
+  }
+
+  my $sql = 'SELECT species_id FROM species WHERE name=?';
+
+  my @sql_params = ( $name );
+  my $sth = $self->dbi->prepare_cached($sql);
+  $sth->execute(@sql_params);
+
+  my @row = $sth->fetchrow_array();
+  my $species_id;
+  if (@row) {
+    $species_id = $row[0];
+  } else {
+    my $msg = "No ID for species name = '${name}'";
+    confess $msg;
+  }
+
+  return $species_id;
+} ## end sub get_id_from_species_name
+
+=head2 get_species_names
+
+=cut
+
+sub get_species_names {
+  my $self = shift;
+
+  my $sth = $self->dbi->prepare_cached( 'SELECT name FROM species' );
+  $sth->execute();
+
+  return map { $_->[0] } @{ $sth->fetchrow_arrayref }
+  
+} ## end sub get_species_names
 
 =head2 get_source_id_for_source_name
   Arg [1]    : source name
@@ -632,17 +681,21 @@ sub upload_direct_xrefs {
 
 
 =head2 add_meta_pair
-  Arg [1]    : key
-  Arg [2]    : value
+  Arg [1]    : Scalar; the key
+  Arg [2]    : Scalar; the value
   Description: Insert into the meta table the key and value.
-  Return type:
-  Caller     : internal
+  Return type: None
+  Caller     : Bio::EnsEMBL::Xref::Mapper
 
 =cut
 
 sub add_meta_pair {
 
   my ( $self, $key, $value ) = @_;
+
+  unless (defined $key and defined $value) {
+    confess 'Need to specify (key, value) pair';
+  }
 
   my $sth = $self->dbi->prepare_cached(
     'INSERT INTO meta (meta_key, meta_value, date) VALUES (?, ?, NOW())' );
@@ -651,6 +704,49 @@ sub add_meta_pair {
   return;
 } ## end sub add_meta_pair
 
+=head2 add_alt_allele
+
+  Arg [1]    : Scalar; the allele id
+  Arg [2]    : Scalar; the gene id
+  Arg [3]    : Boolean; if it's reference
+  Description: Insert into the alt allele table
+  Return type: None
+  Caller     : Bio::EnsEMBL::Xref::Mapper
+
+=cut
+
+sub add_alt_allele {
+
+  my ( $self, $allele_id, $gene_id, $is_reference ) = @_;
+
+  unless (defined $allele_id and defined $gene_id and defined $is_reference ) {
+    confess 'Need to specify (allele_id, gene_id, is_reference)';
+  }
+
+  my $sth = $self->dbi->prepare_cached(
+    'INSERT INTO alt_allele (alt_allele_id, gene_id, is_reference) VALUES (?, ?, ?)' );
+  $sth->execute( $allele_id, $gene_id, $is_reference );
+
+  return;
+} ## end sub add_alt_allele
+
+=head2 delete_alt_allele
+
+  Arg [ ]    : none
+  Description: Delete entries in alt allele table
+  Return type: none
+  Caller     : Bio::EnsEMBL::Xref::Mapper
+
+=cut
+
+sub delete_alt_alleles {
+  my $self = shift;
+
+  my $sth = $self->dbi->prepare_cached( 'DELETE FROM alt_allele' );
+  $sth->execute;
+
+  return;
+} ## end sub delete_alt_alleles
 
 =head2 get_xref_sources
   Description: Create a hash of all the source names for xrefs
@@ -1766,15 +1862,18 @@ sub parsing_finished_store_data {
 
 
 =head2 get_meta_value
+
   Arg [1]    : key
   Description: Return metadata value
   Return type: integer or string
-  Caller     : internal
+  Exceptions : If argument is not provided
+  Caller     : Bio::EnsEMBL::Xref::Mapper
 
 =cut
 
 sub get_meta_value {
   my ( $self, $key ) = @_;
+  confess 'Need to specify the key' unless defined $key;
 
   my $sth = $self->dbi->prepare_cached(
     'SELECT meta_value FROM meta WHERE meta_key LIKE ? ORDER BY meta_id' );
@@ -1786,6 +1885,294 @@ sub get_meta_value {
 
   return $value;
 } ## end sub get_meta_value
+
+=head2 update_process_status
+
+  Arg [1]    : Scalar; the new status
+  Description: Update process status
+  Returntype : none
+  Exceptions : If insertion fails or argument is not provided
+
+=cut
+
+sub update_process_status {
+  my ($self, $value) = @_;
+  confess 'Need to specify a value' unless defined $value;
+
+  my $sth = $self->dbi->prepare_cached( 'INSERT INTO process_status (status, date) VALUES(?, NOW())' );
+  $sth->execute( $value ) or
+    confess $self->dbi->errstr() . "\n $value\n";
+} ## end sub update_process_status
+
+=head2 xref_latest_status
+
+  Arg []     : none
+  Description: Get latest process status
+  Returntype : none
+  Exceptions : none
+
+=cut
+
+sub xref_latest_status { 
+  my $self = shift;
+
+  my $sth = $self->dbi->prepare_cached( 'SELECT id, status, date FROM process_status ORDER BY id' );
+  $sth->execute();
+  
+  my ($id, $status, $date);
+  $sth->bind_columns(\$id, \$status,\$date);
+  while ( $sth->fetch ) {} # get the last one
+  
+  return $status;
+} ## end sub xref_latest_status
+
+=head2 clean_up
+
+=cut
+
+sub clean_up { 
+  my ( $self, $stats, $keep_core_data ) = @_;
+
+  # remove all object_xref, identity_xref  entries
+  my $sth = $self->dbi->prepare_cached( 'TRUNCATE table object_xref' );
+  $sth->execute(); 
+
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE table go_xref' );
+  $sth->execute(); 
+
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE table identity_xref' );
+  $sth->execute(); 
+ 
+  # remove all xrefs after PARSED_xref_id
+  # set dumped to NULL fro all xrefs.
+  my $max_xref_id = $self->get_meta_value( 'PARSED_xref_id' );
+  if($max_xref_id){
+    $sth = $self->dbi->prepare_cached( "DELETE from xref where xref_id > $max_xref_id" );
+    $sth->execute(); 
+  }
+
+  $sth = $self->dbi->prepare_cached( 'UPDATE xref set dumped = null');
+  $sth->execute(); 
+
+  $sth = $self->dbi->prepare_cached( 'DELETE from display_xref_priority' );
+  $sth->execute();
+
+  $sth = $self->dbi->prepare_cached( 'DELETE from gene_desc_priority' );
+  $sth->execute();
+
+  unless ( $keep_core_data ) {
+    # remove all from core_info tables
+    #   gene_transcript_translation
+    #   [gene/transcript/translation]_stable_id
+    #
+    $sth = $self->dbi->prepare_cached( 'DELETE from gene_transcript_translation' );
+    $sth->execute(); 
+    
+    $sth = $self->dbi->prepare_cached( 'DELETE from gene_stable_id' );
+    $sth->execute(); 
+    
+    $sth = $self->dbi->prepare_cached( 'DELETE from transcript_stable_id' );
+    $sth->execute(); 
+    
+    $sth = $self->dbi->prepare_cached( 'DELETE from translation_stable_id' );
+    $sth->execute(); 
+  }
+  
+  return;
+} ## end sub clean_up
+
+=head2 remove_mapping_data
+
+=cut
+
+sub remove_mapping_data {
+  my $self = shift;
+
+  my $sth = $self->dbi->prepare_cached( 'DELETE from mapping_jobs' );
+  $sth->execute(); 
+
+  $sth = $self->dbi->prepare_cached( 'DELETE from mapping' );
+  $sth->execute();
+
+  $sth = $self->dbi->prepare_cached( 'DELETE from alt_allele' );
+  $sth->execute();
+
+  $sth = $self->dbi->prepare_cached( 'DELETE from source_mapping_method' );
+  $sth->execute();
+
+  return;
+} ## end sub remove_mapping_data
+
+=head2 update_mapping_jobs_status
+
+=cut
+
+sub update_mapping_jobs_status {
+  my ( $self, $status ) = @_;
+  confess 'Status not given' unless defined $status;
+  
+  my $sth = $self->dbi->prepare_cached( 'UPDATE mapping_jobs set status = ?' );
+  $sth->execute( $status ) or
+    confess $self->dbi->errstr() . "\n $status\n";
+  
+} ## end sub update_mapping_jobs_status
+
+
+=head2 process_alt_alleles
+
+=cut
+
+sub process_alt_alleles {
+  my $self = shift;
+
+  # ALL are on the Gene level now. This may change but for now it is okay.
+  my ($alt_to_ref, $ref_to_alts) = $self->_get_alt_allele_hashes();
+
+  #
+  # Move the xrefs on to the reference Gene.
+  # NOTE: Igonore used as the xref might already be on this Gene already and we do not want it to crash
+  #
+  my $move_sql =(<<'MOVE');
+UPDATE IGNORE object_xref ox, xref x, source s 
+  SET ox.ensembl_id = ? 
+    WHERE x.source_id = s.source_id AND 
+          ox.xref_id = x.xref_id AND
+          ox.ensembl_id = ? AND
+          ox.ensembl_object_type = 'Gene' AND
+          ox.ox_status = 'DUMP_OUT' AND 
+          s.name in (
+MOVE
+  $move_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+
+  print "MOVE SQL\n$move_sql\n";
+
+  #
+  # Now where it was already on the Gene the ignore will have stopped the move
+  # so we now want to just remove those ones as they already exist.
+  #
+  my $del_ix_sql =(<<'DIX');
+DELETE ix 
+  FROM identity_xref ix, object_xref ox, xref x, source s 
+    WHERE x.source_id = s.source_id AND
+          ox.object_xref_id = ix.object_xref_id AND
+          ox.xref_id = x.xref_id AND 
+          ox.ensembl_id = ? AND 
+          ox.ensembl_object_type = 'Gene' AND 
+          ox.ox_status = 'DUMP_OUT' AND
+           s.name in (
+DIX
+  $del_ix_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+
+  my $del_sql =(<<'DEL');
+DELETE ox 
+  FROM object_xref ox, xref x, source s 
+    WHERE x.source_id = s.source_id AND
+          ox.xref_id = x.xref_id AND 
+          ox.ensembl_id = ? AND 
+          ox.ensembl_object_type = 'Gene' AND 
+          ox.ox_status = 'DUMP_OUT' AND
+           s.name in (
+DEL
+  $del_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+
+  my $move_sth = $self->dbi->prepare_cached( $move_sql )  or confess "$move_sql cannot be prepared";
+  my $del_ix_sth = $self->dbi->prepare_cached( $del_ix_sql ) or confess "$del_ix_sql cannot be prepared";
+  my $del_sth = $self->dbi->prepare_cached( $del_sql ) or confess "$del_sql cannot be prepared";
+
+  my ( $move_count, $del_ix_count, $del_ox_count ) = ( 0, 0, 0 );
+  foreach my $key (keys %$alt_to_ref){
+    $move_sth->execute($alt_to_ref->{$key}, $key);
+    $move_count += $move_sth->rows;
+
+    $del_ix_sth->execute($key);
+    $del_ix_count += $del_ix_sth->rows;
+
+    $del_sth->execute($key);
+    $del_ox_count += $del_sth->rows;
+  }
+  $move_sth->finish;
+  $del_sth->finish;
+  $del_ix_sth->finish;
+
+  print "Number of rows:- moved = $move_count, identitys deleted = $del_ix_count, object_xrefs deleted = $del_ox_count\n";
+  #
+  # Now we have all the data on the reference Gene we want to copy all the data
+  # onto the alt alleles.
+  #
+
+  my $get_data_sql=(<<'GET');
+SELECT ox.object_xref_id, ox.ensembl_object_type, ox.xref_id, ox.linkage_annotation, 
+       ox.linkage_type, ox.ox_status, ox.unused_priority, ox.master_xref_id,
+       ix.query_identity, ix.target_identity, ix.hit_start, ix.hit_end,
+       ix.translation_start, ix.translation_end, ix.cigar_line, ix.score, ix.evalue
+  FROM xref x, source s, object_xref ox 
+    LEFT JOIN identity_xref ix ON ox.object_xref_id =ix.object_xref_id 
+      WHERE  x.source_id = s.source_id AND
+             ox.xref_id = x.xref_id AND
+             ox.ensembl_id = ? AND
+             ox.ox_status = 'DUMP_OUT' AND
+             ox.ensembl_object_type = 'Gene' AND
+              s.name in (
+GET
+  $get_data_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+  my $get_data_sth = $self->dbi->prepare_cached( $get_data_sql ) or confess "Could not prepare $get_data_sql";
+  
+  my $insert_object_xref_sql =(<<'INO');
+INSERT INTO object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_annotation, 
+            linkage_type, ox_status, unused_priority, master_xref_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INO
+  my $insert_ox_sth = $self->dbi->prepare_cached( $insert_object_xref_sql ) or confess "Could not prepare $insert_object_xref_sql";
+
+  my $insert_identity_xref_sql = (<<'INI');
+INSERT INTO identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end,
+            translation_start, translation_end, cigar_line, score, evalue ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INI
+  my $insert_ix_sth = $self->dbi->prepare_cached( $insert_identity_xref_sql ) or confess "Could not prepare $insert_identity_xref_sql";
+
+  my $max_object_xref_id;
+  my $sth = $self->dbi->prepare_cached( 'SELECT MAX(object_xref_id) FROM object_xref' );
+  $sth->execute();
+  $sth->bind_columns(\$max_object_xref_id);
+  $sth->fetch;
+  confess 'Problem getting max object_xref_id' if not defined$max_object_xref_id or not $max_object_xref_id;
+  
+  $max_object_xref_id++;
+
+  my ( $added_count, $ignored ) = ( 0, 0 );
+  foreach my $key ( keys %$ref_to_alts ) {
+    $get_data_sth->execute( $key );
+    my ($object_xref_id, $ensembl_object_type, $xref_id, $linkage_annotation,
+	$linkage_type, $ox_status, $unused_priority, $master_xref_id,
+	$query_identity, $target_identity, $hit_start, $hit_end,
+	$translation_start, $translation_end, $cigar_line, $score, $evalue);
+
+    $get_data_sth->bind_columns( \$object_xref_id, \$ensembl_object_type, \$xref_id, \$linkage_annotation,
+				 \$linkage_type, \$ox_status, \$unused_priority, \$master_xref_id,
+				 \$query_identity, \$target_identity, \$hit_start, \$hit_end,
+				 \$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue );
+
+    while( $get_data_sth->fetch() ) {
+      foreach my $alt ( @{ $ref_to_alts->{$key} } ) {
+	$max_object_xref_id++;
+        $insert_ox_sth->execute( $max_object_xref_id, $alt, $ensembl_object_type, $xref_id, $linkage_annotation,
+				 $linkage_type, $ox_status, $unused_priority, $master_xref_id) or confess 'Could not insert object_xref data';
+	
+	# ONLY add identity xref if object_xref was added successfully.
+	if( $insert_ox_sth->rows ) {
+	  $added_count++;
+	  $insert_ix_sth->execute( $max_object_xref_id, $query_identity, $target_identity, $hit_start, $hit_end,
+				   $translation_start, $translation_end, $cigar_line, $score, $evalue) or confess 'Could not insert identity_xref data';
+	} else {
+	  $ignored++;
+	}
+      }
+    }
+  }
+
+  return ($added_count, $ignored);
+} ## end sub process_alt_alleles
 
 
 =head2 _update_xref_info_type
@@ -1928,6 +2315,74 @@ sub _update_xref_description {
 
   return;
 } ## sub _update_xref_description
+
+#
+# In case we have alt alleles with xefs, these will be direct ones
+# we need to move all xrefs on to the reference
+#
+
+=head2 _get_alt_allele_hashes
+
+=cut
+
+sub _get_alt_allele_hashes {
+  my $self= shift;
+
+  my %alt_to_ref;
+  my %ref_to_alts;
+
+  my $sth = $self->dbi->prepare_cached( 'SELECT alt_allele_id, gene_id, is_reference FROM alt_allele ORDER BY alt_allele_id, is_reference DESC' );
+  $sth->execute();
+  
+  my ( $alt_allele_id, $gene_id, $is_ref );
+  $sth->bind_columns(\$alt_allele_id, \$gene_id, \$is_ref);
+
+  my $last_alt_allele = 0;
+  my $ref_gene;
+  while( $sth->fetch() ) {
+    if( $alt_allele_id != $last_alt_allele) {
+      # use the first non-reference gene if there is no reference gene in an alt_allele
+      $ref_gene = $gene_id;
+    } else {
+      $alt_to_ref{$gene_id} = $ref_gene;
+      push @{ $ref_to_alts{$ref_gene} }, $gene_id;
+    }
+    $last_alt_allele = $alt_allele_id;
+  }
+  $sth->finish;
+
+  return \%alt_to_ref, \%ref_to_alts;
+} ## end sub _get_alt_allele_hashes
+
+#
+# These sources should be on the gene, even if they are mapped transcript or translation.
+# We define which ones are to be moved here
+#
+
+=head2 _get_gene_specific_list
+
+=cut
+
+sub _get_gene_specific_list {
+  my $self = shift;
+  
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
+
+  # Check the sources are used in the database considered
+  my ( @used_list, $sql, $sth, $count );
+  foreach my $source (@list) {
+    $sql = "SELECT COUNT(*) FROM xref x, source s WHERE s.source_id = x.source_id AND s.name = ?";
+    $sth = $self->dbi->prepare_cached($sql);
+    $sth->execute($source);
+    
+    $sth->bind_columns(\$count);
+    $sth->fetch();
+
+    push @used_list, $source if $count > 0;
+  }
+
+  return \@used_list;
+} ## end sub _get_gene_specific_list
 
 1;
 
