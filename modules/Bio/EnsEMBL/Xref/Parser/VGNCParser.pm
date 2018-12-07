@@ -190,6 +190,11 @@ sub run {
 }
 
 
+=head2 add_synonyms_for_hgnc
+  Description: Specialized class to add synonyms from HGNC and VGNC data
+  Return type: N/A
+  Caller     : internal
+=cut
 
 sub add_synonyms_for_hgnc {
   my ($self, $ref_arg) = @_;
