@@ -102,7 +102,7 @@ sub run {
 
 
   if ( (!defined $source_id) or (!defined $species_id) or (!defined $files) ) {
-    croak "Need to pass source_id, species_id and files as pairs";
+    confess "Need to pass source_id, species_id and files as pairs";
   }
 
   my $file = shift @{$files};
@@ -112,7 +112,7 @@ sub run {
   my $file_io = $xref_dba->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    croak "Can't open VGNC file $file\n";
+    confess "Can't open VGNC file $file\n";
   }
 
   # Create a hash of all valid taxon_ids for this species
@@ -125,7 +125,7 @@ sub run {
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
-  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  }) or confess "Cannot use file $file: ".Text::CSV->error_diag ();
 
   # header must contain these columns
   my @required_columns = qw(
@@ -144,7 +144,7 @@ sub run {
   # die if some required_column is not in columns
   foreach my $colname (@required_columns) {
     if ( !grep { /$colname/xms } @columns ) {
-      croak "Can't find required column $colname in VGNC file $file\n";
+      confess "Can't find required column $colname in VGNC file $file\n";
     }
   }
 
@@ -179,7 +179,7 @@ sub run {
 
   }
 
-  $input_file->eof or croak "Error parsing file $file: " . $input_file->error_diag();
+  $input_file->eof or confess "Error parsing file $file: " . $input_file->error_diag();
   $file_io->close();
 
   if($verbose){
