@@ -225,7 +225,7 @@ sub transform {
 
   # All other xref links come from crossreferences
   my ( $direct_xrefs, $dependent_xrefs )
-    = $self->_make_links_from_crossreferences( $source_id );
+    = $self->_make_links_from_crossreferences( $xref_graph_node );
   # Do not assign empty arrays to FOO_XREFS, current insertion code
   # doesn't like them.
   if ( scalar @{ $direct_xrefs } > 0 ) {
@@ -358,7 +358,7 @@ sub _get_source_id {
 # we additionally generate protein_id dependent xrefs from appropriate
 # sources, i.e. EMBL and ChEMBL at present.
 sub _make_links_from_crossreferences {
-  my ( $self, $xref_source_id ) = @_;
+  my ( $self, $primary_xref ) = @_;
 
   my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
   my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
@@ -384,6 +384,12 @@ sub _make_links_from_crossreferences {
              'ENSEMBL_TYPE' => 'Translation',
              'LINKAGE_TYPE' => 'DIRECT',
              'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
+             'ACCESSION'    => $primary_xref->{'ACCESSION'},
+             'VERSION'      => $primary_xref->{'VERSION'},
+             'LABEL'        => $primary_xref->{'LABEL'},
+             'DESCRIPTION'  => $primary_xref->{'DESCRIPTION'},
+             'SPECIES_ID'   => $primary_xref->{'SPECIES_ID'},
+             'INFO_TEXT'    => $primary_xref->{'INFO_TEXT'},
            };
         push @direct_xrefs, $xref_link;
       }
@@ -398,7 +404,7 @@ sub _make_links_from_crossreferences {
           = {
              'ACCESSION'          => $dependent_ref->{'id'},
              'LINKAGE_ANNOTATION' => $dependent_source_id,
-             'LINKAGE_SOURCE_ID'  => $xref_source_id,
+             'LINKAGE_SOURCE_ID'  => $primary_xref->{'SOURCE_ID'},
              'SOURCE_ID'          => $dependent_source_id,
            };
         push @dependent_xrefs, $xref_link;
@@ -412,7 +418,7 @@ sub _make_links_from_crossreferences {
           # crossreferences to other databases
           my $protein_id_xref
             = $protein_id_xref_maker->( $dependent_ref->{'optional_info'},
-                                        $xref_source_id,
+                                        $primary_xref->{'SOURCE_ID'},
                                         $dependent_sources->{$PROTEIN_ID_SOURCE_NAME}
                                      );
           if ( defined $protein_id_xref ) {
