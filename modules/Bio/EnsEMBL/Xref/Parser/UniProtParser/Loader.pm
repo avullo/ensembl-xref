@@ -116,13 +116,10 @@ sub flush {
 
   my $xref_dba = $self->{'xref_dba'};
 
-  if ( ! $xref_dba->upload_xref_object_graphs( $self->{'send_buffer'} ) ) {
-    confess 'Failed to upload xref object graphs. Check for errors on STDOUT';
-  }
+  $xref_dba->upload_xref_object_graphs( $self->{'send_buffer'} );
 
-  # FIXME: we might want to run this even in the event of a
-  # failure. Note that simply copying this above the confession would
-  # not be enough, we should capture exception thrown by e.g. DBI as well.
+  # FIXME: we might want to run this even in the event of a failure,
+  # which would require capturing exceptions thrown above
   $self->_clear_send_buffer();
 
   return;
