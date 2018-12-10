@@ -1353,14 +1353,14 @@ sub add_multiple_dependent_xrefs {
     my %dep = %{$depref};
 
     # Insert the xref
-    my $dep_xref_id = $self->add_xref( (
+    my $dep_xref_id = $self->add_xref( {
       "acc"        => $dep{ACCESSION},
       "version"    => $dep{VERSION}     // 1,
       "label"      => $dep{LABEL}       // $dep{ACCESSION},
       "desc"       => $dep{DESCRIPTION},
       "source_id"  => $dep{SOURCE_ID},
       "species_id" => $dep{SPECIES_ID},
-      "info_type"  => 'DEPENDENT' ) );
+      "info_type"  => 'DEPENDENT' } );
 
     # Add the linkage_annotation and source id it came from
     $self->add_dependent_xref_maponly(
