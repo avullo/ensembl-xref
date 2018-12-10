@@ -109,7 +109,7 @@ sub run {
   $species_name = $species_id_to_names{$species_id}[0];
 
   #get stable_ids from core and create xrefs
-  my $gene_adaptor = $self->_get_gene_adaptor($project, $species_name, $dba);
+  my $gene_adaptor = $dba->get_GeneAdaptor();
 
   print "Finished loading the gene_adaptor\n" if $verbose;
 
@@ -141,48 +141,6 @@ sub run {
 
   return 0;      # successful
 
-}
-
-sub _get_gene_adaptor {
-  my ( $self, $project, $species_name, $dba ) = @_;
-
-  my $registry = "Bio::EnsEMBL::Registry";
-  
-  my ($gene_adaptor);
-
-  if ( defined $project && $project eq 'ensembl' ) {
-    $registry->load_registry_from_multiple_dbs(
-      {
-        '-host' => 'mysql-ens-sta-1',
-        '-port' => 4519,
-        '-user' => 'ensro',
-      },
-    );
-    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
-  }
-  elsif ( defined $project && $project eq 'ensemblgenomes' ) {
-    $registry->load_registry_from_multiple_dbs(
-      {
-        '-host' => 'mysql-eg-staging-1.ebi.ac.uk',
-        '-port' => 4160,
-        '-user' => 'ensro',
-      },
-      {
-        '-host' => 'mysql-eg-staging-2.ebi.ac.uk',
-        '-port' => 4275,
-        '-user' => 'ensro',
-      },
-    );
-    $gene_adaptor = $registry->get_adaptor( $species_name, 'core', 'Gene' );
-  }
-  elsif ( defined $dba ) {
-    $gene_adaptor = $dba->get_GeneAdaptor();
-  }
-  else {
-    die( "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes" );
-  }
-
-  return $gene_adaptor;
 }
 
 sub _get_species {
