@@ -113,6 +113,8 @@ sub run {
 
   my $species;
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
+    # Skipping non-standard characters which cannot be stored in MySQL
+    if ($data->{'description'} !~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
     $species = $data->{'species'};
     $species =~ s/\s/_/;
     $species = lc($species);
