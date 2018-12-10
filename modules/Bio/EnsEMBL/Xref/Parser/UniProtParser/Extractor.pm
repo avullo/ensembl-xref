@@ -162,14 +162,11 @@ sub new {
   my $self = {
               'input_name' => $filename,
               '_io_handle' => $filehandle,
-              'maps'       => {},
               'species_id' => $species_id,
               'xref_dba'   => $xref_dba,
             };
   my $class = ref $proto || $proto;
   bless $self, $class;
-
-  $self->_load_maps();
 
   return $self;
 }
@@ -335,26 +332,6 @@ sub get_uniprot_record {
   # EOF
   return 0;
 }
-
-
-sub _load_maps {
-  my ( $self ) = @_;
-
-  my $xref_dba = $self->{'xref_dba'};
-
-  my $taxonomy_ids_for_species
-    = $xref_dba->get_taxonomy_from_species_id( $self->{'species_id'} );
-  # If the map is empty, something is wrong
-  if ( scalar keys %{ $taxonomy_ids_for_species } == 0 ) {
-    confess "Got zero taxonomy_ids for species_id '"
-      . $self->{'species_id'} . q{'};
-  }
-  $self->{'maps'}->{'taxonomy_ids_for_species'}
-    = $taxonomy_ids_for_species;
-
-  return;
-}
-
 
 
 # Returns true if the current record describes an entry tagged as
@@ -761,7 +738,6 @@ sub _taxon_codes_match_species_id {
   my ( $self ) = @_;
 
   my $taxon_codes = $self->_get_taxon_codes();
-  my $tid4s_map = $self->{'maps'}->{'taxonomy_ids_for_species'};
 
   my @taxonomy_ids;
   foreach my $taxon ( @{ $taxon_codes } ) {
@@ -771,7 +747,7 @@ sub _taxon_codes_match_species_id {
   }
 
   foreach my $taxonomy_id ( @taxonomy_ids ) {
-    if ( exists $tid4s_map->{$taxonomy_id} ) {
+    if ( $taxonomy_id == $self->{'species_id'} ) {
       return 1;
     }
   }
