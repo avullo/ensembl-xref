@@ -76,7 +76,6 @@ sub run {
   my $species_name = $self->{species};
   my $files        = $self->{files};
   my $xref_dba     = $self->{xref_dba};
-  my $verbose      = $self->{verbose} // 0;
 
   if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
