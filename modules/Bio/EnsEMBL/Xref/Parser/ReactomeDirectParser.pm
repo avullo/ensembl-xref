@@ -104,8 +104,6 @@ sub run {
     empty_is_undef => 1
   }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
-
-  # 2 extra columns are ignored
   $input_file->column_names( [ 'ensembl_stable_id', 'accession', 'url', 'description', 'status', 'species'] );
 
   # Create a hash of all valid names for this species
