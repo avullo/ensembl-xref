@@ -46,12 +46,6 @@ use warnings;
 
 use Bio::EnsEMBL::Xref::Mapper;
 
-use Cwd;
-use DBI;
-use File::Basename;
-use IPC::Open3;
-use POSIX;
-
 ##########################################
 # Testing  (may be moved to healthchecks)
 ##########################################
