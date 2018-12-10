@@ -61,7 +61,7 @@ my %protein_id_extraction_recipe_for_database
      'EMBL'   => \&_get_protein_id_xref_from_embldb_xref,
    );
 sub _get_protein_id_xref_from_embldb_xref {
-  my ( $embldb_extra_info, $linkage_source_id, $source_id ) = @_;
+  my ( $embldb_extra_info, $linkage_source_id, $source_id, $species_id ) = @_;
 
   # For both EMBL and ChEMBL entries protein ID immediately follows
   # their respective accessions i.e will be the first element of extra_info.
@@ -88,6 +88,7 @@ sub _get_protein_id_xref_from_embldb_xref {
                    'LINKAGE_ANNOTATION' => $source_id,
                    'LINKAGE_SOURCE_ID'  => $linkage_source_id,
                    'SOURCE_ID'          => $source_id,
+                   'SPECIES_ID'         => $species_id,
               };
   return $xref_link;
 }
@@ -216,7 +217,7 @@ sub transform {
 
   # UniProt Gene Names links come from the 'gene_names' fields
   my $genename_dependent_xrefs
-    = $self->_make_links_from_gene_names( $accession, $source_id );
+    = $self->_make_links_from_gene_names( $xref_graph_node );
   # Do not assign an empty array to DEPENDENT_XREFS, current insertion code
   # doesn't like them.
   if ( scalar @{ $genename_dependent_xrefs } > 0 ) {
@@ -406,6 +407,7 @@ sub _make_links_from_crossreferences {
              'LINKAGE_ANNOTATION' => $dependent_source_id,
              'LINKAGE_SOURCE_ID'  => $primary_xref->{'SOURCE_ID'},
              'SOURCE_ID'          => $dependent_source_id,
+             'SPECIES_ID'         => $primary_xref->{'SPECIES_ID'},
            };
         push @dependent_xrefs, $xref_link;
 
@@ -419,7 +421,8 @@ sub _make_links_from_crossreferences {
           my $protein_id_xref
             = $protein_id_xref_maker->( $dependent_ref->{'optional_info'},
                                         $primary_xref->{'SOURCE_ID'},
-                                        $dependent_sources->{$PROTEIN_ID_SOURCE_NAME}
+                                        $dependent_sources->{$PROTEIN_ID_SOURCE_NAME},
+                                        $primary_xref->{'SPECIES_ID'}
                                      );
           if ( defined $protein_id_xref ) {
             push @dependent_xrefs, $protein_id_xref;
@@ -440,7 +443,7 @@ sub _make_links_from_crossreferences {
 # extracted record, in a form suitable to attaching to the main xref's
 # graph node as consumed by upload_xref_object_graphs().
 sub _make_links_from_gene_names {
-  my ( $self, $xref_accession, $xref_source_id ) = @_;
+  my ( $self, $primary_xref ) = @_;
 
   my @genename_xrefs;
 
@@ -468,11 +471,12 @@ sub _make_links_from_gene_names {
 
     my $name = $gn_entry->{'Name'};
     my $xref = {
-                'ACCESSION'          => $xref_accession,
+                'ACCESSION'          => $primary_xref->{'ACCESSION'},
                 'LABEL'              => $name,
                 'LINKAGE_ANNOTATION' => $dependent_source_id,
-                'LINKAGE_SOURCE_ID'  => $xref_source_id,
+                'LINKAGE_SOURCE_ID'  => $primary_xref->{'SOURCE_ID'},
                 'SOURCE_ID'          => $dependent_source_id,
+                'SPECIES_ID'         => $primary_xref->{'SPECIES_ID'},
               };
 
     my $synonyms = $gn_entry->{'Synonyms'};
