@@ -652,27 +652,6 @@ sub add_meta_pair {
   return;
 } ## end sub add_meta_pair
 
-=head2 _add_species_alias
-  Arg [1]    : species_id
-  Arg [2]    : alias
-  Description: Insert new entries in species table
-  Return type:
-  Caller     : Test
-
-=cut
-
-sub _add_species_alias {
-
-  my ( $self, $species_id, $alias) = @_;
-
-  my $sth = $self->dbi->prepare_cached(
-    'INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (?, ?, ?, ?)' );
-  $sth->execute( $species_id, $species_id, $alias, $alias);
-  $sth->finish();
-
-  return;
-} ## end sub _add_species_alias
-
 
 =head2 get_xref_sources
   Description: Create a hash of all the source names for xrefs
