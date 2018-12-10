@@ -103,8 +103,6 @@ sub run {
     empty_is_undef => 1
   }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
-
-  # 2 extra columns are ignored
   $input_file->column_names( [ 'uniprot_accession', 'accession', 'url', 'description', 'status', 'species'] );
   my (%uniprot) = 
     %{ $xref_dba->get_valid_codes( "uniprot/", $species_id ) };
