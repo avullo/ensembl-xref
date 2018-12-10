@@ -676,74 +676,6 @@ sub get_xref_sources {
 } ## end sub get_xref_sources
 
 
-=head2 species_id2taxonomy
-  Description: Create and return a hash that that goes from species_id to taxonomy_id
-  Return type: Hashref
-  Caller     : internal
-
-=cut
-
-sub species_id2taxonomy {
-
-  my $self = shift;
-
-  my %species_id2taxonomy;
-
-  my $sth =
-    $self->dbi->prepare_cached('SELECT species_id, taxonomy_id FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id  = $row[0];
-    my $taxonomy_id = $row[1];
-    if ( defined $species_id2taxonomy{$species_id} ) {
-      push @{ $species_id2taxonomy{$species_id} }, $taxonomy_id;
-    }
-    else {
-      $species_id2taxonomy{$species_id} = [$taxonomy_id];
-    }
-  }
-
-  return %species_id2taxonomy;
-} ## end sub species_id2taxonomy
-
-
-=head2 species_id2name
-  Description: Create and return a hash that that goes from species_id to species name
-  Return type:
-  Caller     : internal
-
-=cut
-
-sub species_id2name {
-  my $self = shift;
-
-  my %species_id2name;
-
-  my $sth = $self->dbi->prepare_cached('SELECT species_id, name FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    my $name       = $row[1];
-    $species_id2name{$species_id} = [$name];
-  }
-
-  ##############################################
-  # Also populate the hash with all the aliases.
-  ##############################################
-  $sth = $self->dbi->prepare_cached('SELECT species_id, aliases FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    foreach my $name ( split /,\s*/xms, $row[1] ) {
-      $species_id2name{$species_id} ||= [];
-      push @{ $species_id2name{$species_id} }, $name;
-    }
-  }
-
-  return %species_id2name;
-} ## end sub species_id2name
-
-
 =head2 get_xref_id
   Arg [1]    : xref entry
   Description: Get the xref internal id
@@ -795,29 +727,6 @@ sub primary_xref_id_exists {
 
   return $exists;
 } ## end sub primary_xref_id_exists
-
-
-=head2 get_taxonomy_from_species_id
-  Arg [1]    : species ID
-  Description: Get the taxon id for a particular species id
-  Return type: Hashref
-  Caller     : internal
-
-=cut
-
-sub get_taxonomy_from_species_id {
-  my ( $self, $species_id) = @_;
-  my %hash;
-
-  my $sth = $self->dbi->prepare_cached(
-      "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $hash{ $row[0] } = 1;
-  }
-
-  return \%hash;
-} ## end sub get_taxonomy_from_species_id
 
 
 =head2 get_direct_xref
