@@ -590,7 +590,7 @@ sub upload_xref_object_graphs {
       "update_label" => 1, "update_desc" => 1 } );
 
     # If there are any direct_xrefs, add these to the relevant tables
-    $self->add_multiple_direct_xrefs( @{ $xref->{DIRECT_XREFS} } );
+    $self->add_multiple_direct_xrefs( $xref->{DIRECT_XREFS} );
 
     # create entry in primary_xref table with sequence; if this is a "cumulative"
     # entry it may already exist, and require an UPDATE rather than an INSERT
