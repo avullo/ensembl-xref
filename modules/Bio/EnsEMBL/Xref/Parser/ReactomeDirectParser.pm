@@ -43,7 +43,8 @@ A parser class to parse the Reactome file for direct mappings to Ensembl..
 
   my $parser = Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser->new(
     source_id  => 85,
-    species_id => 9696,
+    species_id => 9606,
+    species_name => 'homo_sapiens',
     files      => ['Ensembl2Reactome_All_Levels.txt'],
     xref_dba   => $xref_dba
   );
@@ -70,11 +71,12 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 sub run {
   my ( $self ) = @_;
 
-  my $source_id  = $self->{source_id};
-  my $species_id = $self->{species_id};
-  my $files      = $self->{files};
-  my $xref_dba   = $self->{xref_dba};
-  my $verbose    = $self->{verbose} // 0;
+  my $source_id    = $self->{source_id};
+  my $species_id   = $self->{species_id};
+  my $species_name = $self->{species};
+  my $files        = $self->{files};
+  my $xref_dba     = $self->{xref_dba};
+  my $verbose      = $self->{verbose} // 0;
 
   if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
@@ -95,31 +97,21 @@ sub run {
 
   my $file_io = $xref_dba->get_filehandle($file);
 
-  if ( !defined $file_io ) {
-    confess "Can't open Ensembl_Reactome file '$file'\n";
-  }
-
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
+    binary         => 1,
     empty_is_undef => 1
   }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
   $input_file->column_names( [ 'ensembl_stable_id', 'accession', 'url', 'description', 'status', 'species'] );
-
-  # Create a hash of all valid names for this species
-  my %species2alias = $xref_dba->species_id2name();
-  if (!defined $species2alias{$species_id}) { 
-    confess "No alias found for $species_id";
-  }
-  my @aliases = @{$species2alias{$species_id}};
-  my %alias2species_id = map {$_, 1} @aliases;
 
   my ($reactome_source_id, $type, $species);
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
     $species = $data->{'species'};
     $species =~ s/\s/_/;
     $species = lc($species);
-    if ( !$alias2species_id{$species} ) {
+    if ($data->{'description'} !~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
+    if ( $species ne $species_name ) {
       next;
     }
     if ( $data->{'ensembl_stable_id'} =~ /G[0-9]*$/) {

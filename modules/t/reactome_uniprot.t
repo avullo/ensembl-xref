@@ -53,13 +53,13 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 my $species = $db->schema->resultset('Species')->create({
   species_id  => 9606,
   taxonomy_id => 9606,
-  name        => 'Homo sapiens',
+  name        => 'homo_sapiens',
   aliases     => 'homo_sapiens'
 });
 
 my $reactome_uniprot_source = $db->schema->resultset('Source')->create({
   source_id            => 86,
-  name                 => 'reactome',
+  name                 => 'reactome_translation',
   priority_description => 'uniprot',
   ordered              => 1
 });
@@ -83,8 +83,9 @@ my $uniprot_xref = $db->schema->resultset('Xref')->create({
 use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeUniProtParser';
 
 my $parser = Bio::EnsEMBL::Xref::Parser::ReactomeUniProtParser->new(
- source_id  => 85,
+ source_id  => 86,
  species_id => 9606,
+ species    => 'homo_sapiens',
  files      => ["$Bin/test-data/uniprot_reactome.txt"],
  xref_dba   => $xref_dba
 );

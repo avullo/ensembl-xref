@@ -7,3 +7,4 @@ ENSG00000000419	R-HSA-446193	https://reactome.org/PathwayBrowser/#/R-HSA-446193	
 ENSDARG00000000019	R-DRE-1280218	https://reactome.org/PathwayBrowser/#/R-DRE-1280218	Adaptive Immune System	IEA	Danio rerio
 ENSDARG00000000019	R-DRE-168256	https://reactome.org/PathwayBrowser/#/R-DRE-168256	Immune System	IEA	Danio rerio
 ENSDARG00000000019	R-DRE-392499	https://reactome.org/PathwayBrowser/#/R-DRE-392499	Metabolism of proteins	IEA	Danio rerio
+ENSBTAG00000014127	R-BTA-9027604	https://reactome.org/PathwayBrowser/#/R-BTA-9027604	Biosynthesis of electrophilic ω-3 PUFA oxo-derivatives	IEA	Homo sapiens

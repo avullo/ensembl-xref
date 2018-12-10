@@ -70,11 +70,12 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 sub run {
   my ( $self ) = @_;
 
-  my $source_id  = $self->{source_id};
-  my $species_id = $self->{species_id};
-  my $files      = $self->{files};
-  my $xref_dba   = $self->{xref_dba};
-  my $verbose    = $self->{verbose} // 0;
+  my $source_id    = $self->{source_id};
+  my $species_id   = $self->{species_id};
+  my $species_name = $self->{species};
+  my $files        = $self->{files};
+  my $xref_dba     = $self->{xref_dba};
+  my $verbose      = $self->{verbose} // 0;
 
   if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) ) {
     confess "Need to pass source_id, species_id and files as pairs";
@@ -83,7 +84,7 @@ sub run {
   my $file = shift @{$files};
 
   my $reactome_source_id =
-    $xref_dba->get_source_id_for_source_name( "reactome", "uniprot" );
+    $xref_dba->get_source_id_for_source_name( "reactome_translation", "uniprot" );
 
 #e.g.
 #A0A075B6P5  R-HSA-109582  https://reactome.org/PathwayBrowser/#/R-HSA-109582  Hemostasis  TAS  Homo sapiens
@@ -99,6 +100,7 @@ sub run {
 
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
+    binary         => 1,
     empty_is_undef => 1
   }) or confess "Cannot use file '$file': " . Text::CSV->error_diag();
 
@@ -112,20 +114,12 @@ sub run {
     confess "No UniProt xrefs found, cannot parse dependent Reactome mappings";
   }
 
-  # Create a hash of all valid names for this species
-  my %species2alias = $xref_dba->species_id2name();
-  if (!defined $species2alias{$species_id}) {
-    confess "No alias found for $species_id";
-  }
-  my @aliases = @{$species2alias{$species_id}};
-  my %alias2species_id = map {$_, 1} @aliases;
-
   my $species;
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
     $species = $data->{'species'};
     $species =~ s/\s/_/;
     $species = lc($species);
-    if ( !$alias2species_id{$species} ) {
+    if ( $species ne $species_name ) {
       next;
     }
     if ( defined $uniprot{$data->{'uniprot_accession'}} ) {
@@ -135,7 +129,7 @@ sub run {
           label          => $data->{'accession'},
           desc           => $data->{'description'},
           master_xref_id => $master_xref_id, 
-          source_id      => $reactome_source_id,
+          source_id      => $source_id,
           species_id     => $species_id,
           info_type      => "DEPENDENT"
         });

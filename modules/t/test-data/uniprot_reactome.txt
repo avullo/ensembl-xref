@@ -13,3 +13,4 @@ A0A0A0MPA8	R-CFA-432047	https://reactome.org/PathwayBrowser/#/R-CFA-432047	Passi
 A0A0A0MPA8	R-CFA-445717	https://reactome.org/PathwayBrowser/#/R-CFA-445717	Aquaporin-mediated transport	IEA	Canis familiaris
 A0A0A0MPA9	R-CFA-2672351	https://reactome.org/PathwayBrowser/#/R-CFA-2672351	Stimuli-sensing channels	IEA	Canis familiaris
 A0A0A0MPA9	R-CFA-382551	https://reactome.org/PathwayBrowser/#/R-CFA-382551	Transport of small molecules	IEA	Canis familiaris
+F1MNI5	R-BTA-9027604	https://reactome.org/PathwayBrowser/#/R-BTA-9027604	Biosynthesis of electrophilic ω-3 PUFA oxo-derivatives	IEA	Homo sapiens

@@ -53,7 +53,7 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 my $species = $db->schema->resultset('Species')->create({
   species_id  => 9606,
   taxonomy_id => 9606,
-  name        => 'Homo sapiens',
+  name        => 'homo_sapiens',
   aliases     => 'homo_sapiens'
 });
 
@@ -74,6 +74,7 @@ use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser';
 my $parser = Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser->new(
  source_id  => 85,
  species_id => 9606,
+ species    => 'homo_sapiens',
  files      => ["$Bin/test-data/ensembl_reactome.txt"],
  xref_dba   => $xref_dba
 );
