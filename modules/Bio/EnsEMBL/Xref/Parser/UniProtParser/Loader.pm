@@ -116,11 +116,13 @@ sub flush {
 
   my $xref_dba = $self->{'xref_dba'};
 
-  $xref_dba->upload_xref_object_graphs( $self->{'send_buffer'} );
+  if ( $self->{'send_backlog'} > 0 ) {
+    $xref_dba->upload_xref_object_graphs( $self->{'send_buffer'} );
 
-  # FIXME: we might want to run this even in the event of a failure,
-  # which would require capturing exceptions thrown above
-  $self->_clear_send_buffer();
+    # FIXME: we might want to run this even in the event of a failure,
+    # which would require capturing exceptions thrown above
+    $self->_clear_send_buffer();
+  }
 
   return;
 }
