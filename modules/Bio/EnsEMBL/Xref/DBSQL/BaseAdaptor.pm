@@ -844,7 +844,7 @@ sub get_taxonomy_from_species_id {
 
   my $sth = $self->dbi->prepare_cached(
       "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute() or croak( $self->dbi->errstr() );
+  $sth->execute( $species_id ) or croak( $self->dbi->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $hash{ $row[0] } = 1;
   }
