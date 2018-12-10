@@ -59,7 +59,7 @@ use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
 =cut
 
-sub new{
+sub new {
   my ( $caller ) = @_;
 
   my $class = ref($caller) || $caller;
@@ -752,7 +752,7 @@ sub get_species_id_from_species_name {
     1;
   } or do {
     my $error = $@ || "Couldn't get ID for species name $name\n";
-    $error .= "It must be one of :-\n" . join("\n", $self->xref->get_species_names );
+    $error .= "It must be one of :-\n" . join("\n", @{ $self->xref->get_species_names } );
     confess $error;
   };
   
