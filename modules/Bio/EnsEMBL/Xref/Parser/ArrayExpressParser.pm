@@ -80,12 +80,6 @@ sub run {
 
   my $file = shift @{$files};
 
-  # project could be ensembl or ensemblgenomes
-  my $project;
-  if ( $file =~ /project[=][>](\S+?)[,]/ ) {
-    $project = $1;
-  }
-
   my %species_id_to_names = $xref_dba->species_id2name();
 
   # the species_name passed could be an alias that is different from what is stored in species table,
