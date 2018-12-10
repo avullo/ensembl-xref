@@ -83,7 +83,6 @@ sub new {
     -PASS   => $args{pass} || '',
     -PORT => $args{port} || '3306'
   ) );
-
   $self->verbose( $args{verbose} // 0 );
 
   return $self;
