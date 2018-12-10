@@ -319,6 +319,7 @@ sub parse_ti {
 
   # Extract the 'type' and the whole description
   my @captures = ( $ti =~ m{
+                             \A
                              ([#%+*^]*)  # type of entry
                              (\d+)       # accession number, same as in NO
                              \s+         # normally just one space
