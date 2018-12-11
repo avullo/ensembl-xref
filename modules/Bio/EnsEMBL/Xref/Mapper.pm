@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -60,7 +61,7 @@ use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 =cut
 
 sub new {
-  my ( $caller ) = @_;
+  my ($caller) = @_;
 
   my $class = ref($caller) || $caller;
   return bless {}, $class;
@@ -79,7 +80,7 @@ sub new {
 sub xref {
   my $self = shift;
   $self->{_xref} = shift if @_;
-  
+
   return $self->{_xref};
 }
 
@@ -96,7 +97,7 @@ sub xref {
 sub farm_queue {
   my $self = shift;
   $self->{_queue} = shift if @_;
-  
+
   return $self->{_queue};
 }
 
@@ -113,7 +114,7 @@ sub farm_queue {
 sub exonerate {
   my $self = shift;
   $self->{_exonerate} = shift if @_;
-  
+
   return $self->{_exonerate};
 }
 
@@ -131,7 +132,7 @@ sub exonerate {
 sub core {
   my $self = shift;
   $self->{_core} = shift if @_;
-  
+
   return $self->{_core};
 }
 
@@ -148,7 +149,7 @@ sub core {
 sub previous_core {
   my $self = shift;
   $self->{_previous_core} = shift if @_;
-  
+
   return $self->{_previous_core};
 }
 
@@ -165,89 +166,104 @@ sub previous_core {
 
 sub process_file {
   my ( $self, $file, $verbose ) = @_;
-  
-  my $xref = undef;
+
+  my $xref    = undef;
   my $ensembl = undef;
   my $type;
-  
-  my %xref_hash = ();
+
+  my %xref_hash    = ();
   my %species_hash = ();
-  my %farm_hash = ();
-  
-  open my $fh, "<", $file or confess ("Cannot open input file '$file':\n $!\n");
-  while( my $line = <$fh> ) {
+  my %farm_hash    = ();
+
+  open my $fh, "<", $file or
+    confess("Cannot open input file '$file':\n $!\n");
+  while ( my $line = <$fh> ) {
 
     chomp($line);
-    next if not $line or $line =~ /^#/;
+    next if not $line or $line =~ /^#/x;
 
-    my ($key, $value) = split( '=', $line );
+    my ( $key, $value ) = split( '=', $line );
     if ( defined $value ) {
-      $value =~ s/^\s*//;
-      $value =~ s/\s*$//;
+      $value =~ s/^\s*//x;
+      $value =~ s/\s*$//x;
     }
     if ( defined $key ) {
-      $key =~ s/^\s*//;
-      $key =~ s/\s*$//;
+      $key =~ s/^\s*//x;
+      $key =~ s/\s*$//x;
     }
-    
+
     if ( $key eq "species" ) {
       $type = 'species';
       $species_hash{'species'} = $value;
-    } elsif ( $key eq 'xref' ) {
-      $type = 'xref';
-    } elsif ( $key eq 'farm' ) {
-      $type = "farm";
-    }  elsif ( $type eq 'species' ) { # processing species data
-      $species_hash{lc($key)} = $value;
-    } elsif ( $type eq 'xref' ) { # processing xref data
-      $xref_hash{lc($key)} = $value;
-    } elsif ( $type eq 'farm' ) {
-      $farm_hash{lc($key)} = $value;
     }
-  }
+    elsif ( $key eq 'xref' ) {
+      $type = 'xref';
+    }
+    elsif ( $key eq 'farm' ) {
+      $type = "farm";
+    }
+    elsif ( $type eq 'species' ) {    # processing species data
+      $species_hash{ lc($key) } = $value;
+    }
+    elsif ( $type eq 'xref' ) {       # processing xref data
+      $xref_hash{ lc($key) } = $value;
+    }
+    elsif ( $type eq 'farm' ) {
+      $farm_hash{ lc($key) } = $value;
+    }
+  } ## end while ( my $line = <$fh> )
   close $fh or confess "Can't close file";
 
   my $value = $species_hash{'species'};
-  confess "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file" if $value !~ /_/;
-  
-  my $taxon = $species_hash{'taxon'};
-  
-  my $use_basic = 0;
-  my ($mapper, $module);
-  
-  my $class = "Bio::EnsEMBL::Xref::Mapper::$value";  
-  eval "require $class";
-  
-  if($@) {
-    if ($@ =~ /Can\'t locate $class/) {
-      if (defined $taxon) {
-      	$class = "Bio::EnsEMBL::Xref::Mapper::$taxon";
-	eval "require $class";
+  confess
+"\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file"
+    if $value !~ /_/;
 
-      	if($@) {
-	  if ($@ =~ /Can\'t locate $class/)  {
-	    $use_basic = 1;
-	  } else { confess "$@"; }
-       	} else {
-	  $module = "Bio::EnsEMBL::Xref::Mapper::$taxon"; 
-       	}
-      } else {
-	$use_basic = 1;
+  my $taxon = $species_hash{'taxon'};
+
+  my $use_basic = 0;
+  my ( $mapper, $module );
+
+  my $class = "Bio::EnsEMBL::Xref::Mapper::$value";
+  eval "require $class";
+
+  if ($@) {
+    if ( $@ =~ /Can\'t locate $class/x ) {
+      if ( defined $taxon ) {
+        $class = "Bio::EnsEMBL::Xref::Mapper::$taxon";
+        eval "require $class";
+
+        if ($@) {
+          if ( $@ =~ /Can\'t locate $class/x ) {
+            $use_basic = 1;
+          }
+          else { confess "$@"; }
+        }
+        else {
+          $module = "Bio::EnsEMBL::Xref::Mapper::$taxon";
+        }
       }
-    } else {
+      else {
+        $use_basic = 1;
+      }
+    }
+    else {
       confess "$@";
     }
-  } else{
+  }
+  else {
     $module = $class;
   }
 
   if ( $use_basic or not defined $module ) {
-    if( defined($verbose) and $verbose ) {
-      my $warning_msg = "Did not find a specific mapping module Bio::EnsEMBL::Xref::Mapper::$value ";
-      if (defined $taxon) {
-	$warning_msg .= "or Bio::EnsEMBL::Xref::Mapper::$taxon "; 
+    if ( defined($verbose) and $verbose ) {
+      my $warning_msg =
+"Did not find a specific mapping module Bio::EnsEMBL::Xref::Mapper::$value ";
+      if ( defined $taxon ) {
+        $warning_msg .= "or Bio::EnsEMBL::Xref::Mapper::$taxon ";
       }
-      $warning_msg .= "- using Bio::EnsEMBL::Xref::Mapper base class instead\n";
+      $warning_msg .=
+        "- using Bio::EnsEMBL::Xref::Mapper base class instead\n";
       carp "$warning_msg";
     }
     require Bio::EnsEMBL::Xref::Mapper;
@@ -256,81 +272,106 @@ sub process_file {
 
   $mapper = $module->new();
 
-  $mapper->farm_queue( $farm_hash{'queue'} ) if defined $farm_hash{'queue'};    
-  $mapper->exonerate( $farm_hash{'exonerate'} ) if defined $farm_hash{'exonerate'};
+  $mapper->farm_queue( $farm_hash{'queue'} )
+    if defined $farm_hash{'queue'};
+  $mapper->exonerate( $farm_hash{'exonerate'} )
+    if defined $farm_hash{'exonerate'};
 
-  my ($host, $user, $dbname, $pass, $port);
-  if( defined $xref_hash{host} ) {
-    $host = $xref_hash{'host'};
-    $user = $xref_hash{'user'};
+  my ( $host, $user, $dbname, $pass, $port );
+  if ( defined $xref_hash{host} ) {
+    $host   = $xref_hash{'host'};
+    $user   = $xref_hash{'user'};
     $dbname = $xref_hash{'dbname'};
-    $pass = defined $xref_hash{'password'}?$xref_hash{'password'}:'';
-    $port = defined $xref_hash{'port'}?$xref_hash{'port'}:3306;
+    $pass =
+      defined $xref_hash{'password'} ? $xref_hash{'password'} : '';
+    $port = defined $xref_hash{'port'} ? $xref_hash{'port'} : 3306;
 
-    $mapper->xref(Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(-host => $host,
-							      -port => $port,
-							      -user => $user,
-							      -pass => $pass,
-							      -group   => 'core',
-							      -dbname => $dbname));
-    $mapper->xref->add_meta_pair("xref", $host.":".$dbname);
+    $mapper->xref( Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+                                                      -host   => $host,
+                                                      -port   => $port,
+                                                      -user   => $user,
+                                                      -pass   => $pass,
+                                                      -group  => 'core',
+                                                      -dbname => $dbname
+                   ) );
+    $mapper->xref->add_meta_pair( "xref", $host . ":" . $dbname );
 
     if ( defined $xref_hash{'dir'} ) {
-      confess "directory ".$xref_hash{'dir'}." does not exist please create this\n" unless -d $xref_hash{'dir'};
-      $mapper->xref->dir($xref_hash{'dir'});
-    } else {
+      confess "directory " .
+        $xref_hash{'dir'} . " does not exist please create this\n"
+        unless -d $xref_hash{'dir'};
+      $mapper->xref->dir( $xref_hash{'dir'} );
+    }
+    else {
       confess "No directory specified for the xref fasta files\n";
     }
-  } else {
+  } ## end if ( defined $xref_hash...)
+  else {
     confess "No host name given for xref database\n";
   }
- 
+
   if ( defined $species_hash{'species'} ) {
-    $host = $species_hash{'host'};
-    $user = $species_hash{'user'};
+    $host   = $species_hash{'host'};
+    $user   = $species_hash{'user'};
     $dbname = $species_hash{'dbname'};
-    $pass = defined $species_hash{'password'}?$species_hash{'password'}:'';
-    $port = defined $species_hash{'port'}?$species_hash{'port'}:3306;
-    
-    $mapper->core(Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(-host => $host,
-							      -port => $port,
-							      -user => $user,
-							      -pass => $pass,
-							      -group   => 'core',
-							      -dbname => $dbname));
-    
-    $mapper->xref->add_meta_pair("species", $host.":".$dbname);
-    
-    if( defined $species_hash{'dir'} ) {
-      confess "directory ".$species_hash{'dir'}." does not exist please create this" unless -d $species_hash{'dir'};
-      $mapper->core->dir($species_hash{'dir'});
-    } else {
+    $pass =
+      defined $species_hash{'password'} ? $species_hash{'password'} :
+      '';
+    $port =
+      defined $species_hash{'port'} ? $species_hash{'port'} : 3306;
+
+    $mapper->core( Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+                                                      -host   => $host,
+                                                      -port   => $port,
+                                                      -user   => $user,
+                                                      -pass   => $pass,
+                                                      -group  => 'core',
+                                                      -dbname => $dbname
+                   ) );
+
+    $mapper->xref->add_meta_pair( "species", $host . ":" . $dbname );
+
+    if ( defined $species_hash{'dir'} ) {
+      confess "directory " .
+        $species_hash{'dir'} . " does not exist please create this"
+        unless -d $species_hash{'dir'};
+      $mapper->core->dir( $species_hash{'dir'} );
+    }
+    else {
       confess "No directory specified for the ensembl fasta files";
     }
-    
+
     $mapper->core->species($value);
 
-    # connect to previous release of core db if connection details specified in xref_input (pr_host, pr_port, pr_dbname, pr_user) 
-    if ( defined $species_hash{'pr_host'} && defined $species_hash{'pr_user'} && defined $species_hash{'pr_dbname'} ) {
-      my ($pr_host, $pr_port, $pr_user, $pr_dbname);
-      $pr_host = $species_hash{'pr_host'};
-      $pr_user = $species_hash{'pr_user'};
+# connect to previous release of core db if connection details specified in xref_input (pr_host, pr_port, pr_dbname, pr_user)
+    if ( defined $species_hash{'pr_host'} &&
+         defined $species_hash{'pr_user'} &&
+         defined $species_hash{'pr_dbname'} )
+    {
+      my ( $pr_host, $pr_port, $pr_user, $pr_dbname );
+      $pr_host   = $species_hash{'pr_host'};
+      $pr_user   = $species_hash{'pr_user'};
       $pr_dbname = $species_hash{'pr_dbname'};
-      $pr_port = defined $species_hash{'pr_port'}?$species_hash{'pr_port'}:3306;
-      
-      $mapper->previous_core(Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(-host => $pr_host,
-									 -port => $pr_port,
-									 -user => $pr_user,
-									 -pass => '',
-									 -group   => 'core',
-									 -dbname => $pr_dbname));
-      $mapper->xref->add_meta_pair("species", $pr_host.":".$pr_dbname);
+      $pr_port =
+        defined $species_hash{'pr_port'} ? $species_hash{'pr_port'} :
+        3306;
+
+      $mapper->previous_core(
+                            Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+                                                   -host   => $pr_host,
+                                                   -port   => $pr_port,
+                                                   -user   => $pr_user,
+                                                   -pass   => '',
+                                                   -group  => 'core',
+                                                   -dbname => $pr_dbname
+                            ) );
+      $mapper->xref->add_meta_pair( "species",
+                                    $pr_host . ":" . $pr_dbname );
     }
-  }
+  } ## end if ( defined $species_hash...)
 
   return $mapper;
-}
-
+} ## end sub process_file
 
 =head2 dumpcheck
 
@@ -351,12 +392,20 @@ sub dumpcheck {
   return $self->{_dumpcheck};
 }
 
+=head2 nofarm
+
+=cut
+
 sub nofarm {
   my $self = shift;
   $self->{_nofarm} = shift if @_;
 
   return $self->{_nofarm};
 }
+
+=head2 verbose
+
+=cut
 
 sub verbose {
   my $self = shift;
@@ -365,6 +414,10 @@ sub verbose {
   return $self->{_verbose};
 }
 
+=head2 species_id
+
+=cut
+
 sub species_id {
   my $self = shift;
   $self->{_species_id} = shift if @_;
@@ -372,82 +425,82 @@ sub species_id {
   return $self->{_species_id};
 }
 
-=head2 get_alt_allele
+=head2 get_alt_alleles
 
 =cut
 
 sub get_alt_alleles {
-  my $self =  shift;
-  
-  my $dba = $self->core->dba;
+  my $self = shift;
+
+  my $dba  = $self->core->dba;
   my $aaga = Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor->new($dba);
-  
+
   my $aa_list = $aaga->fetch_all();
-  
+
   my $count = scalar(@$aa_list);
-  my %alt_id_to_gene_id;
-  my %gene_id_to_alt_id;
   my $max_alt_id = 0;
   my %is_reference;
   my $sth;
 
-  if($count){
+  if ($count) {
     $self->xref->delete_alt_alleles();
 
-    my $alt_added = 0;
+    my $alt_added    = 0;
     my $num_of_genes = 0;
-    
-    # Iterate through all alt-allele groups, pushing unique alleles into the xref alt allele table.
-    # Track the reference gene IDs.    
-    foreach my $aag ( @$aa_list ) {
+
+# Iterate through all alt-allele groups, pushing unique alleles into the xref alt allele table.
+# Track the reference gene IDs.
+    foreach my $aag (@$aa_list) {
       my $ref_gene = $aag->rep_Gene_id();
 
-      # Representative gene not guaranteed, try to find an alternative best fit
-      unless ( $ref_gene ) {
-	my $genes = $aag->get_all_Genes;
-	foreach my $gene ( @$genes ) {
-	  if ($gene->slice->is_reference) {
-	    $ref_gene = $gene->dbID;
-	    last;
-	  }
-	}
+# Representative gene not guaranteed, try to find an alternative best fit
+      unless ($ref_gene) {
+        my $genes = $aag->get_all_Genes;
+        foreach my $gene (@$genes) {
+          if ( $gene->slice->is_reference ) {
+            $ref_gene = $gene->dbID;
+            last;
+          }
+        }
       }
-      unless ( $ref_gene ) { 
-	warn "Tried very hard but failed to select a representative gene for alt-allele-group " . $aag->dbID;
-	next;
+      unless ($ref_gene) {
+        carp
+"Tried very hard but failed to select a representative gene for alt-allele-group "
+          . $aag->dbID;
+        next;
       }
-      
+
       $is_reference{$ref_gene} = 1;
       my $others = $aag->get_all_Gene_ids('no rep');
 
       # Extra step in place to handle non-ref situations
-      my @cleaned_others = grep { !/$ref_gene/ } @$others;
+      my @cleaned_others = grep { !/$ref_gene/x } @$others;
 
       $self->xref->add_alt_allele( $aag->dbID, $ref_gene, 1 );
       $num_of_genes++;
       $alt_added++;
 
-      foreach my $aa ( @cleaned_others ) {
-	$self->xref->add_alt_allele( $aag->dbID, $aa, 0 );
-	$num_of_genes++;
+      foreach my $aa (@cleaned_others) {
+        $self->xref->add_alt_allele( $aag->dbID, $aa, 0 );
+        $num_of_genes++;
       }
-        
-      if ($aag->dbID > $max_alt_id) { $max_alt_id = $aag->dbID }
-    }
-    
-    print "$alt_added alleles found containing $num_of_genes genes\n";
-  } else {
-    print "No alt_alleles found for this species.\n" ;
-  }
 
+      if ( $aag->dbID > $max_alt_id ) { $max_alt_id = $aag->dbID }
+    } ## end foreach my $aag (@$aa_list)
+
+    print "$alt_added alleles found containing $num_of_genes genes\n";
+  } ## end if ($count)
+  else {
+    print "No alt_alleles found for this species.\n";
+  }
 
   ### LRGs added as alt_alleles in the XREF system but never added to core.
 
   #
   # Use $max_alt_id for new ones.
   #
-  
-  my $sql =(<<'LRG');
+
+  my $sql = (<<'LRG');
 SELECT  ox.ensembl_id, g.gene_id
   FROM xref x, object_xref ox, external_db e, gene g
     WHERE x.xref_id = ox.xref_id AND
@@ -456,58 +509,59 @@ SELECT  ox.ensembl_id, g.gene_id
           ox.ensembl_object_type = "Gene" AND
            x.display_label = g.stable_id
 LRG
-  
+
   $sth = $self->core->dbc->prepare($sql);
-  my ($core_gene_id, $lrg_gene_id);
+  my ( $core_gene_id, $lrg_gene_id );
   $sth->execute();
-  $sth->bind_columns(\$lrg_gene_id, \$core_gene_id);
-  
-  $count =0;
-  
-  my ($old_count, $new_count, $lrg_count) = ( 0, 0, 0 );
-  
-  #
-  # If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
-  # Else use a new one and add both core and LRG.
-  #
-  while ($sth->fetch()){
+  $sth->bind_columns( \$lrg_gene_id, \$core_gene_id );
+
+  $count = 0;
+
+  my ( $old_count, $new_count, $lrg_count ) = ( 0, 0, 0 );
+
+#
+# If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
+# Else use a new one and add both core and LRG.
+#
+  while ( $sth->fetch() ) {
     my $aag = $aaga->fetch_by_gene_id($core_gene_id);
     if ($aag) {
       $self->xref->add_alt_allele( $aag->dbID, $lrg_gene_id, 0 );
       $old_count++;
-    } else {
+    }
+    else {
       $aag = $aaga->fetch_by_gene_id($lrg_gene_id);
       if ($aag) {
-	$self->xref->add_alt_allele( $aag->dbID, $lrg_gene_id, 1 );
-	print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
-	$lrg_count++;
-      } else {
-	$max_alt_id++;
-	$self->xref->add_alt_allele( $max_alt_id, $lrg_gene_id, 0 );
-	$self->xref->add_alt_allele( $max_alt_id, $core_gene_id, 1 );
-	$new_count++;
+        $self->xref->add_alt_allele( $aag->dbID, $lrg_gene_id, 1 );
+        print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
+        $lrg_count++;
+      }
+      else {
+        $max_alt_id++;
+        $self->xref->add_alt_allele( $max_alt_id, $lrg_gene_id,  0 );
+        $self->xref->add_alt_allele( $max_alt_id, $core_gene_id, 1 );
+        $new_count++;
       }
     }
 
     $count++;
   }
 
-  
-  if ( $count ) {
-    print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
+  if ($count) {
+    print
+"Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
     print "LRG problem count = $lrg_count\n";
   }
 
   $self->xref->update_process_status("alt_alleles_added");
 
-  return;  
-}
-
+  return;
+} ## end sub get_alt_alleles
 
 #
 # Default behaviour is not to do the offical naming
 # Overload this method in the species file returning the
-# official database name to do so. 
+# official database name to do so.
 # (ie, human-> HGNC, mouse ->MGI, zebrafisf -> ZFIN_ID)
 #
 
@@ -533,38 +587,43 @@ sub get_official_name {
 sub biomart_fix {
   my ( $self, $db_name, $type1, $type2, $verbose ) = @_;
 
-  print "$db_name is associated with both $type1 and $type2 object types\n" if $verbose;
+  print
+    "$db_name is associated with both $type1 and $type2 object types\n"
+    if $verbose;
   print "$db_name moved to Gene level.\n" unless $verbose;
 
-  my ( $to, $from, $to_id, $from_id);
-  if( $type1 eq "Gene" or $type2 eq "Gene" ) {
-    $to = "Gene";
+  my ( $to, $from, $to_id, $from_id );
+  if ( $type1 eq "Gene" or $type2 eq "Gene" ) {
+    $to    = "Gene";
     $to_id = "gene_id";
 
-    if( $type1 eq "Translation" or $type2 eq "Translation" ) {
-      $from = "Translation";
-      $from_id = "translation_id"
-    } else {
-      $from = "Transcript";
+    if ( $type1 eq "Translation" or $type2 eq "Translation" ) {
+      $from    = "Translation";
+      $from_id = "translation_id";
+    }
+    else {
+      $from    = "Transcript";
       $from_id = "transcript_id";
     }
-  } else {
-    $to = "Transcript";
-    $to_id = "transcript_id";
-    $from = "Translation";
+  }
+  else {
+    $to      = "Transcript";
+    $to_id   = "transcript_id";
+    $from    = "Translation";
     $from_id = "translation_id";
   }
 
-  if ( $db_name eq 'GO' || $db_name eq 'goslim_goa' ) { 
-    $to = 'Translation';
-    $from = 'Transcript';
-    $to_id = 'translation_id';
+  if ( $db_name eq 'GO' || $db_name eq 'goslim_goa' ) {
+    $to      = 'Translation';
+    $from    = 'Transcript';
+    $to_id   = 'translation_id';
     $from_id = 'transcript_id';
   }
-  
-  print "Therefore moving all associations from $from to ".$to."\n" if $verbose;
 
-  my $sql =(<<"EOF");
+  print "Therefore moving all associations from $from to " . $to . "\n"
+    if $verbose;
+
+  my $sql = (<<"EOF");
   UPDATE IGNORE object_xref, gene_transcript_translation, xref, source
     SET object_xref.ensembl_object_type = "$to",
       object_xref.ensembl_id = gene_transcript_translation.$to_id 
@@ -575,10 +634,10 @@ sub biomart_fix {
                 object_xref.ox_status = "DUMP_OUT"  AND
 		  source.name = "$db_name";
 EOF
-  my $result =  $self->xref->dbc->do($sql) ;
+  my $result = $self->xref->dbc->do($sql);
 
-  if( $db_name eq "GO" || $db_name eq 'goslim_goa' ) {
-    $sql =(<<"EOF2");
+  if ( $db_name eq "GO" || $db_name eq 'goslim_goa' ) {
+    $sql = (<<"EOF2");
   DELETE object_xref, identity_xref, go_xref
     FROM object_xref, xref, source, identity_xref, go_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
@@ -589,13 +648,13 @@ EOF
             object_xref.ox_status = "DUMP_OUT"  AND
 	      source.name = "$db_name";
 EOF2
-    
-  $result = $self->xref->dbc->do($sql);  
+
+    $result = $self->xref->dbc->do($sql);
 
     # Special tidying up for transcripts without translation
     # The resulting object_xref does not have an ensembl_id to map to
 
-    $sql=(<<"EOF4");
+    $sql = (<<"EOF4");
   DELETE object_xref, identity_xref, go_xref
     FROM object_xref, xref, source, identity_xref, go_xref
       WHERE object_xref.ensembl_object_type = "$to" AND
@@ -607,9 +666,9 @@ EOF2
               object_xref.ox_status = "DUMP_OUT"  AND
                 source.name = "$db_name";
 EOF4
-  }
-  else{
-    $sql =(<<"EOF3");
+  } ## end if ( $db_name eq "GO" ...)
+  else {
+    $sql = (<<"EOF3");
   DELETE object_xref, identity_xref
     FROM xref, source, object_xref
       LEFT JOIN identity_xref
@@ -624,15 +683,14 @@ EOF3
     $result = $self->xref->dbc->do($sql);
   }
 
-  # delete dependent_xref 
-  $sql =(<<'EOF4');
+  # delete dependent_xref
+  $sql = (<<'EOF4');
   DELETE FROM dependent_xref WHERE object_xref_id NOT IN 
    (SELECT object_xref_id FROM object_xref);
 EOF4
 
   return;
-}
-
+} ## end sub biomart_fix
 
 #
 # This sub finds which source lie on multiple ensembl object types and calls biomart_fix to fix this.
@@ -645,40 +703,42 @@ EOF4
 sub biomart_testing {
   my ($self) = @_;
 
-  my $sql = 'SELECT ox.ensembl_object_type, COUNT(*), s.name  FROM xref x, object_xref ox, source s  WHERE x.xref_id = ox.xref_id AND s.source_id = x.source_id  and ox.ox_status = "DUMP_OUT" GROUP BY s.name, ox.ensembl_object_type';
+  my $sql =
+'SELECT ox.ensembl_object_type, COUNT(*), s.name  FROM xref x, object_xref ox, source s  WHERE x.xref_id = ox.xref_id AND s.source_id = x.source_id  and ox.ox_status = "DUMP_OUT" GROUP BY s.name, ox.ensembl_object_type';
 
   my $again = 1;
-  while ( $again ) {
+  while ($again) {
     $again = 0;
 
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
-    
-    my ( $type, $count, $name );
+
+    my ( $type,      $count,      $name );
     my ( $last_type, $last_count, $last_name );
     $sth->bind_columns( \$type, \$count, \$name );
-    
+
     $last_name = "DEFAULT";
     while ( not $again and $sth->fetch ) {
-      if( $last_name eq $name ) {
-	$again  = 1;
-	$self->biomart_fix($name,$last_type, $type, 1);
+      if ( $last_name eq $name ) {
+        $again = 1;
+        $self->biomart_fix( $name, $last_type, $type, 1 );
       }
 
-      $last_name = $name;
-      $last_type= $type;
+      $last_name  = $name;
+      $last_type  = $type;
       $last_count = $count;
     }
-    $sth->finish;  
+    $sth->finish;
   }
 
-  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new( $self );
-  confess 'Problems found before source_defined_move' if $tester->unlinked_entries;
-  
+  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new($self);
+  confess 'Problems found before source_defined_move'
+    if $tester->unlinked_entries;
+
   $self->xref->update_process_status('biomart_test_finished');
 
   return;
-}
+} ## end sub biomart_testing
 
 #
 # Similar to above but just reports the problems. It does not fix them
@@ -691,36 +751,37 @@ sub biomart_testing {
 sub biomart_test {
   my $self = shift;
 
-  my $sql = 'SELECT ox.ensembl_object_type, COUNT(*), s.name  FROM xref x, object_xref ox, source s  WHERE x.xref_id = ox.xref_id AND s.source_id = x.source_id  and ox.ox_status = "DUMP_OUT" GROUP BY s.name, ox.ensembl_object_type';
+  my $sql =
+'SELECT ox.ensembl_object_type, COUNT(*), s.name  FROM xref x, object_xref ox, source s  WHERE x.xref_id = ox.xref_id AND s.source_id = x.source_id  and ox.ox_status = "DUMP_OUT" GROUP BY s.name, ox.ensembl_object_type';
 
-  my $sth = $self->xref->dbc->prepare($sql);  
+  my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
-  
-  my ( $type, $count, $name );
+
+  my ( $type,      $count,      $name );
   my ( $last_type, $last_count, $last_name );
   $sth->bind_columns( \$type, \$count, \$name );
-  
+
   $last_name = "NOTKNOWN";
   my $first = 1;
   while ( $sth->fetch ) {
-    if( $last_name eq $name ) {
-      if( $first ) {
-	print STDERR "\nProblem Biomart test fails\n";
-	$first = 0;
+    if ( $last_name eq $name ) {
+      if ($first) {
+        print STDERR "\nProblem Biomart test fails\n";
+        $first = 0;
       }
 
       print STDERR "$last_name\t$last_count\t$last_type\n";
       print STDERR "$name\t$count\t$type\n";
     }
-    
-    $last_name = $name;
-    $last_type= $type;
+
+    $last_name  = $name;
+    $last_type  = $type;
     $last_count = $count;
   }
   $sth->finish;
-  
+
   return;
-}
+} ## end sub biomart_test
 
 # remove a list of patterns from a string
 
@@ -732,8 +793,8 @@ sub filter_by_regexp {
 
   my ( $self, $str, $regexps ) = @_;
 
-  foreach my $regexp ( @$regexps ) {
-    $str =~ s/$regexp//ig;
+  foreach my $regexp (@$regexps) {
+    $str =~ s/$regexp//xig;
   }
 
   return $str;
@@ -748,16 +809,18 @@ sub get_species_id_from_species_name {
 
   my $species_id;
   eval {
-    $species_id = $self->xref->get_id_from_species_name( $name );
+    $species_id = $self->xref->get_id_from_species_name($name);
     1;
-  } or do {
+    } or
+    do {
     my $error = $@ || "Couldn't get ID for species name $name\n";
-    $error .= "It must be one of :-\n" . join("\n", @{ $self->xref->get_species_names } );
+    $error .= "It must be one of :-\n" .
+      join( "\n", @{ $self->xref->get_species_names } );
     confess $error;
-  };
-  
+    };
+
   return $species_id;
-} 
+}
 
 =head2 revert_to_parsing_finished
 
@@ -768,12 +831,12 @@ sub revert_to_parsing_finished {
 
   $self->xref->clean_up();
   $self->xref->remove_mapping_data();
-  $self->xref->update_process_status( 'parsing_finished' );
+  $self->xref->update_process_status('parsing_finished');
 
   return;
 }
 
-=head2 evert_to_mapping_finished
+=head2 revert_to_mapping_finished
 
 =cut
 
@@ -781,7 +844,7 @@ sub revert_to_mapping_finished {
   my $self = shift;
 
   $self->xref->clean_up( undef, 1 );
-  $self->xref->update_mapping_jobs_status( 'SUBMITTED' );
+  $self->xref->update_mapping_jobs_status('SUBMITTED');
   $self->update_process_status('mapping_finished');
 
   return;
@@ -794,14 +857,15 @@ sub revert_to_mapping_finished {
 sub process_alt_alleles {
   my $self = shift;
 
-  my ($added_count, $ignored) = $self->xref->process_alt_alleles();
+  my ( $added_count, $ignored ) = $self->xref->process_alt_alleles();
   print "Added $added_count new mapping but ignored $ignored\n";
 
-  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new( $self );
-  confess 'Problems found after process_alt_alleles' if $tester->unlinked_entries;
-  
+  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new($self);
+  confess 'Problems found after process_alt_alleles'
+    if $tester->unlinked_entries;
+
   $self->xref->update_process_status('alt_alleles_processed');
-  
+
   return;
 }
 
@@ -816,16 +880,17 @@ sub process_alt_alleles {
 sub source_defined_move {
   my $self = shift;
 
-  foreach my $source ( @{ $self->xref->_get_gene_specific_list() } ){
+  foreach my $source ( @{ $self->xref->_get_gene_specific_list() } ) {
     $self->biomart_fix( $source, "Translation", "Gene", undef, undef );
-    $self->biomart_fix( $source, "Transcript", "Gene", undef, undef );
+    $self->biomart_fix( $source, "Transcript",  "Gene", undef, undef );
   }
-  
-  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new( $self );
-  confess 'Problems found after source_defined_move' if $tester->unlinked_entries;
-  
+
+  my $tester = Bio::EnsEMBL::Xref::Mapper::QC->new($self);
+  confess 'Problems found after source_defined_move'
+    if $tester->unlinked_entries;
+
   $self->update_process_status('source_level_move_finished');
-  
+
   return;
 }
 

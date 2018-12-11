@@ -1932,6 +1932,8 @@ sub update_process_status {
   my $sth = $self->dbi->prepare_cached( 'INSERT INTO process_status (status, date) VALUES(?, NOW())' );
   $sth->execute( $value ) or
     confess $self->dbi->errstr() . "\n $value\n";
+
+  return;
 } ## end sub update_process_status
 
 =head2 xref_latest_status
@@ -2045,6 +2047,7 @@ sub update_mapping_jobs_status {
   $sth->execute( $status ) or
     confess $self->dbi->errstr() . "\n $status\n";
 
+  return;
 } ## end sub update_mapping_jobs_status
 
 
