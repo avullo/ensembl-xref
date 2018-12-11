@@ -129,15 +129,20 @@ sub run {
  RECORD:
   while ( my $line = $csv->getline( $m2g_io ) ) {
 
-    my ( $is_comment, $is_header )
+    my ( $is_comment )
       = ( $line->[0] =~ m{
                            \A
                            ([#])?
-                           \s*
-                           (MIM[ ]Number)?  # FIXME: this is an assumption regarding header contents.
-                                            # See if $line has split to the right number of columns instead?
                        }msx );
     if ( $is_comment ) {
+      # At present we identify the header line among other comments by
+      # checking if it has the expected number of tab-delimited
+      # columns, which of course means we cannot identify header lines
+      # with too few or too many column names. However, this should be
+      # mostly harmless - something would have to be very, very wrong
+      # with the input file for the header to have the wrong number of
+      # column names without a change in the number of actual columns
+      # in data rows.
       if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
            && ( ! is_file_header_valid( $line ) ) ) {
         confess "Malformed or unexpected header in Mim2Gene file '${filename}'";
