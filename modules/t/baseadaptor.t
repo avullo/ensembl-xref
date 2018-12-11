@@ -544,6 +544,7 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 # _update_xref_description - This should have already been covered by previous tests
 # Specific tests can be added later
 
+<<<<<<< HEAD
 note 'Test methods to support base mapper';
 
 throws_ok {
@@ -593,6 +594,13 @@ is( _check_db( $db, 'MappingJob', { job_id => 1 } )->status, 'SUBMITTED', 'Added
 $xref_dba->update_mapping_jobs_status( 'SUCCESS' );
 is( _check_db( $db, 'MappingJob', { job_id => 1 } )->status, 'SUCCESS', 'Updated mapping job status' );
 
+# get/set_species
+ok( !defined($xref_dba->species), "Species not defined yet");
+is($xref_dba->species("human"), "human", "Species set to ". $xref_dba->species);
+
+# get_dba
+ok( defined($xref_dba->dba), "dba defined");
+isa_ok( $xref_dba->dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
 
 done_testing();
 
