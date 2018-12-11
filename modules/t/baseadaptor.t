@@ -537,6 +537,14 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 # _update_xref_description - This should have already been covered by previous tests
 # Specific tests can be added later
 
+# get/set_species
+ok( !defined($xref_dba->species), "Species not defined yet");
+is($xref_dba->species("human"), "human", "Species set to ". $xref_dba->species);
+
+# get_dba
+ok( defined($xref_dba->dba), "dba defined");
+isa_ok( $xref_dba->dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
+
 done_testing();
 
 
