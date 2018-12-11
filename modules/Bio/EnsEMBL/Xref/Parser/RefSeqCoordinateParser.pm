@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2018] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,6 +15,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 =cut
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::Xref::Parser::RefSeqCoordinateParser
+
+=head1 DESCRIPTION
+
+A parser class for the RefSeq_import source.
+Requires an otherfeatures database adaptor and the species must have
+RefSeq_import data or will be skipped.
+
+=head1 SYNOPSIS
+
+  my $parser = Bio::EnsEMBL::Xref::Parser::RefSeqCoordinateParser->new(
+    source_id  => 94,
+    species_id => 1,
+    files      => [],
+    dba        => $otherfeatures_dba,
+    xref_dba   => $xref_dba
+  );
+
+  $parser->run();
+
+=cut
+
 
 package Bio::EnsEMBL::Xref::Parser::RefSeqCoordinateParser;
 
@@ -291,11 +325,16 @@ sub run {
 
 
 
-# params hash can provide 3 keyed params: exons, check_and_register and overlap
-# exons is the array ref of the exons to process
-# check_and_register may contain a range registry to check_and_register the exons there
-# overlap may contain a range registry to calculate the overlap of the exons there
-# returns the exon_match, which is always 0 if no overlap requested
+=head2 compute_exons
+  Arg [1]    : Hash ref: exons, check_and_register and overlap as pairs
+  Description: exons is the array ref of the exons to process.
+               check_and_register may contain a range registry to check_and_register the exons there.
+               overlap may contain a range registry to calculate the overlap of the exons there.
+               Returns the exon_match, which is always 0 if no overlap requested.
+  Return type: Scalar (number)
+  Caller     : internal
+=cut
+
 sub compute_exons {
   my ($self, $params) = @_;
 
@@ -314,8 +353,15 @@ sub compute_exons {
   return $exon_match;
 }
 
-# requires transcript_result and tl_transcript_result hashrefs
-# returns the best_id, best_score and best_tl_score
+=head2 compute_best_scores
+  Arg [1]    : hash ref: transcript_result
+  Arg [2]    : hash ref: tl_transcript_result
+  Description: Provided the hashrefs of the transcripts and translatable transcripts,
+               computes the best ID and the best transcript and translatable transcript score.
+  Return type: Array (best_id, best_score, best_tl_score)
+  Caller     : internal
+=cut
+
 sub compute_best_scores {
   my ($self, $transcript_result, $tl_transcript_result) = @_;
 
@@ -348,7 +394,14 @@ sub compute_best_scores {
   return ($best_id, $best_score, $best_tl_score);
 }
 
-# returns the source id for a source name, requires $self->{source_ids} to have been populated
+=head2 source_id_from_name
+  Arg [1]    : Scalar (string name)
+  Description: Returns the source ID for provided source name.
+               Prints warning message on failure.
+  Return type: Scalar (number source_id)
+  Caller     : internal
+=cut
+
 sub source_id_from_name {
   my ($self, $name) = @_;
 
@@ -363,7 +416,15 @@ sub source_id_from_name {
   return $source_id;
 }
 
-# returns the source id for a RefSeq accession, requires $self->{source_ids} to have been populated
+=head2 source_id_from_acc
+  Arg [1]    : Scalar (string acc)
+  Description: Returns the source ID for provided RefSeq accession.
+               Requires $self->{source_ids} to have been populated.
+               Prints warning message on failure.
+  Return type: Scalar (number source_id)
+  Caller     : internal
+=cut
+
 sub source_id_from_acc {
   my ($self, $acc) = @_;
 
