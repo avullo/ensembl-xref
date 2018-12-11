@@ -144,7 +144,7 @@ sub run {
       # column names without a change in the number of actual columns
       # in data rows.
       if ( ( scalar @{ $line } == $EXPECTED_NUMBER_OF_COLUMNS )
-           && ( ! is_file_header_valid( $line ) ) ) {
+           && ( ! is_file_header_valid( @{ $line } ) ) ) {
         confess "Malformed or unexpected header in Mim2Gene file '${filename}'";
       }
       next RECORD;
@@ -234,8 +234,8 @@ sub run {
 
 =head2 is_file_header_valid
 
-  Arg [1]    : String file header line
-  Example    : if (!is_file_header_valid($header_line)) {
+  Arg [1..N] : list of column names provided by Text::CSV::getline()
+  Example    : if ( ! is_file_header_valid( $csv->getline( $fh ) ) {
                  confess 'Bad header';
                }
   Description: Verifies if the header of a Mim2Gene file follows expected
@@ -250,9 +250,7 @@ sub run {
 =cut
 
 sub is_file_header_valid {
-  my ( $header ) = @_;
-
-  my @fields_ok;
+  my ( @header ) = @_;
 
   Readonly my @field_patterns
     => (
@@ -265,13 +263,13 @@ sub is_file_header_valid {
 
   my $header_field;
   foreach my $pattern (@field_patterns) {
-    $header_field = shift @{ $header };
+    $header_field = shift @header;
     # Make sure we run the regex match in scalar context
-    push @fields_ok, scalar ( $header_field =~ m{ $pattern }msx );
+    return 0 unless scalar ( $header_field =~ m{ $pattern }msx );
   }
 
-  # All fields must have matched
-  return List::Util::all { $_ } @fields_ok;
+  # If we have made it this far, all should be in order
+  return 1;
 }
 
 
