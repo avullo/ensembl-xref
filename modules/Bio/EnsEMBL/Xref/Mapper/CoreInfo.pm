@@ -45,7 +45,9 @@ package Bio::EnsEMBL::Xref::Mapper::CoreInfo;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Xref::Mapper;
+use Carp;
+
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 # Get info from the core database.
 
@@ -63,12 +65,25 @@ use Bio::EnsEMBL::Xref::Mapper;
 sub new {
   my($caller, $mapper) = @_;
 
+  assert_ref( $mapper, 'Bio::EnsEMBL::Xref::Mapper' );
+
   my $class = ref($caller) || $caller;
   my $self = bless {} , $class;
 
-  $self->mapper($mapper);
+  $self->mapper( $mapper );
   
   return $self;
+}
+
+=head2 mapper
+
+=cut
+
+sub mapper {
+  my $self = shift;
+  $self->{_mapper} = shift if @_;
+
+  return $self->{_mapper};
 }
 
 =head2 get_core_data
