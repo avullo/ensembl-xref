@@ -59,12 +59,12 @@ sub run {
 
   # initial param validation step
   if ( (!defined $source_id) || (!defined $species_id) ){
-    croak "Need to pass source_id and species_id as pairs.";
+    confess "Need to pass source_id and species_id as pairs.";
   }
 
   # otherfeatures db param validation
   if ( !defined $of_dba ) {
-    croak "Need to pass dba as pairs. Missing otherfeatures database adaptor.";
+    confess "Need to pass dba as pairs. Missing otherfeatures database adaptor.";
   }
 
   my $core_dba = $of_dba->dnadb();
