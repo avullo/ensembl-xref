@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -53,7 +54,7 @@ use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 # Need to load tables:-
 #
-# gene_transcript_translation 
+# gene_transcript_translation
 # gene_stable_id
 # transcript_stable_id
 # translation_stable_id
@@ -63,15 +64,15 @@ use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 =cut
 
 sub new {
-  my($caller, $mapper) = @_;
+  my ( $caller, $mapper ) = @_;
 
   assert_ref( $mapper, 'Bio::EnsEMBL::Xref::Mapper' );
 
   my $class = ref($caller) || $caller;
-  my $self = bless {} , $class;
+  my $self = bless {}, $class;
 
-  $self->mapper( $mapper );
-  
+  $self->mapper($mapper);
+
   return $self;
 }
 
@@ -93,7 +94,7 @@ sub mapper {
 sub get_core_data {
   my $self = shift;
 
-  # gene_transcript_translation 
+  # gene_transcript_translation
   # gene_stable_id
   # transcript_stable_id
   # translation_stable_id
@@ -101,7 +102,7 @@ sub get_core_data {
   $self->load_gene_transcript_translation();
   $self->load_stable_ids();
 
-  $self->mapper->xref->update_process_status( 'core_data_loaded' );
+  $self->mapper->xref->update_process_status('core_data_loaded');
 
   return;
 }
@@ -112,16 +113,19 @@ sub get_core_data {
 
 sub load_gene_transcript_translation {
   my $self = shift;
-  
-  my $ins_sth = $self->mapper->xref->dbi->prepare("INSERT IGNORE INTO gene_transcript_translation (gene_id, transcript_id, translation_id) VALUES (?, ?, ?)"); 
-  my $sql = "SELECT tn.gene_id, tn.transcript_id, tl.translation_id FROM transcript tn LEFT JOIN translation tl ON tl.transcript_id = tn.transcript_id";
-  my $sth = $self->mapper->core->dbc->prepare( $sql );
+
+  my $ins_sth = $self->mapper->xref->dbi->prepare(
+"INSERT IGNORE INTO gene_transcript_translation (gene_id, transcript_id, translation_id) VALUES (?, ?, ?)"
+  );
+  my $sql =
+"SELECT tn.gene_id, tn.transcript_id, tl.translation_id FROM transcript tn LEFT JOIN translation tl ON tl.transcript_id = tn.transcript_id";
+  my $sth = $self->mapper->core->dbc->prepare($sql);
   $sth->execute();
-  
+
   my ( $gene_id, $transcript_id, $translation_id );
   $sth->bind_columns( \$gene_id, \$transcript_id, \$translation_id );
-  
-  while( $sth->fetch() ) {
+
+  while ( $sth->fetch() ) {
     $ins_sth->execute( $gene_id, $transcript_id, $translation_id );
   }
   $ins_sth->finish;
@@ -138,13 +142,16 @@ sub load_stable_ids {
   my $self = shift;
 
   my ( $id, $stable_id, $biotype );
-  foreach my $table ( qw(gene translation) ) {
-    my $sth = $self->mapper->core->dbc->prepare( "SELECT " . $table . "_id, stable_id FROM " . $table );
-    my $ins_sth = $self->mapper->xref->dbi->prepare( "INSERT IGNORE INTO " . $table . "_stable_id (internal_id, stable_id) VALUES (?, ?)" );
+  foreach my $table (qw(gene translation)) {
+    my $sth = $self->mapper->core->dbc->prepare(
+                 "SELECT " . $table . "_id, stable_id FROM " . $table );
+    my $ins_sth =
+      $self->mapper->xref->dbi->prepare( "INSERT IGNORE INTO " .
+         $table . "_stable_id (internal_id, stable_id) VALUES (?, ?)" );
     $sth->execute();
     $sth->bind_columns( \$id, \$stable_id );
-    
-    while( $sth->fetch ) {
+
+    while ( $sth->fetch ) {
       $ins_sth->execute( $id, $stable_id );
     }
     $ins_sth->finish;
@@ -153,18 +160,21 @@ sub load_stable_ids {
 
   # populate transcript_stable_id table incuding the biotype column
   my $table = "transcript";
-  my $sth = $self->mapper->core->dbc->prepare( "SELECT " . $table . "_id, stable_id, biotype FROM " . $table );
-  my $ins_sth = $self->mapper->xref->dbi->prepare("INSERT IGNORE INTO " . $table . "_stable_id (internal_id, stable_id, biotype) VALUES (?, ?, ?)" );
+  my $sth = $self->mapper->core->dbc->prepare(
+        "SELECT " . $table . "_id, stable_id, biotype FROM " . $table );
+  my $ins_sth =
+    $self->mapper->xref->dbi->prepare( "INSERT IGNORE INTO " . $table .
+      "_stable_id (internal_id, stable_id, biotype) VALUES (?, ?, ?)" );
   $sth->execute();
   $sth->bind_columns( \$id, \$stable_id, \$biotype );
-  
-  while( $sth->fetch ) {
+
+  while ( $sth->fetch ) {
     $ins_sth->execute( $id, $stable_id, $biotype );
   }
   $ins_sth->finish;
   $sth->finish;
 
   return;
-}
+} ## end sub load_stable_ids
 
 1;
