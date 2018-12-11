@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -74,7 +75,6 @@ use Bio::EnsEMBL::Xref::Mapper;
 
 # All object_xref of type go have a go_xref entry
 
-
 ##### Numbers between xref and core (xref and object_xref) are similar
 
 ##### if human or mouse check the number of gene name changes.
@@ -84,13 +84,13 @@ use Bio::EnsEMBL::Xref::Mapper;
 =cut
 
 sub new {
-  my($caller, $mapper) = @_;
+  my ( $caller, $mapper ) = @_;
 
   my $class = ref($caller) || $caller;
-  my $self = bless {} , $class;
+  my $self = bless {}, $class;
 
   $self->mapper($mapper);
-  
+
   return $self;
 }
 
@@ -101,7 +101,7 @@ sub new {
 sub mapper {
   my $self = shift;
   $self->{_mapper} = shift if @_;
-  
+
   return $self->{_mapper};
 }
 
@@ -111,15 +111,16 @@ sub mapper {
 
 sub unlinked_entries {
   my $self = shift;
-  
+
   $self->mapper->xref->update_process_status('tests_started');
 
   my $dbi = $self->mapper->xref->dbi;
-  
+
   # dependent_xref and xref
-  my ($xref_id, $count);
-  my $count_sql = 'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  my $sth = $dbi->prepare( $count_sql );
+  my ( $xref_id, $count );
+  my $count_sql =
+'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL';
+  my $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
@@ -127,211 +128,236 @@ sub unlinked_entries {
 
   my $failed = 0;
   my $sql;
-  if( $count ) {
+  if ($count) {
     $failed = 1;
-    $sql = 'SELECT DISTINCT(d.master_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
-    $sth = $dbi->prepare( $sql );
+    $sql =
+'SELECT DISTINCT(d.master_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with master xref $xref_id\n";
     }
     $sth->finish;
   }
 
-  $count_sql = 'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql = "SELECT DISTINCT(d.dependent_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10";
+  $count_sql =
+'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL';
+  $sql =
+"SELECT DISTINCT(d.dependent_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10";
 
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with dependent xref $xref_id\n";
     }
     $sth->finish;
   }
 
-  $count_sql = 'SELECT COUNT(1) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql = 'SELECT DISTINCT(d.xref_id) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
+  $count_sql =
+'SELECT COUNT(1) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
+  $sql =
+'SELECT DISTINCT(d.xref_id) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
 
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with primary xref $xref_id\n";
     }
     $sth->finish;
   }
 
-  foreach my $type ( qw(transcript translation gene) ) {
-    $count_sql = 'SELECT COUNT(1) FROM ".$type."_direct_xref d LEFT JOIN xref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL';    
-    $sql = 'SELECT DISTINCT(d.general_xref_id) FROM ' . $type . '_direct_xref d LEFT JOINxref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
-    
-    $sth = $dbi->prepare( $count_sql );
+  foreach my $type (qw(transcript translation gene)) {
+    $count_sql =
+'SELECT COUNT(1) FROM ".$type."_direct_xref d LEFT JOIN xref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL';
+    $sql =
+      'SELECT DISTINCT(d.general_xref_id) FROM ' . $type .
+'_direct_xref d LEFT JOINxref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
+
+    $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns( \$count );
     $sth->fetch();
     $sth->finish;
-    
-    if( $count ) {
+
+    if ($count) {
       $failed = 1;
-      $sth = $dbi->prepare( $sql );
+      $sth    = $dbi->prepare($sql);
       $sth->execute();
       $sth->bind_columns( \$xref_id );
-      
+
       print STDERR "SQL QUERY: $sql\n";
-      while( $sth->fetch ) {
-	print STDERR "Problem with ".$type."_direct_xref $xref_id\n";
+      while ( $sth->fetch ) {
+        print STDERR "Problem with " .
+          $type . "_direct_xref $xref_id\n";
       }
       $sth->finish;
     }
-  }
+  } ## end foreach my $type (qw(transcript translation gene))
 
+  $count_sql =
+'SELECT COUNT(1) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
+  $sql =
+'SELECT DISTINCT(d.xref_id) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
 
-  $count_sql = 'SELECT COUNT(1) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql = 'SELECT DISTINCT(d.xref_id) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
-
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with synonym $xref_id\n";
     }
     $sth->finish;
   }
 
-  $count_sql = 'SELECT COUNT(1) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
-  $sql = 'SELECT DISTINCT(d.object_xref_id) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
+  $count_sql =
+'SELECT COUNT(1) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
+  $sql =
+'SELECT DISTINCT(d.object_xref_id) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
 
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with object_xref $xref_id\n";
     }
     $sth->finish;
   }
 
-  $count_sql = 'SELECT COUNT(1) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
-  $sql = 'SELECT DISTINCT(d.object_xref_id) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
+  $count_sql =
+'SELECT COUNT(1) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
+  $sql =
+'SELECT DISTINCT(d.object_xref_id) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
 
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
+    while ( $sth->fetch ) {
       print STDERR "Problem with object_xref $xref_id\n";
     }
     $sth->finish;
   }
 
+  foreach my $type (qw(transcript translation gene)) {
+    $count_sql =
+      'SELECT COUNT(1) FROM gene_transcript_translation d LEFT JOIN ' .
+      $type . '_stable_id x ON d.' .
+      $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' .
+      $type . '_id IS NOT NULL';
+    $sql =
+      'SELECT DISTINCT(d.' .
+      $type . '_id) FROM gene_transcript_translation d LEFT JOIN ' .
+      $type . '_stable_id x ON d.' .
+      $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' .
+      $type . '_id IS NOT NULL LIMIT 10';
 
-  foreach my $type ( qw(transcript translation gene) ) {
-    $count_sql = 'SELECT COUNT(1) FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x ON d.' . $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL';
-    $sql = 'SELECT DISTINCT(d.' . $type . '_id) FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x ON d.' . $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL LIMIT 10';
-    
-    $sth = $dbi->prepare( $count_sql );
+    $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns( \$count );
     $sth->fetch();
     $sth->finish;
-    
-    if( $count ) {
+
+    if ($count) {
       $failed = 1;
-      $sth = $dbi->prepare( $sql );
+      $sth    = $dbi->prepare($sql);
       $sth->execute();
       $sth->bind_columns( \$xref_id );
-      
+
       print STDERR "SQL QUERY: $sql\n";
-      while( $sth->fetch ) {
-	print STDERR "Problem with ".$type."_id $xref_id\n";
+      while ( $sth->fetch ) {
+        print STDERR "Problem with " . $type . "_id $xref_id\n";
       }
       $sth->finish;
     }
-  }
+  } ## end foreach my $type (qw(transcript translation gene))
 
+  $count_sql =
+"SELECT COUNT(1) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL";
+  $sql =
+"SELECT DISTINCT(o.object_xref_id) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL LIMIT 10";
 
-  $count_sql = "SELECT COUNT(1) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL";
-  $sql = "SELECT DISTINCT(o.object_xref_id) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL LIMIT 10";
-
-  $sth = $dbi->prepare( $count_sql );
+  $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
   $sth->fetch();
   $sth->finish;
-  
-  if( $count ) {
+
+  if ($count) {
     $failed = 1;
-    $sth = $dbi->prepare( $sql );
+    $sth    = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
-    while( $sth->fetch ) {
-      print STDERR "Problem with object_xref $xref_id which is linked to a GO source but has no go_xref reference\n";
+    while ( $sth->fetch ) {
+      print STDERR
+"Problem with object_xref $xref_id which is linked to a GO source but has no go_xref reference\n";
     }
     $sth->finish;
   }
 
-  if( !$failed ) {
+  if ( !$failed ) {
     $self->mapper->xref->update_process_status('tests_finished');
-  } else {
+  }
+  else {
     $self->mapper->xref->update_process_status('tests_failed');
   }
-  
+
   return $failed;
-}
+} ## end sub unlinked_entries
 
 =head2 entry_number_check
 
@@ -339,51 +365,67 @@ sub unlinked_entries {
 
 sub entry_number_check {
   my $self = shift;
-  my $dbi = $self->mapper->xref->dbi;
-  
-  # No point doing xrefs object_xrefs are more important and gives a better indication of wether things went okay.
+  my $dbi  = $self->mapper->xref->dbi;
+
+# No point doing xrefs object_xrefs are more important and gives a better indication of wether things went okay.
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $dbi->prepare( 'SELECT s.name, COUNT(distinct x.xref_id, ensembl_id) FROM xref x, object_xref ox, source s WHERE ox.xref_id = x.xref_id AND x.source_id = s.source_id AND ox_status = "DUMP_OUT" AND s.name NOT LIKE "AFFY%" GROUP BY s.name');
+  my $sth = $dbi->prepare(
+'SELECT s.name, COUNT(distinct x.xref_id, ensembl_id) FROM xref x, object_xref ox, source s WHERE ox.xref_id = x.xref_id AND x.source_id = s.source_id AND ox_status = "DUMP_OUT" AND s.name NOT LIKE "AFFY%" GROUP BY s.name'
+  );
   $sth->execute();
-  
+
   my ( $name, $count );
   $sth->bind_columns( \$name, \$count );
-  while( $sth->fetch() ) {
+  while ( $sth->fetch() ) {
     $new_object_xref_count{$name} = $count;
   }
   $sth->finish;
 
- $sth = $self->mapper->core->dbc->prepare('SELECT e.db_name, COUNT(*) FROM xref x, object_xref ox, external_db e WHERE ox.xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.db_name NOT LIKE "AFFY%" AND (x.info_type IS NULL or x.info_type != "PROJECTION") GROUP BY e.db_name');
+  $sth = $self->mapper->core->dbc->prepare(
+'SELECT e.db_name, COUNT(*) FROM xref x, object_xref ox, external_db e WHERE ox.xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.db_name NOT LIKE "AFFY%" AND (x.info_type IS NULL or x.info_type != "PROJECTION") GROUP BY e.db_name'
+  );
   $sth->execute();
   $sth->bind_columns( \$name, \$count );
-  
-  while( $sth->fetch() ) {
+
+  while ( $sth->fetch() ) {
     my $change = 0;
     $old_object_xref_count{$name} = $count;
-    if( defined $new_object_xref_count{$name} ) {
-      $change = (($new_object_xref_count{$name} - $count) / $count) * 100;
-      
-      if( $change > 5 ) { # increase of 5%
-	print "WARNING: $name has increased by " . int( $change ) . "\% was $count now " . $new_object_xref_count{$name} . "\n" if $self->mapper->verbose; 
-      } elsif( $change < -5 ) { # decrease by 5%
-	print "WARNING: $name has decreased by " . int( $change ) . " \% was $count now " . $new_object_xref_count{$name} . "\n" if $self->mapper->verbose;
+    if ( defined $new_object_xref_count{$name} ) {
+      $change =
+        ( ( $new_object_xref_count{$name} - $count )/$count )*100;
+
+      if ( $change > 5 ) {    # increase of 5%
+        print "WARNING: $name has increased by " .
+          int($change) .
+          "\% was $count now " . $new_object_xref_count{$name} . "\n"
+          if $self->mapper->verbose;
       }
-    } else {
-      print "WARNING: xrefs $name are not in the new database but $count are in the old???\n"
-	if $self->mapper->verbose;
+      elsif ( $change < -5 ) {    # decrease by 5%
+        print "WARNING: $name has decreased by " .
+          int($change) .
+          " \% was $count now " . $new_object_xref_count{$name} . "\n"
+          if $self->mapper->verbose;
+      }
     }
-  }
+    else {
+      print
+"WARNING: xrefs $name are not in the new database but $count are in the old???\n"
+        if $self->mapper->verbose;
+    }
+  } ## end while ( $sth->fetch() )
   $sth->finish;
-  
+
   foreach my $key ( keys %new_object_xref_count ) {
-    print "WARNING: $key has " . $new_object_xref_count{$key} . " xrefs in the new database but NONE in the old\n"
-      if not defined $old_object_xref_count{$key} and $self->mapper->verbose;
+    print "WARNING: $key has " . $new_object_xref_count{$key} .
+      " xrefs in the new database but NONE in the old\n"
+      if not defined $old_object_xref_count{$key} and
+      $self->mapper->verbose;
   }
-  
+
   return;
-}
+} ## end sub entry_number_check
 
 =head2 name_change_check
 
@@ -391,76 +433,89 @@ sub entry_number_check {
 
 sub name_change_check {
   my $self = shift;
-  my $dbi = $self->mapper->xref->dbi;
-  
-  my %new_name; # $old_name{$gene_id} = HGNC_%name
+  my $dbi  = $self->mapper->xref->dbi;
+
+  my %new_name;    # $old_name{$gene_id} = HGNC_%name
   my %id_to_stable_id;
 
   my $official_name = $self->mapper->get_official_name;
   return unless defined $official_name;
-  
-  my $sql = 'SELECT x.label, gsi.internal_id, gsi.stable_id FROM object_xref ox, xref x, gene_stable_id gsi, source s WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = "Gene" AND gsi.internal_id = ox.ensembl_id AND x.source_id = s.source_id AND s.name LIKE "' . $official_name . '_%"';
-  my $sth = $dbi->prepare( $sql );
+
+  my $sql =
+'SELECT x.label, gsi.internal_id, gsi.stable_id FROM object_xref ox, xref x, gene_stable_id gsi, source s WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = "Gene" AND gsi.internal_id = ox.ensembl_id AND x.source_id = s.source_id AND s.name LIKE "'
+    . $official_name . '_%"';
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
-  
+
   my ( $name, $gene_id, $stable_id, $syn );
   $sth->bind_columns( \$name, \$gene_id, \$stable_id );
   my $count = 0;
-  
-  while( $sth->fetch() ) {
-    $new_name{$gene_id} = $name;
+
+  while ( $sth->fetch() ) {
+    $new_name{$gene_id}        = $name;
     $id_to_stable_id{$gene_id} = $stable_id;
     $count++;
   }
   $sth->finish;
-  
+
   # Use synonyms as well.
   my %alias;
-  $sql = 'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id and so.source_id = x.source_id AND so.name LIKE "' . $official_name . '_%" ';
-  $sth = $dbi->prepare( $sql );
+  $sql =
+'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id and so.source_id = x.source_id AND so.name LIKE "'
+    . $official_name . '_%" ';
+  $sth = $dbi->prepare($sql);
   $sth->execute();
-  
+
   $sth->bind_columns( \$name, \$syn );
   $count = 0;
-  
-  while( $sth->fetch() ) {
+
+  while ( $sth->fetch() ) {
     $alias{$syn} = $name;
   }
   $sth->finish;
 
-  $sql = 'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id AND so.source_id = x.source_id AND so.name LIKE "EntrezGene"';
-  $sth = $dbi->prepare( $sql );
+  $sql =
+'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id AND so.source_id = x.source_id AND so.name LIKE "EntrezGene"';
+  $sth = $dbi->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$name, \$syn );
-  
-  while( $sth->fetch() ) {
+
+  while ( $sth->fetch() ) {
     $alias{$syn} = $name;
   }
   $sth->finish;
 
   # NOTE ncRNA has higher priority
-  $sql = "SELECT x.display_label, g.gene_id FROM gene g, xref x WHERE g.display_xref_id = x.xref_id AND biotype = 'protein_coding'";
-  $sth = $self->mapper->core->dbc->prepare( $sql );
+  $sql =
+"SELECT x.display_label, g.gene_id FROM gene g, xref x WHERE g.display_xref_id = x.xref_id AND biotype = 'protein_coding'";
+  $sth = $self->mapper->core->dbc->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$name, \$gene_id );
-  
-  $count =0;
+
+  $count = 0;
   my $total_count = 0;
-  while( $sth->fetch() ) {
+  while ( $sth->fetch() ) {
     $total_count++ if defined $new_name{$gene_id};
-    
-    if( defined $new_name{$gene_id} and $new_name{$gene_id} ne $name ) {
-      if( not defined$alias{$name} or $alias{$name} ne $new_name{$gene_id} ) {
-	print STDERR "WARN: gene_id ($gene_id) " . $id_to_stable_id{$gene_id} . " new = " . $new_name{$gene_id} . " old = $name\n";
-	$count++;
+
+    if ( defined $new_name{$gene_id} and $new_name{$gene_id} ne $name )
+    {
+      if ( not defined $alias{$name} or
+           $alias{$name} ne $new_name{$gene_id} )
+      {
+        print STDERR "WARN: gene_id ($gene_id) " .
+          $id_to_stable_id{$gene_id} .
+          " new = " . $new_name{$gene_id} . " old = $name\n";
+        $count++;
       }
-    }	
+    }
   }
 
-  print STDERR "$count entries with different names out of $total_count protein coding gene comparisons?\n" if $total_count;
+  print STDERR
+"$count entries with different names out of $total_count protein coding gene comparisons?\n"
+    if $total_count;
 
   return;
-}
+} ## end sub name_change_check
 
 =head2 direct_stable_id_check
 
@@ -468,26 +523,32 @@ sub name_change_check {
 
 sub direct_stable_id_check {
   my $self = shift;
-  my $dbi = $self->mapper->xref->dbi;
-  
-  foreach my $type ( qw(gene transcript translation) ) {
+  my $dbi  = $self->mapper->xref->dbi;
 
-    my $sql = 'SELECT s.name, COUNT(*) FROM source s, xref x, ' . $type . '_direct_xref gdx LEFT JOIN ' . $type . '_stable_id gsi ON gdx.ensembl_stable_id = gsi.stable_id WHERE s.source_id = x.source_id AND x.xref_id = gdx.general_xref_id AND gsi.stable_id IS NULL GROUP BY s.name';
-    my $sth = $dbi->prepare( $sql );
+  foreach my $type (qw(gene transcript translation)) {
+
+    my $sql =
+      'SELECT s.name, COUNT(*) FROM source s, xref x, ' .
+      $type . '_direct_xref gdx LEFT JOIN ' . $type .
+'_stable_id gsi ON gdx.ensembl_stable_id = gsi.stable_id WHERE s.source_id = x.source_id AND x.xref_id = gdx.general_xref_id AND gsi.stable_id IS NULL GROUP BY s.name';
+    my $sth = $dbi->prepare($sql);
     $sth->execute();
-    
+
     my ( $name, $count );
     $sth->bind_columns( \$name, \$count );
-    
+
     my $total_count = 0;
-    while( $sth->fetch() ) {
-      print STDERR "WARNING $name has $count invalid stable ids in " . $type . "_direct_xrefs\n";
+    while ( $sth->fetch() ) {
+      print STDERR "WARNING $name has $count invalid stable ids in " .
+        $type . "_direct_xrefs\n";
       $total_count += $count;
     }
     $sth->finish;
-    
+
     print STDERR "USEFUL SQL: $sql\n" if $total_count;
   }
-}
+
+  return;
+} ## end sub direct_stable_id_check
 
 1;
