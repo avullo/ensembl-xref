@@ -544,7 +544,6 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 # _update_xref_description - This should have already been covered by previous tests
 # Specific tests can be added later
 
-<<<<<<< HEAD
 note 'Test methods to support base mapper';
 
 throws_ok {
