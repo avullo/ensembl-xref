@@ -81,7 +81,7 @@ sub new {
     -USER   => $args{user},
     -PASS   => $args{pass} || '',
     -PORT   => $args{port} || '3306',
-    -GROUP  => $args{group} || ''						     
+    -GROUP  => $args{group} || ''
   ) );
   $self->verbose( $args{verbose} // 0 );
 
@@ -210,7 +210,7 @@ sub get_species_names {
   my $sth = $self->dbi->prepare_cached( 'SELECT name FROM species' );
   $sth->execute();
 
-  return map { $_->[0] } @{ $sth->fetchrow_arrayref }
+  return $sth->fetchrow_arrayref;
   
 } ## end sub get_species_names
 
@@ -728,7 +728,7 @@ sub add_alt_allele {
   return;
 } ## end sub add_alt_allele
 
-=head2 delete_alt_allele
+=head2 delete_alt_alleles
 
   Arg [ ]    : none
   Description: Delete entries in alt allele table
@@ -1911,16 +1911,16 @@ sub update_process_status {
 
 =cut
 
-sub xref_latest_status { 
+sub xref_latest_status {
   my $self = shift;
 
   my $sth = $self->dbi->prepare_cached( 'SELECT id, status, date FROM process_status ORDER BY id' );
   $sth->execute();
-  
+
   my ($id, $status, $date);
   $sth->bind_columns(\$id, \$status,\$date);
   while ( $sth->fetch ) {} # get the last one
-  
+
   return $status;
 } ## end sub xref_latest_status
 
@@ -1928,29 +1928,29 @@ sub xref_latest_status {
 
 =cut
 
-sub clean_up { 
+sub clean_up {
   my ( $self, $stats, $keep_core_data ) = @_;
 
   # remove all object_xref, identity_xref  entries
   my $sth = $self->dbi->prepare_cached( 'TRUNCATE table object_xref' );
-  $sth->execute(); 
+  $sth->execute();
 
   $sth = $self->dbi->prepare_cached( 'TRUNCATE table go_xref' );
-  $sth->execute(); 
+  $sth->execute();
 
   $sth = $self->dbi->prepare_cached( 'TRUNCATE table identity_xref' );
-  $sth->execute(); 
- 
+  $sth->execute();
+
   # remove all xrefs after PARSED_xref_id
   # set dumped to NULL fro all xrefs.
   my $max_xref_id = $self->get_meta_value( 'PARSED_xref_id' );
   if($max_xref_id){
     $sth = $self->dbi->prepare_cached( "DELETE from xref where xref_id > $max_xref_id" );
-    $sth->execute(); 
+    $sth->execute();
   }
 
   $sth = $self->dbi->prepare_cached( 'UPDATE xref set dumped = null');
-  $sth->execute(); 
+  $sth->execute();
 
   $sth = $self->dbi->prepare_cached( 'DELETE from display_xref_priority' );
   $sth->execute();
@@ -1964,16 +1964,16 @@ sub clean_up {
     #   [gene/transcript/translation]_stable_id
     #
     $sth = $self->dbi->prepare_cached( 'DELETE from gene_transcript_translation' );
-    $sth->execute(); 
-    
+    $sth->execute();
+ 
     $sth = $self->dbi->prepare_cached( 'DELETE from gene_stable_id' );
-    $sth->execute(); 
-    
+    $sth->execute();
+ 
     $sth = $self->dbi->prepare_cached( 'DELETE from transcript_stable_id' );
-    $sth->execute(); 
-    
+    $sth->execute();
+ 
     $sth = $self->dbi->prepare_cached( 'DELETE from translation_stable_id' );
-    $sth->execute(); 
+    $sth->execute();
   }
   
   return;
@@ -2008,11 +2008,11 @@ sub remove_mapping_data {
 sub update_mapping_jobs_status {
   my ( $self, $status ) = @_;
   confess 'Status not given' unless defined $status;
-  
+
   my $sth = $self->dbi->prepare_cached( 'UPDATE mapping_jobs set status = ?' );
   $sth->execute( $status ) or
     confess $self->dbi->errstr() . "\n $status\n";
-  
+
 } ## end sub update_mapping_jobs_status
 
 
