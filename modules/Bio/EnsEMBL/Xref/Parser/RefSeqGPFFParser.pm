@@ -43,6 +43,7 @@ provided data files.
   my $parser = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
     source_id  => 108,
     species_id => 9606,
+    species    => 'homo_sapiens',
     files      => ['data.protein.gpff'],
     rel_file   => 'release.txt',
     xref_dba   => $xref_dba
@@ -92,8 +93,8 @@ sub run {
   my $xref_dba     = $self->{xref_dba};
   my $verbose      = $self->{verbose} // 0;
 
-  if ( (!defined $source_id) || (!defined $species_id) || (!defined $files) || (!defined $release_file) ){
-    confess "Need to pass source_id, species_id, files and rel_file as pairs";
+  if ( (!defined $source_id) || (!defined $species_id) || (!defined $species_name) || (!defined $files) || (!defined $release_file) ){
+    confess "Need to pass source_id, species_id, species, files and rel_file as pairs";
   }
 
   # get RefSeq source ids
