@@ -308,7 +308,7 @@ sub xref_from_record {
     next GENEID unless (defined $refseq_pair);
 
     # remove the version number
-    $refseq_pair =~ s/\.\d*//;
+    $refseq_pair =~ s/\.\d*//x;
 
     # Add xrefs for RefSeq mRNA as well where available
     foreach my $refseq_acc (@{ $self->{refseq_accs}->{$refseq_pair} }) {
