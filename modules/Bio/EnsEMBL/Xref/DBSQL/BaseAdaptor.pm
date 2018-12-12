@@ -53,6 +53,7 @@ use Getopt::Long;
 use IO::Uncompress::AnyUncompress;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 my $base_dir = File::Spec->curdir();
 
@@ -116,6 +117,37 @@ sub dbi {
 } ## end sub dbi
 
 
+=head2 dba
+  Description: Getter for the dba object
+  Return type: Bio::EnsEMBL::DBSQL::DBAdaptor instance
+  Caller     : internal
+=cut
+
+sub dba {
+    my $self = shift;
+    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbconn => $self->dbc, -species => $self->species);
+}
+
+
+=head2 species
+  Arg [1]    : (optional) string $arg
+               The new value of the species
+  Example    : $species = $dba->species()
+  Description: Getter/Setter for the current species
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+=cut
+
+sub species{
+  my ($self, $arg) = @_;
+
+  if ( defined $arg ) {
+    $self->{_species} = $arg;
+  }
+  return $self->{_species};
+}
+
 
 =head2 get_filehandle
   Arg [1]    : file name
@@ -146,8 +178,8 @@ sub get_filehandle {
   }
 
   if ( !-e $file_name ) {
-    carp( "File '$file_name' does not exist, " .
-          "will try '$alt_file_name'" );
+    print "File $file_name does not exist, " .
+          "will try $alt_file_name\n";
     $file_name = $alt_file_name;
   }
 
@@ -207,6 +239,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
@@ -272,12 +305,10 @@ sub get_source_name_for_source_id {
     $source_name = $row[0];
   }
   else {
-    carp
-"There is no entity with source-id  $source_id  in the source-table of the \n";
-    carp
-"xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n";
-    carp "and in the parser\n";
-    carp "Couldn't get source name for source ID $source_id\n";
+    print "There is no entity with source-id  $source_id  in the source-table of the \n";
+    print "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n";
+    print "and in the parser\n";
+    print "Couldn't get source name for source ID $source_id\n";
     $source_name = '-1';
   }
 

@@ -36,12 +36,8 @@ use lib "$Bin/";
 
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Test::MultiTestDB;
 
 use_ok 'Bio::EnsEMBL::Xref::Parser';
-
-my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new();
-my $dba      = $multi_db->get_DBAdaptor('core');
 
 my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my %config = %{ $db->config };
@@ -54,56 +50,58 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   port   => $config{port}
 );
 
-# populate the species info as species_id2name method is called from the ArrayExpressParser 
-$db->schema->populate(
-  'Species',
-  [
-    [qw/species_id taxonomy_id name aliases/],
-    [ 9606, 9606, 'homo_sapiens', 'homo_sapiens' ],
-  ]
-);
+my $species = $db->schema->resultset('Species')->create({
+  species_id  => 9606,
+  taxonomy_id => 9606,
+  name        => 'homo_sapiens',
+  aliases     => 'homo_sapiens'
+});
 
-use_ok 'Bio::EnsEMBL::Xref::Parser::ArrayExpressParser';
+my $reactome_uniprot_source = $db->schema->resultset('Source')->create({
+  source_id            => 86,
+  name                 => 'reactome_translation',
+  priority_description => 'uniprot',
+  ordered              => 1
+});
 
-my $parser = Bio::EnsEMBL::Xref::Parser::ArrayExpressParser->new(
+my $uniprot_source = $db->schema->resultset('Source')->create({
+  source_id            => 1,
+  name                 => 'UniProt/SWISSPROT',
+  ordered              => 1
+});
+
+my $uniprot_xref = $db->schema->resultset('Xref')->create({
+  xref_id    => 1,
+  accession  => 'A0A075B6P5',
   source_id  => 1,
   species_id => 9606,
-  files      => ["project=>ensembl"],
-  xref_dba   => $xref_dba,
-  dba        => $dba
+  info_type => 'DIRECT',
+  info_text => ''
+});
+
+
+use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeUniProtParser';
+
+my $parser = Bio::EnsEMBL::Xref::Parser::ReactomeUniProtParser->new(
+ source_id  => 86,
+ species_id => 9606,
+ species    => 'homo_sapiens',
+ files      => ["$Bin/test-data/uniprot_reactome.txt"],
+ xref_dba   => $xref_dba
 );
-isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ArrayExpressParser' );
+
+isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ReactomeUniProtParser' );
 
 $parser->run();
 
 ok(
-  $db->schema->resultset('Xref')->check_direct_xref(
-    {
-      accession  => "ENSG00000131044",
-      label      => 'ENSG00000131044',
-      info_type  => 'DIRECT',
-      source_id  => 1,
-      species_id => 9606
-    }
-  ),
-  'Sample Arrayexpress direct Xref has been inserted'
+ $db->schema->resultset('DependentXref')->fetch_dependent_xref("A0A075B6P5", "R-HSA-109582"),
+ 'Sample Reactome uniprot Xref has been inserted'
 );
 
-ok (
-  $db->schema->resultset('GeneDirectXref')->find(
-    {
-       ensembl_stable_id => 'ENSG00000131044'
-    }
-  ),
-   'Sample Arrayexpress gene direct Xref has been inserted'
- );
+# Test if all the rows were inserted
+is($db->schema->resultset('Xref')->count, 8, "All 8 human rows were inserted");
 
-# Test if all the rows from gene table were inserted as the parser loads all gene stable_ids as direct xref
-is( $db->schema->resultset('Xref')->count,
-  21, "All 21 rows were inserted in to xref" );
-
-is( $db->schema->resultset('GeneDirectXref')->count,
-  21, "All 21 rows were inserted in to gene_direct_xref" );
 
 done_testing();
 
