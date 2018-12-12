@@ -167,51 +167,10 @@ sub previous_core {
 sub process_file {
   my ( $self, $file, $verbose ) = @_;
 
-  my $xref    = undef;
-  my $ensembl = undef;
-  my $type;
-
-  my %xref_hash    = ();
-  my %species_hash = ();
-  my %farm_hash    = ();
-
-  open my $fh, "<", $file or
+  open( my $fh, "<", $file ) or
     confess("Cannot open input file '$file':\n $!\n");
-  while ( my $line = <$fh> ) {
-
-    chomp($line);
-    next if not $line or $line =~ /^#/x;
-
-    my ( $key, $value ) = split( '=', $line );
-    if ( defined $value ) {
-      $value =~ s/^\s*//x;
-      $value =~ s/\s*$//x;
-    }
-    if ( defined $key ) {
-      $key =~ s/^\s*//x;
-      $key =~ s/\s*$//x;
-    }
-
-    if ( $key eq "species" ) {
-      $type = 'species';
-      $species_hash{'species'} = $value;
-    }
-    elsif ( $key eq 'xref' ) {
-      $type = 'xref';
-    }
-    elsif ( $key eq 'farm' ) {
-      $type = "farm";
-    }
-    elsif ( $type eq 'species' ) {    # processing species data
-      $species_hash{ lc($key) } = $value;
-    }
-    elsif ( $type eq 'xref' ) {       # processing xref data
-      $xref_hash{ lc($key) } = $value;
-    }
-    elsif ( $type eq 'farm' ) {
-      $farm_hash{ lc($key) } = $value;
-    }
-  } ## end while ( my $line = <$fh> )
+  my ( %species_hash, %xref_hash, %farm_hash ) =
+    $self->_parse_file($fh);
   close $fh or confess "Can't close file";
 
   my $value = $species_hash{'species'};
@@ -437,7 +396,7 @@ sub get_alt_alleles {
 
   my $aa_list = $aaga->fetch_all();
 
-  my $count = scalar(@$aa_list);
+  my $count      = scalar(@$aa_list);
   my $max_alt_id = 0;
   my %is_reference;
   my $sth;
@@ -880,7 +839,7 @@ sub process_alt_alleles {
 sub source_defined_move {
   my $self = shift;
 
-  foreach my $source ( @{ $self->xref->_get_gene_specific_list() } ) {
+  foreach my $source ( @{ $self->xref->get_gene_specific_list() } ) {
     $self->biomart_fix( $source, "Translation", "Gene", undef, undef );
     $self->biomart_fix( $source, "Transcript",  "Gene", undef, undef );
   }
@@ -893,5 +852,53 @@ sub source_defined_move {
 
   return;
 }
+
+=head2 _parse_file
+
+=cut
+
+sub _parse_file {
+  my ( $self, $fh ) = @_;
+
+  my $type;
+  my ( %species_hash, %xref_hash, %farm_hash );
+
+  while ( my $line = <$fh> ) {
+
+    chomp($line);
+    next if not $line or $line =~ /^#/x;
+
+    my ( $key, $value ) = split( '=', $line );
+    if ( defined $value ) {
+      $value =~ s/^\s*//x;
+      $value =~ s/\s*$//x;
+    }
+    if ( defined $key ) {
+      $key =~ s/^\s*//x;
+      $key =~ s/\s*$//x;
+    }
+
+  SWITCH:
+    {
+      if ( $key eq "species" ) {
+        $type = 'species';
+        $species_hash{'species'} = $value;
+        last SWITCH;
+      }
+
+      $type = 'xref' and last SWITCH if $key eq 'xref';
+      $type = 'farm' and last SWITCH if $key eq 'farm';
+      $species_hash{ lc($key) } = $value and last SWITCH
+        if $type eq 'species';    # processing species data
+      $xref_hash{ lc($key) } = $value and last SWITCH
+        if $type eq 'xref';       # processing xref data
+      $farm_hash{ lc($key) } = $value and last SWITCH
+        if $type eq 'farm';
+    }
+
+  } ## end while ( my $line = <$fh> )
+
+  return ( %species_hash, %xref_hash, %farm_hash );
+} ## end sub _parse_file
 
 1;

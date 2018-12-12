@@ -2075,7 +2075,7 @@ UPDATE IGNORE object_xref ox, xref x, source s
           ox.ox_status = 'DUMP_OUT' AND 
           s.name in (
 MOVE
-  $move_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+  $move_sql .= "'" . join( "', '", @{ $self->get_gene_specific_list() } ) . "')";
 
   print "MOVE SQL\n$move_sql\n";
 
@@ -2094,7 +2094,7 @@ DELETE ix
           ox.ox_status = 'DUMP_OUT' AND
            s.name in (
 DIX
-  $del_ix_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+  $del_ix_sql .= "'" . join( "', '", @{ $self->get_gene_specific_list() } ) . "')";
 
   my $del_sql =(<<'DEL');
 DELETE ox 
@@ -2106,7 +2106,7 @@ DELETE ox
           ox.ox_status = 'DUMP_OUT' AND
            s.name in (
 DEL
-  $del_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+  $del_sql .= "'" . join( "', '", @{ $self->get_gene_specific_list() } ) . "')";
 
   my $move_sth = $self->dbi->prepare_cached( $move_sql )  or confess "$move_sql cannot be prepared";
   my $del_ix_sth = $self->dbi->prepare_cached( $del_ix_sql ) or confess "$del_ix_sql cannot be prepared";
@@ -2147,7 +2147,7 @@ SELECT ox.object_xref_id, ox.ensembl_object_type, ox.xref_id, ox.linkage_annotat
              ox.ensembl_object_type = 'Gene' AND
               s.name in (
 GET
-  $get_data_sql .= "'" . join( "', '", @{ $self->_get_gene_specific_list() } ) . "')";
+  $get_data_sql .= "'" . join( "', '", @{ $self->get_gene_specific_list() } ) . "')";
   my $get_data_sth = $self->dbi->prepare_cached( $get_data_sql ) or confess "Could not prepare $get_data_sql";
   
   my $insert_object_xref_sql =(<<'INO');
@@ -2207,6 +2207,35 @@ INI
   return ($added_count, $ignored);
 } ## end sub process_alt_alleles
 
+#
+# These sources should be on the gene, even if they are mapped transcript or translation.
+# We define which ones are to be moved here
+#
+
+=head2 get_gene_specific_list
+
+=cut
+
+sub get_gene_specific_list {
+  my $self = shift;
+
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
+
+  # Check the sources are used in the database considered
+  my ( @used_list, $sql, $sth, $count );
+  foreach my $source (@list) {
+    $sql = "SELECT COUNT(*) FROM xref x, source s WHERE s.source_id = x.source_id AND s.name = ?";
+    $sth = $self->dbi->prepare_cached($sql);
+    $sth->execute($source);
+
+    $sth->bind_columns(\$count);
+    $sth->fetch();
+
+    push @used_list, $source if $count > 0;
+  }
+
+  return \@used_list;
+} ## end sub _get_gene_specific_list
 
 =head2 _update_xref_info_type
   Arg [1]    : xref ID
@@ -2386,36 +2415,6 @@ sub _get_alt_allele_hashes {
 
   return \%alt_to_ref, \%ref_to_alts;
 } ## end sub _get_alt_allele_hashes
-
-#
-# These sources should be on the gene, even if they are mapped transcript or translation.
-# We define which ones are to be moved here
-#
-
-=head2 _get_gene_specific_list
-
-=cut
-
-sub _get_gene_specific_list {
-  my $self = shift;
-  
-  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_gn WikiGene MIM_GENE MIM_MORBID HGNC MGI ZFIN_ID FlyBaseName_gene RGD SGD_GENE VGNC wormbase_gseqname wormbase_locus Xenbase);
-
-  # Check the sources are used in the database considered
-  my ( @used_list, $sql, $sth, $count );
-  foreach my $source (@list) {
-    $sql = "SELECT COUNT(*) FROM xref x, source s WHERE s.source_id = x.source_id AND s.name = ?";
-    $sth = $self->dbi->prepare_cached($sql);
-    $sth->execute($source);
-    
-    $sth->bind_columns(\$count);
-    $sth->fetch();
-
-    push @used_list, $source if $count > 0;
-  }
-
-  return \@used_list;
-} ## end sub _get_gene_specific_list
 
 1;
 
