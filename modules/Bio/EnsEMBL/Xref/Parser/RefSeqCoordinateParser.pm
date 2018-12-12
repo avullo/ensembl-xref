@@ -81,6 +81,13 @@ Readonly my $TL_TRANSCRIPT_SCORE_THRESHOLD => 0.75;
 Readonly my $PENALTY => 0.9;
 
 
+
+=head2 run
+  Description: Runs the RefSeqCoordinateParser
+  Return type: N/A
+  Caller     : internal
+=cut
+
 sub run {
   my ( $self ) = @_;
 
