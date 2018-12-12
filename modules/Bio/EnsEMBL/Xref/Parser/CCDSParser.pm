@@ -59,6 +59,16 @@ use Carp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
+=head2
+The run method does the actual parsing and creation of direct xrefs.
+Parser gets initialized as noted above and run is called from
+Bio::EnsEMBL::Production::Pipeline::Xrefs::ParseSource
+
+my $parser = Bio::EnsEMBL::Xref::Parser::CCDSParser-E<gt>new(..)
+$parser-E<gt>run();
+
+=cut
+
 sub run {
 
   my ( $self, $ref_arg ) = @_;
