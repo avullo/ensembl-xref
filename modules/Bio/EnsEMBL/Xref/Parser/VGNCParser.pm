@@ -167,7 +167,7 @@ sub run {
         species_id => $species_id
       });
 
-      $self->add_synonyms_for_hgnc({
+      $xref_dba->add_synonyms_for_hgnc_vgnc({
         source_id  => $source_id,
         name       => $data->{'vgnc_id'},
         species_id => $species_id,
@@ -188,43 +188,6 @@ sub run {
   }
 
   return 0; # successful
-}
-
-
-=head2 add_synonyms_for_hgnc
-  Description: Specialized class to add synonyms from HGNC and VGNC data
-  Return type: N/A
-  Caller     : internal
-=cut
-
-sub add_synonyms_for_hgnc {
-  my ($self, $ref_arg) = @_;
-
-  my $source_id    = $ref_arg->{source_id};
-  my $name         = $ref_arg->{name};
-  my $species_id   = $ref_arg->{species_id};
-  my $dead_string  = $ref_arg->{dead};
-  my $alias_string = $ref_arg->{alias};
-
-  # dead name, add to synonym
-  if (defined $dead_string) {
-    $dead_string =~ s/"//xg;
-    my @dead_array = split( ',\s', $dead_string );
-    foreach my $dead (@dead_array){
-      $self->{xref_dba}->add_to_syn($name, $source_id, $dead, $species_id);
-    }
-  }
-
-  # alias name, add to synonym
-  if (defined $alias_string) {
-    $alias_string =~ s/"//xg;
-    my @alias_array = split( ',\s', $alias_string );
-    foreach my $alias (@alias_array){
-      $self->{xref_dba}->add_to_syn($name, $source_id, $alias, $species_id);
-    }
-  }
-
-  return;
 }
 
 
