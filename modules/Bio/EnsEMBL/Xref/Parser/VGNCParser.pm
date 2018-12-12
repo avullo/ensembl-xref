@@ -116,13 +116,6 @@ sub run {
     confess "Can't open VGNC file $file\n";
   }
 
-  # Create a hash of all valid taxon_ids for this species
-  my %species2tax = $xref_dba->species_id2taxonomy;
-
-  my @tax_ids = @{$species2tax{$species_id}};
-
-  my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
-
   my $input_file = Text::CSV->new({
     sep_char       => "\t",
     empty_is_undef => 1
@@ -154,7 +147,7 @@ sub run {
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
 
     # skip data for other species
-    next if ( !exists $taxonomy2species_id{$data->{'taxon_id'}} );
+    next if ( $species_id != $data->{'taxon_id'} );
 
     if ( $data->{'ensembl_gene_id'} ) {              # Ensembl direct xref
       $xref_dba->add_to_direct_xrefs({
