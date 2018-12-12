@@ -121,14 +121,6 @@ sub run {
   # populate entrez gene id => label hash
   $self->{entrez} = $xref_dba->get_acc_to_label('EntrezGene', $species_id, undef );
 
-  # get the species name, prepare species related data checks
-  my %species2name = $xref_dba->species_id2name();
-  $species_name //= shift @{$species2name{$species_id}};
-
-  $self->{name2species_id} = { map{ $_=>$species_id } @{$species2name{$species_id}} };
-  my %species2tax  = $xref_dba->species_id2taxonomy();
-  $self->{taxonomy2species_id} = { map{ $_=>$species_id } @{$species2tax{$species_id}} };
-
   # process the source files
   foreach my $file (@{$files}) {
 
@@ -200,17 +192,8 @@ sub xref_from_record {
   $record_species = lc $record_species;
   $record_species =~ s/\s+/_/xg;
 
-  # get the record species id from the record name
-  my $record_species_id = $self->{name2species_id}->{$record_species};
-
-  # if not found try from the record taxon_id
-  if ( !defined $record_species_id ) {
-    my ($record_taxon) = $genbank_rec =~ /db_xref="taxon:(\d+)/x;
-    $record_species_id = $self->{taxonomy2species_id}->{$record_taxon};
-  }
-
   # skip if species is not the required
-  return unless ( defined $record_species_id && ($record_species_id eq $self->{species_id}) );
+  return unless ( defined $record_species && ($record_species eq $self->{species}) );
 
 
   my ($acc) = $genbank_rec =~ /ACCESSION\s+(\S+)/x;
