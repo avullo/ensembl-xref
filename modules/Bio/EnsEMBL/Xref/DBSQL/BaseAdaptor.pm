@@ -239,6 +239,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
