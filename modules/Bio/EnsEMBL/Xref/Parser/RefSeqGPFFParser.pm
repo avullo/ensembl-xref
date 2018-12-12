@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2018] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,6 +15,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 =cut
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser
+
+=head1 DESCRIPTION
+
+A parser class for the RefSeq_peptide and RefSeq_dna sources.
+Data files are in genbank format and should be of types
+*.protein.gpff or *.rna.gbff.
+rel_file is mandatory and should be thge release file for the
+provided data files.
+
+=head1 SYNOPSIS
+
+  my $parser = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
+    source_id  => 108,
+    species_id => 9606,
+    files      => ['data.protein.gpff'],
+    rel_file   => 'release.txt',
+    xref_dba   => $xref_dba
+  );
+
+  $parser->run();
+
+=cut
+
 
 package Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser;
 
@@ -37,6 +73,13 @@ Readonly my $REFSEQ_SOURCES => {
     XP => 'RefSeq_peptide_predicted',
 };
 
+
+
+=head2 run
+  Description: Runs the RefSeqGPFFParser
+  Return type: N/A
+  Caller     : internal
+=cut
 
 sub run {
   my ( $self ) = @_;
@@ -296,7 +339,15 @@ sub xref_from_record {
 }
 
 
-# returns the source id for a source name, requires $self->{source_ids} to have been populated
+
+=head2 source_id_from_name
+  Arg [1]    : Scalar (string name)
+  Description: Provided the name of a source, returns the source_id.
+               Requires $self->{source_ids} to have been populated.
+  Return type: Scalar (integer source_id)
+  Caller     : internal
+=cut
+
 sub source_id_from_name {
   my ($self, $name) = @_;
 
@@ -311,7 +362,15 @@ sub source_id_from_name {
   return $source_id;
 }
 
-# returns the source id for a RefSeq accession, requires $self->{source_ids} to have been populated
+
+=head2 source_id_from_acc
+  Arg [1]    : Scalar (string acc)
+  Description: Provided a RefSeq accession, returns the source_id.
+               Requires $self->{source_ids} to have been populated.
+  Return type: Scalar (integer source_id)
+  Caller     : internal
+=cut
+
 sub source_id_from_acc {
   my ($self, $acc) = @_;
 
@@ -327,8 +386,17 @@ sub source_id_from_acc {
   return $source_id;
 }
 
-# get type from filename. this includes the source name and that's enough to extract it
-# type can be either peptide or dna
+
+=head2 type_from_file
+  Arg [1]    : Scalar (string file)
+  Description: Provided the data filename of the form *.(protein|rna).*
+               returns the appropriate type:
+               protein => peptide
+               rna => dna
+  Return type: Scalar (string type)
+  Caller     : internal
+=cut
+
 sub type_from_file {
   my ($self, $file) = @_;
 
