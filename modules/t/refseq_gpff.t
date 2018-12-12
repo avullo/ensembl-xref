@@ -155,7 +155,6 @@ my $parser_refseq_dna = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  files      => ["$Bin/test-data/refseq_gpff.rna.gbff"],
  rel_file   => "$Bin/test-data/refseq_gpff.release.txt",
  xref_dba   => $xref_dba,
- verbose    => 1
 );
 
 $parser_refseq_dna->run();
@@ -182,7 +181,6 @@ my $parser_no_release = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  species    => 'homo_sapiens',
  files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
  xref_dba   => $xref_dba,
- verbose    => 1
 );
 
 throws_ok{ $parser_no_release->run() } qr/Need to pass .+ and rel_file as pairs/, 'No release file provided throws error' ;
