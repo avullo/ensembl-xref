@@ -1496,7 +1496,7 @@ sub add_synonyms_for_hgnc_vgnc {
     $dead_string =~ s/"//xg;
     my @dead_array = split( ',\s', $dead_string );
     foreach my $dead (@dead_array){
-      $self->{xref_dba}->add_to_syn($name, $source_id, $dead, $species_id);
+      $self->add_to_syn($name, $source_id, $dead, $species_id);
     }
   }
 
@@ -1505,7 +1505,7 @@ sub add_synonyms_for_hgnc_vgnc {
     $alias_string =~ s/"//xg;
     my @alias_array = split( ',\s', $alias_string );
     foreach my $alias (@alias_array){
-      $self->{xref_dba}->add_to_syn($name, $source_id, $alias, $species_id);
+      $self->add_to_syn($name, $source_id, $alias, $species_id);
     }
   }
 
