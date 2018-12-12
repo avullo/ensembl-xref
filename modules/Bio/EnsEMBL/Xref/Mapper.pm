@@ -63,18 +63,19 @@ use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 =cut
 
 sub new {
-  my ($caller, %args) = @_;
+  my ( $caller, %args ) = @_;
 
   my $class = ref($caller) || $caller;
-  my $self =  bless {
-		     _xref => $args{xref_dba},
-		     _core => $args{core_dba}
-		    }, $class;
+  my $self =
+    bless { _xref => $args{xref_dba}, _core => $args{core_dba} },
+    $class;
 
   confess "Required arguments missing (xref/core DBA)"
-    unless defined $self->{_xref} and defined $self->{_core};
+    unless defined $self->{_xref} and
+    defined $self->{_core};
 
-  assert_ref( $self->{_xref}, 'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor' );
+  assert_ref( $self->{_xref},
+              'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor' );
   assert_ref( $self->{_core}, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
 
   return $self;
@@ -96,7 +97,6 @@ sub xref {
 
   return $self->{_xref};
 }
-
 
 =head2 core
 
@@ -901,15 +901,15 @@ sub _parse_file {
       }
 
       if ( $key eq 'xref' ) {
-	$type = 'xref';
-	last SWITCH;
+        $type = 'xref';
+        last SWITCH;
       }
 
       if ( $key eq 'farm' ) {
-	$type = 'farm';
-	last SWITCH;
+        $type = 'farm';
+        last SWITCH;
       }
-      
+
       $species_hash{ lc($key) } = $value and last SWITCH
         if $type eq 'species';    # processing species data
       $xref_hash{ lc($key) } = $value and last SWITCH
