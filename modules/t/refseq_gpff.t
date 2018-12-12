@@ -115,6 +115,7 @@ use_ok 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser';
 my $parser_refseq_peptide = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  source_id  => 108,
  species_id => 9606,
+ species    => 'homo_sapiens',
  files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
  rel_file   => "$Bin/test-data/refseq_gpff.release.txt",
  xref_dba   => $xref_dba,
@@ -150,6 +151,7 @@ is($source_release, 'NCBI Reference Sequence (RefSeq) Database Release 91, Novem
 my $parser_refseq_dna = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  source_id  => 108,
  species_id => 9598,
+ species    => 'pan_troglodytes',
  files      => ["$Bin/test-data/refseq_gpff.rna.gbff"],
  rel_file   => "$Bin/test-data/refseq_gpff.release.txt",
  xref_dba   => $xref_dba,
@@ -177,12 +179,13 @@ ok(
 my $parser_no_release = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  source_id  => 108,
  species_id => 9606,
+ species    => 'homo_sapiens',
  files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
  xref_dba   => $xref_dba,
  verbose    => 1
 );
 
-throws_ok{ $parser_no_release->run() } qr/Need to pass source_id, species_id, files and rel_file as pairs/, 'No release file provided throws error' ;
+throws_ok{ $parser_no_release->run() } qr/Need to pass .+ and rel_file as pairs/, 'No release file provided throws error' ;
 
 done_testing();
 
