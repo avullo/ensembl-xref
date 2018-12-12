@@ -60,7 +60,7 @@ use warnings;
 use Carp;
 use List::Util 1.45 qw(uniq);
 use Readonly;
-use Smart::Comments;
+
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 # Refseq sources to consider. Prefixes not in this list will be ignored
@@ -83,7 +83,7 @@ Readonly my $REFSEQ_SOURCES => {
 
 sub run {
   my ( $self ) = @_;
-### $self
+
   my $source_id    = $self->{source_id};
   my $species_id   = $self->{species_id};
   my $species_name = $self->{species};
@@ -153,7 +153,7 @@ sub run {
     }
 
     $refseq_fh->close();
-### $xrefs
+
     # upload the xrefs
     $xref_dba->upload_xref_object_graphs( $xrefs ) if $xrefs;
 
@@ -201,7 +201,7 @@ sub xref_from_record {
   my ($record_species) = $genbank_rec =~ /ORGANISM\s*(.*)\n/x;
   $record_species = lc $record_species;
   $record_species =~ s/\s+/_/xg;
-### $record_species
+
   # get the record species id from the record name
   my $record_species_id = $self->{name2species_id}->{$record_species};
 
