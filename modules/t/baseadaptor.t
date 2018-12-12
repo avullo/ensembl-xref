@@ -21,6 +21,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Warnings;
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
@@ -108,6 +109,21 @@ is(
   $xref_dba->get_source_id_for_source_name('RefSeq'),
   $source->source_id, 'get_source_id_for_source_name' );
 
+# Add a second example source to the db
+my $source2 = $db->schema->resultset('Source')->create({
+  name                 => 'Second_fake_source',
+  status               => 'KNOWN',
+  source_release       => '38',
+  download             => 'Y',
+  priority             => 1,
+  priority_description => 'Like a boss',
+  ordered              => 10
+});
+
+is(
+  $xref_dba->get_source_id_for_source_name('RefSeq'),
+  $source->source_id, 'get_source_id_for_source_name' );
+
 
 # get_source_ids_for_source_name_pattern
 throws_ok
@@ -117,6 +133,7 @@ throws_ok
 ok(
   defined $xref_dba->get_source_ids_for_source_name_pattern('fake_name'),
   'get_source_ids_for_source_name_pattern - Array returned' );
+
 is(
   $xref_dba->get_source_ids_for_source_name_pattern('RefSeq'),
   $source->source_id, 'get_source_ids_for_source_name_pattern' );
@@ -488,7 +505,7 @@ ok( scalar $xref_dba->get_label_to_desc( 'RefSeq', 9606, 'Like a boss' ) > 0, 'g
 
 
 # set_release
-ok( !defined $xref_dba->set_release( $source->source_id, 100 ) );
+ok( !defined $xref_dba->set_release( $source->source_id, 100 ), 'Set release without problems' );
 
 
 # get_dependent_mappings
@@ -535,6 +552,14 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 
 # _update_xref_description - This should have already been covered by previous tests
 # Specific tests can be added later
+
+# get/set_species
+ok( !defined($xref_dba->species), "Species not defined yet");
+is($xref_dba->species("human"), "human", "Species set to ". $xref_dba->species);
+
+# get_dba
+ok( defined($xref_dba->dba), "dba defined");
+isa_ok( $xref_dba->dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
 
 done_testing();
 

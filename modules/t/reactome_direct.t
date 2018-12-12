@@ -31,7 +31,6 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Warnings;
-use Data::Dumper;
 use FindBin '$Bin';
 use lib "$Bin/";
 
@@ -40,7 +39,7 @@ use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
 use_ok 'Bio::EnsEMBL::Xref::Parser';
 
-my $db     = Bio::EnsEMBL::Xref::Test::TestDB->new();
+my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my %config = %{ $db->config };
 
 my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
@@ -51,49 +50,55 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   port   => $config{port}
 );
 
-# populate the synonyms to test if
-$db->schema->populate( 'Synonym',
-  [ [qw/xref_id synonym/], [ 1, 'Test-Synonym1' ], [ 1, 'Test-Synonym2' ] ] );
+my $species = $db->schema->resultset('Species')->create({
+  species_id  => 9606,
+  taxonomy_id => 9606,
+  name        => 'homo_sapiens',
+  aliases     => 'homo_sapiens'
+});
 
-use_ok 'Bio::EnsEMBL::Xref::Parser::MGIParser';
+my $reactome_gene_source = $db->schema->resultset('Source')->create({
+  source_id => 86,
+  name      => 'reactome_gene',
+  ordered   => 1
+});
 
-my $parser = Bio::EnsEMBL::Xref::Parser::MGIParser->new(
-  source_id  => 55,
-  species_id => 10090,
-  files      => ["$Bin/test-data/MRK_ENSEMBL.rpt"],
-  xref_dba   => $xref_dba
+my $reactome_transcript_source = $db->schema->resultset('Source')->create({
+  source_id => 87,
+  name      => 'reactome_transcript',
+  ordered   => 1
+});
+
+use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser';
+
+my $parser = Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser->new(
+ source_id  => 85,
+ species_id => 9606,
+ species    => 'homo_sapiens',
+ files      => ["$Bin/test-data/ensembl_reactome.txt"],
+ xref_dba   => $xref_dba
 );
-isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::MGIParser' );
+
+isa_ok( $parser, 'Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser' );
 
 $parser->run();
 
 ok(
-  $db->schema->resultset('Xref')->check_direct_xref(
-    {
-      accession   => 'MGI:1915733',
-      label       => '1110002O04Rik',
-      description => 'RIKEN cDNA 1110002O04 gene',
-      source_id   => 55,
-      species_id  => 10090,
-      info_type   => 'DIRECT'
-    }
-  ),
-  'Sample mouse direct Xref has been inserted'
+ $db->schema->resultset('Xref')->check_direct_xref(
+  {
+   accession   => "R-HSA-162699",
+   label       => 'R-HSA-162699',
+   description => 'Synthesis of dolichyl-phosphate mannose',
+   source_id   => 86,
+   species_id  => 9606
+  }
+ ),
+ 'Sample Reactome direct Xref has been inserted'
 );
 
-ok(
-  $db->schema->resultset('GeneDirectXref')->find(
-    {
-      ensembl_stable_id => "ENSMUSG00000102531"
-    }
-  ),
-  'Sample mouse gene direct Xref has been inserted'
-);
-
-
-is($db->schema->resultset('Xref')->count, 10, "All 10 rows were inserted in to Xref");
-is($db->schema->resultset('GeneDirectXref')->count, 10, "All 10 rows were inserted in to GeneDirectXref");
-is($db->schema->resultset('Synonym')->count, 2, "Synonym count remained the same");
+# Test if all the rows were inserted
+is($db->schema->resultset('Xref')->count, 6, "All 6 human rows were inserted");
 
 
 done_testing();
+
