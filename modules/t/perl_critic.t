@@ -32,7 +32,8 @@ use Test::Warnings;
 
 use Test::Perl::Critic (
     -severity => 3,
-    -profile => '.perlcriticrc');
+    -profile => '.perlcriticrc',
+    -exclude => [ 'ProhibitStringyEval', 'ProhibitExcessComplexity', 'RequireCheckingReturnValueOfEval' ] );
 
 all_critic_ok('modules/Bio');
 
