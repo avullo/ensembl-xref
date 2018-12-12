@@ -173,6 +173,7 @@ ok(
  'Sample chimpanzee RefSeq_dna direct Xref has been inserted'
 );
 
+# Check the if missing rel_file throws error
 my $parser_no_release = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  source_id  => 108,
  species_id => 9606,
@@ -181,6 +182,7 @@ my $parser_no_release = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  verbose    => 1
 );
 
+throws_ok{ $parser_no_release->run() } qr/Need to pass source_id, species_id, files and rel_file as pairs/, 'No release file provided throws error' ;
 
 done_testing();
 
