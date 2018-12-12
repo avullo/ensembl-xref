@@ -113,7 +113,7 @@ $db->schema->resultset('Source')->populate([
 use_ok 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser';
 
 my $parser_refseq_peptide = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
- source_id  => 94,
+ source_id  => 108,
  species_id => 9606,
  files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
  rel_file   => "$Bin/test-data/refseq_gpff.release.txt",
@@ -148,7 +148,7 @@ my $source_release = $db->schema->resultset('Source')->search({
 is($source_release, 'NCBI Reference Sequence (RefSeq) Database Release 91, November 5, 2018', "Source release has been updated");
 
 my $parser_refseq_dna = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
- source_id  => 94,
+ source_id  => 108,
  species_id => 9598,
  files      => ["$Bin/test-data/refseq_gpff.rna.gbff"],
  rel_file   => "$Bin/test-data/refseq_gpff.release.txt",
@@ -174,7 +174,7 @@ ok(
 );
 
 my $parser_no_release = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
- source_id  => 94,
+ source_id  => 108,
  species_id => 9606,
  files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
  xref_dba   => $xref_dba,
