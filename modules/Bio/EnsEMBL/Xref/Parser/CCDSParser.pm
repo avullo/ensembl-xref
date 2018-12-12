@@ -43,6 +43,7 @@ database as well as in the direct xref table.
   my $parser = Bio::EnsEMBL::Xref::Parser::CCDSParser->new(
     source_id  => 1,
     species_id => 9606,
+    xref_dba   => $xref_dba # xref db adaptor
     dba        => $dba   # core db adaptor
   );
 
@@ -85,7 +86,7 @@ CCDS
 
   my $xref_count = 0;
   my $sth = $dba->dbc->prepare($sql);
-  $sth->execute() or croak( $dba->errstr() );
+  $sth->execute() or confess ( $dba->errstr() );
   while ( my ($ccds_id, $ens_id) = $sth->fetchrow_array() ) {
     my ( $acc, $version ) = split ( qr{ \. }msx, $ccds_id ) ;
     $xref_dba->add_to_direct_xrefs({
@@ -104,7 +105,7 @@ CCDS
 
   print "Added $xref_count DIRECT xrefs\n" if ($verbose);
   if ( !$xref_count ) {
-   croak "No CCDS xref added\n";
+   confess "No CCDS xref added\n";
   }
 
   return 0;      # successful
