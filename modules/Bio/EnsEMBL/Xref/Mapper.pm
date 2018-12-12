@@ -47,7 +47,9 @@ use warnings;
 
 use Carp;
 
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
+
 use Bio::EnsEMBL::Xref::Mapper::QC;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 
@@ -61,10 +63,21 @@ use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 =cut
 
 sub new {
-  my ($caller) = @_;
+  my ($caller, %args) = @_;
 
   my $class = ref($caller) || $caller;
-  return bless {}, $class;
+  my $self =  bless {
+		     _xref => $args{xref_dba},
+		     _core => $args{core_dba}
+		    }, $class;
+
+  confess "Required arguments missing (xref/core DBA)"
+    unless defined $self->{_xref} and defined $self->{_core};
+
+  assert_ref( $self->{_xref}, 'Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor' );
+  assert_ref( $self->{_core}, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
+
+  return $self;
 }
 
 =head2 xref
@@ -82,6 +95,25 @@ sub xref {
   $self->{_xref} = shift if @_;
 
   return $self->{_xref};
+}
+
+
+=head2 core
+
+  Arg [1]    : (optional)
+  Example    : $mapper->core($new_core);
+  Description: Getter / Setter for the core.
+               info for the ensembl core database.
+  Returntype : Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor
+  Exceptions : none
+
+=cut
+
+sub core {
+  my $self = shift;
+  $self->{_core} = shift if @_;
+
+  return $self->{_core};
 }
 
 =head2 farm_queue
@@ -116,24 +148,6 @@ sub exonerate {
   $self->{_exonerate} = shift if @_;
 
   return $self->{_exonerate};
-}
-
-=head2 core
-
-  Arg [1]    : (optional)
-  Example    : $mapper->core($new_core);
-  Description: Getter / Setter for the core.
-               info for the ensembl core database.
-  Returntype : Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor
-  Exceptions : none
-
-=cut
-
-sub core {
-  my $self = shift;
-  $self->{_core} = shift if @_;
-
-  return $self->{_core};
 }
 
 =head2 previous_core
@@ -886,8 +900,16 @@ sub _parse_file {
         last SWITCH;
       }
 
-      $type = 'xref' and last SWITCH if $key eq 'xref';
-      $type = 'farm' and last SWITCH if $key eq 'farm';
+      if ( $key eq 'xref' ) {
+	$type = 'xref';
+	last SWITCH;
+      }
+
+      if ( $key eq 'farm' ) {
+	$type = 'farm';
+	last SWITCH;
+      }
+      
       $species_hash{ lc($key) } = $value and last SWITCH
         if $type eq 'species';    # processing species data
       $xref_hash{ lc($key) } = $value and last SWITCH

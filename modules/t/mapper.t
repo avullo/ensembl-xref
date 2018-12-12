@@ -57,15 +57,31 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   port   => $config{port}
 );
 
-my $mapper = Bio::EnsEMBL::Xref::Mapper->new();
+throws_ok {
+  Bio::EnsEMBL::Xref::Mapper->new()
+} qr/Required/, 'Throws without required arguments';
+
+throws_ok {
+  Bio::EnsEMBL::Xref::Mapper->new( xref_dba => $xref_dba )
+} qr/Required/, 'Throws without required arguments';
+
+throws_ok {
+  Bio::EnsEMBL::Xref::Mapper->new( core_dba => $dba )
+} qr/Required/, 'Throws without required arguments';
+
+throws_ok {
+  Bio::EnsEMBL::Xref::Mapper->new( xref_dba => [], core_dba => $dba )
+} qr/was expected/, 'Throws with argument not of the correct class';
+
+throws_ok {
+  Bio::EnsEMBL::Xref::Mapper->new( xref_dba => $xref_dba, core_dba => [] )
+} qr/was expected/, 'Throws with argument not of the correct class';
+
+
+my $mapper = Bio::EnsEMBL::Xref::Mapper->new( xref_dba => $xref_dba, core_dba => $dba );
 isa_ok( $mapper, 'Bio::EnsEMBL::Xref::Mapper' );
 
-ok( !$mapper->xref, 'Empty xref DBA' );
-$mapper->xref( $xref_dba );
 is( $mapper->xref, $xref_dba, 'Correct xref dba assignment' );
-
-ok( !$mapper->core, 'Empty core DBA' );
-$mapper->core( $dba );
 is( $mapper->core, $dba, 'Correct core dba assignment' );
 
 ok( !$mapper->get_official_name, 'Just returns' );
