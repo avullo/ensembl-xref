@@ -121,11 +121,6 @@ sub run {
     }
   }
 
-  # get the species name
-  my %id2name = $xref_dba->species_id2name;
-  $species_name //= shift @{$id2name{$species_id}};
-
-
   # Cache EntrezGene IDs and source ID where available
   my $entrez_ids = $xref_dba->get_valid_codes('EntrezGene', $species_id);
   $self->{source_ids}->{EntrezGene} = $xref_dba->get_source_id_for_source_name('EntrezGene', undef);
