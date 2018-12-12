@@ -86,6 +86,7 @@ ok(
  'Sample chimpanzee direct Xref has been inserted'
 );
 
+is($db->schema->resultset('Synonym')->count, 1, "Sample synonym was inserted");
 
 my $parser_no_file = Bio::EnsEMBL::Xref::Parser::VGNCParser->new(
  source_id  => 144,
