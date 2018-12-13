@@ -148,7 +148,7 @@ subtest 'Malformed header' => sub {
 
 subtest 'Malformed data' => sub {
   my $QR_MALFORMED_DATA
-    = qr{ \A Error[ ]parsing[ ]CSV:[ ]ENF[ ] }msx;
+    = qr{ '[ ]has[ ]an[ ]incorrect[ ]number[ ]of[ ]columns[ ] }msx;
 
   $parser = Bio::EnsEMBL::Xref::Parser::DBASSParser->new(
     source_id  => $SOURCE_ID_DBASS3,

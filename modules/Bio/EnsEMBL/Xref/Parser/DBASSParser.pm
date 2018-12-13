@@ -75,7 +75,7 @@ sub run {
   my $verbose    = $self->{verbose} // 0;
   my $xref_dba   = $self->{xref_dba};
 
-  my $csv = Text::CSV->new({ strict => 1 })
+  my $csv = Text::CSV->new()
     || confess 'Failed to initialise CSV parser: ' . Text::CSV->error_diag();
 
   my $filename = @{$files}[0];
@@ -89,6 +89,11 @@ sub run {
   my $unmapped_count  = 0;
 
   while ( defined( my $line = $csv->getline( $file_io ) ) ) {
+
+    if ( scalar @{ $line } != $EXPECTED_NUMBER_OF_COLUMNS ) {
+      confess 'Line ' . (2 + $processed_count + $unmapped_count)
+        . " of input file '${filename}' has an incorrect number of columns";
+    }
 
     # Do not modify the contents of @{$line}, only the output - hence the /r.
     my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id )
