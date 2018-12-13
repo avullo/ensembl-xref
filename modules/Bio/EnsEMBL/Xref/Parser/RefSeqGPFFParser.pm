@@ -177,7 +177,6 @@ sub run {
     warn "Could not set release info from release file '$release_file'\n";
   }
 
-
   return 0;
 }
 
