@@ -772,7 +772,7 @@ sub add_alt_allele {
 sub delete_alt_alleles {
   my $self = shift;
 
-  my $sth = $self->dbi->prepare_cached( 'DELETE FROM alt_allele' );
+  my $sth = $self->dbi->prepare_cached( 'TRUNCATE alt_allele' );
   $sth->execute;
 
   return;
@@ -1986,10 +1986,10 @@ sub clean_up {
   $sth = $self->dbi->prepare_cached( 'UPDATE xref set dumped = null');
   $sth->execute();
 
-  $sth = $self->dbi->prepare_cached( 'DELETE from display_xref_priority' );
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE display_xref_priority' );
   $sth->execute();
 
-  $sth = $self->dbi->prepare_cached( 'DELETE from gene_desc_priority' );
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE gene_desc_priority' );
   $sth->execute();
 
   unless ( $keep_core_data ) {
@@ -1997,16 +1997,16 @@ sub clean_up {
     #   gene_transcript_translation
     #   [gene/transcript/translation]_stable_id
     #
-    $sth = $self->dbi->prepare_cached( 'DELETE from gene_transcript_translation' );
+    $sth = $self->dbi->prepare_cached( 'TRUNCATE gene_transcript_translation' );
     $sth->execute();
  
-    $sth = $self->dbi->prepare_cached( 'DELETE from gene_stable_id' );
+    $sth = $self->dbi->prepare_cached( 'TRUNCATE gene_stable_id' );
     $sth->execute();
  
-    $sth = $self->dbi->prepare_cached( 'DELETE from transcript_stable_id' );
+    $sth = $self->dbi->prepare_cached( 'TRUNCATE transcript_stable_id' );
     $sth->execute();
  
-    $sth = $self->dbi->prepare_cached( 'DELETE from translation_stable_id' );
+    $sth = $self->dbi->prepare_cached( 'TRUNCATE translation_stable_id' );
     $sth->execute();
   }
   
@@ -2020,16 +2020,16 @@ sub clean_up {
 sub remove_mapping_data {
   my $self = shift;
 
-  my $sth = $self->dbi->prepare_cached( 'DELETE from mapping_jobs' );
+  my $sth = $self->dbi->prepare_cached( 'TRUNCATE mapping_jobs' );
   $sth->execute(); 
 
-  $sth = $self->dbi->prepare_cached( 'DELETE from mapping' );
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE mapping' );
   $sth->execute();
 
-  $sth = $self->dbi->prepare_cached( 'DELETE from alt_allele' );
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE alt_allele' );
   $sth->execute();
 
-  $sth = $self->dbi->prepare_cached( 'DELETE from source_mapping_method' );
+  $sth = $self->dbi->prepare_cached( 'TRUNCATE source_mapping_method' );
   $sth->execute();
 
   return;
