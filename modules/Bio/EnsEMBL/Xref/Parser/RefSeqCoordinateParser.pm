@@ -59,7 +59,7 @@ use Carp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-
+# score is the fraction of exons matching out of all exons in the transcript
 # Only scores higher than the threshold will be stored for transcripts
 my $TRANSCRIPT_SCORE_THRESHOLD = 0.75;
 
@@ -222,6 +222,7 @@ sub run {
           });
 
           # Comparing exon matching with number of exons to give a score
+          # score is the fraction of exons matching out of all exons in the transcript
           my $score = ( ($exon_match_of + $exon_match)) / (scalar(@{$exons_of}) + scalar(@{$exons}) );
           my $tl_score = 0;
           if (scalar(@{$tl_exons_of}) > 0) {
