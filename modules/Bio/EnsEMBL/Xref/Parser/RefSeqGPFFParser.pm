@@ -183,7 +183,15 @@ sub run {
 
 
 
-# provided a params hash containing record and type, returns xref for bulk insert and creates related dependent_xrefs
+=head2 xref_from_record
+  Arg [1]    : scalar (string genbank_record)
+  Arg [2]    : scalar (string type)
+  Description: Processes the provided genbank record of the provided type
+               returns xref for bulk insert and creates related dependent_xrefs
+  Return type: hashref
+  Caller     : internal
+=cut
+
 sub xref_from_record {
   my ($self, $genbank_rec, $type) = @_;
 
