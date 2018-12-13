@@ -118,8 +118,13 @@ sub unlinked_entries {
 
   # dependent_xref and xref
   my ( $xref_id, $count );
-  my $count_sql =
-'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL';
+  my $count_sql = (<<"COUNT1");
+SELECT COUNT(1) 
+  FROM dependent_xref d LEFT JOIN xref x 
+    ON d.master_xref_id = x.xref_id
+    WHERE x.xref_id IS NULL;
+COUNT1
+  
   my $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -130,12 +135,18 @@ sub unlinked_entries {
   my $sql;
   if ($count) {
     $failed = 1;
-    $sql =
-'SELECT DISTINCT(d.master_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.master_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
+
+    $sql = (<<"DISTINCT1");
+SELECT DISTINCT(d.master_xref_id) 
+  FROM dependent_xref d LEFT JOIN xref x 
+    ON d.master_xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL LIMIT 10;
+DISTINCT1
+
     $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-
+    
     print STDERR "SQL QUERY: $sql\n";
     while ( $sth->fetch ) {
       print STDERR "Problem with master xref $xref_id\n";
@@ -143,10 +154,19 @@ sub unlinked_entries {
     $sth->finish;
   }
 
-  $count_sql =
-'SELECT COUNT(1) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql =
-"SELECT DISTINCT(d.dependent_xref_id) FROM dependent_xref d LEFT JOIN xref x ON d.dependent_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10";
+  $count_sql = (<<"COUNT2");
+SELECT COUNT(1) 
+  FROM dependent_xref d LEFT JOIN xref x 
+    ON d.dependent_xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL;
+COUNT2
+  
+  $sql = (<<"DISTINCT2");
+SELECT DISTINCT(d.dependent_xref_id)
+  FROM dependent_xref d LEFT JOIN xref x
+    ON d.dependent_xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL LIMIT 10;
+DISTINCT2
 
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
@@ -167,11 +187,20 @@ sub unlinked_entries {
     $sth->finish;
   }
 
-  $count_sql =
-'SELECT COUNT(1) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql =
-'SELECT DISTINCT(d.xref_id) FROM primary_xref d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
-
+  $count_sql = (<<"COUNT3");
+SELECT COUNT(1) 
+  FROM primary_xref d LEFT JOIN xref x 
+    ON d.xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL;
+COUNT3
+    
+  $sql = (<<"DISTINCT3");
+SELECT DISTINCT(d.xref_id) 
+  FROM primary_xref d LEFT JOIN xref x 
+    ON d.xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL LIMIT 10;
+DISTINCT3
+  
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -192,12 +221,20 @@ sub unlinked_entries {
   }
 
   foreach my $type (qw(transcript translation gene)) {
-    $count_sql =
-'SELECT COUNT(1) FROM ".$type."_direct_xref d LEFT JOIN xref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL';
-    $sql =
-      'SELECT DISTINCT(d.general_xref_id) FROM ' . $type .
-'_direct_xref d LEFT JOINxref x ON d.general_xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
+    $count_sql = (<<"COUNT4");
+SELECT COUNT(1) 
+  FROM ".$type."_direct_xref d LEFT JOIN xref x 
+    ON d.general_xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL;
+COUNT4
 
+    $sql = (<<"DISTINCT4");
+SELECT DISTINCT(d.general_xref_id) 
+  FROM ' . $type . '_direct_xref d LEFT JOIN xref x 
+    ON d.general_xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL LIMIT 10;
+DISTINCT4
+    
     $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns( \$count );
@@ -219,11 +256,20 @@ sub unlinked_entries {
     }
   } ## end foreach my $type (qw(transcript translation gene))
 
-  $count_sql =
-'SELECT COUNT(1) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL';
-  $sql =
-'SELECT DISTINCT(d.xref_id) FROM synonym d LEFT JOIN xref x ON d.xref_id = x.xref_id WHERE x.xref_id IS NULL LIMIT 10';
-
+  $count_sql = (<<"COUNT5");
+SELECT COUNT(1) 
+  FROM synonym d LEFT JOIN xref x 
+    ON d.xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL;
+COUNT5
+  
+  $sql = (<<"DISTINCT5");
+SELECT DISTINCT(d.xref_id) 
+  FROM synonym d LEFT JOIN xref x 
+    ON d.xref_id = x.xref_id 
+    WHERE x.xref_id IS NULL LIMIT 10;
+DISTINCT5
+  
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -243,11 +289,20 @@ sub unlinked_entries {
     $sth->finish;
   }
 
-  $count_sql =
-'SELECT COUNT(1) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
-  $sql =
-'SELECT DISTINCT(d.object_xref_id) FROM identity_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
+  $count_sql = (<<"COUNT6");
+SELECT COUNT(1) 
+  FROM identity_xref d LEFT JOIN object_xref o 
+    ON d.object_xref_id = o.object_xref_id 
+    WHERE o.object_xref_id IS NULL;
+COUNT6
 
+  $sql = (<<"DISTINCT6");
+SELECT DISTINCT(d.object_xref_id) 
+  FROM identity_xref d LEFT JOIN object_xref o 
+    ON d.object_xref_id = o.object_xref_id 
+    WHERE o.object_xref_id IS NULL LIMIT 10;
+DISTINCT6
+  
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -267,11 +322,20 @@ sub unlinked_entries {
     $sth->finish;
   }
 
-  $count_sql =
-'SELECT COUNT(1) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL';
-  $sql =
-'SELECT DISTINCT(d.object_xref_id) FROM go_xref d LEFT JOIN object_xref o ON d.object_xref_id = o.object_xref_id WHERE o.object_xref_id IS NULL LIMIT 10';
-
+  $count_sql = (<<"COUNT7");
+SELECT COUNT(1) 
+  FROM go_xref d LEFT JOIN object_xref o 
+    ON d.object_xref_id = o.object_xref_id 
+    WHERE o.object_xref_id IS NULL;
+COUNT7
+  
+  $sql = (<<"DISTINCT7");
+SELECT DISTINCT(d.object_xref_id) 
+  FROM go_xref d LEFT JOIN object_xref o 
+    ON d.object_xref_id = o.object_xref_id 
+    WHERE o.object_xref_id IS NULL LIMIT 10;
+DISTINCT7
+  
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -292,17 +356,19 @@ sub unlinked_entries {
   }
 
   foreach my $type (qw(transcript translation gene)) {
-    $count_sql =
-      'SELECT COUNT(1) FROM gene_transcript_translation d LEFT JOIN ' .
-      $type . '_stable_id x ON d.' .
-      $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' .
-      $type . '_id IS NOT NULL';
-    $sql =
-      'SELECT DISTINCT(d.' .
-      $type . '_id) FROM gene_transcript_translation d LEFT JOIN ' .
-      $type . '_stable_id x ON d.' .
-      $type . '_id = x.internal_id WHERE x.internal_id IS NULL AND d.' .
-      $type . '_id IS NOT NULL LIMIT 10';
+    $count_sql = (<<"COUNT8");
+SELECT COUNT(1) 
+  FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x 
+    ON d.' . $type . '_id = x.internal_id 
+    WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL;
+COUNT8
+
+    $sql = (<<"DISTINCT8");
+SELECT DISTINCT(d.' . $type . '_id) 
+  FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x 
+    ON d.' . $type . '_id = x.internal_id 
+    WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL LIMIT 10;
+DISTINCT8
 
     $sth = $dbi->prepare($count_sql);
     $sth->execute();
@@ -324,10 +390,26 @@ sub unlinked_entries {
     }
   } ## end foreach my $type (qw(transcript translation gene))
 
-  $count_sql =
-"SELECT COUNT(1) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL";
-  $sql =
-"SELECT DISTINCT(o.object_xref_id) FROM xref x, source s, object_xref o LEFT JOIN go_xref g ON o.object_xref_id = g.object_xref_id WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND s.name LIKE 'GO' AND ox_status IN ('DUMP_OUT') AND g.object_xref_id IS NULL LIMIT 10";
+  $count_sql = (<<"COUNT9");
+SELECT COUNT(1) 
+  FROM xref x, source s, object_xref o LEFT JOIN go_xref g 
+    ON o.object_xref_id = g.object_xref_id 
+    WHERE x.xref_id = o.xref_id AND s.source_id = x.source_id AND 
+      s.name LIKE 'GO' AND 
+      ox_status IN ('DUMP_OUT') AND 
+      g.object_xref_id IS NULL;
+COUNT9
+
+  $sql = (<<"DISTINCT9");
+SELECT DISTINCT(o.object_xref_id) 
+  FROM xref x, source s, object_xref o LEFT JOIN go_xref g 
+    ON o.object_xref_id = g.object_xref_id 
+    WHERE x.xref_id = o.xref_id AND 
+      s.source_id = x.source_id AND 
+      s.name LIKE 'GO'          AND 
+      ox_status IN ('DUMP_OUT') AND 
+      g.object_xref_id IS NULL LIMIT 10;
+DISTINCT9
 
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
