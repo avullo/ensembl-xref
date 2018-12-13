@@ -60,16 +60,6 @@ use Carp;
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
-# Refseq sources to consider. Prefixes not in this list will be ignored
-my $REFSEQ_SOURCES = {
-    NM => 'RefSeq_mRNA',
-    NR => 'RefSeq_ncRNA',
-    XM => 'RefSeq_mRNA_predicted',
-    XR => 'RefSeq_ncRNA_predicted',
-    NP => 'RefSeq_peptide',
-    XP => 'RefSeq_peptide_predicted',
-};
-
 # Only scores higher than the threshold will be stored for transcripts
 my $TRANSCRIPT_SCORE_THRESHOLD = 0.75;
 
@@ -109,13 +99,15 @@ sub run {
 
   my $core_dba = $of_dba->dnadb();
 
+  $self->{refseq_sources} = $xref_dba->get_refseq_sources;
+
   # get RefSeq source ids
-  while (my ($source_prefix, $source_name) = each %{$REFSEQ_SOURCES}) {
+  while (my ($source_prefix, $source_name) = each %{$self->{refseq_sources}}) {
     $self->{source_ids}->{$source_name} = $xref_dba->get_source_id_for_source_name( $source_name, 'otherfeatures' )
   }
 
   if ($verbose) {
-    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+    for my $source_name (sort values %{$self->{refseq_sources}}) {
       print "$source_name source ID = $self->{source_ids}->{$source_name}\n";
     }
   }
@@ -163,7 +155,7 @@ sub run {
         }
 
         # Skip non supported and missing accessions
-        unless ( exists $REFSEQ_SOURCES->{substr($id, 0, 2)} ) {
+        unless ( exists $self->{refseq_sources}->{substr($id, 0, 2)} ) {
           next TRANSCRIPT_OF;
         }
 
@@ -432,8 +424,8 @@ sub source_id_from_acc {
   my $source_id;
   my $prefix = substr($acc, 0, 2);
 
-  if ( exists $REFSEQ_SOURCES->{$prefix} ) {
-    $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
+  if ( exists $self->{refseq_sources}->{$prefix} ) {
+    $source_id = $self->source_id_from_name( $self->{refseq_sources}->{$prefix} );
   } elsif ( $self->{verbose} ) {
     confess "Can't get source ID for accession '$acc'\n";
   }
