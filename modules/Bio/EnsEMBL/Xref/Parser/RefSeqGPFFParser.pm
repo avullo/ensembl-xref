@@ -161,6 +161,10 @@ sub run {
 
   $release =~ s/\s+/ /xg;
 
+  # (NCBI.*Release  > match and get NCBI blablabla Release
+  # \s\d+)          > the release number
+  # \s(.*)          > the release date
+  # \sDistribution  > anchor
   if ( $release =~ m/(NCBI.*Release\s\d+)\s(.*)\sDistribution/x ) {
     my ($rel_number, $rel_date) = ($1, $2);
     my $release_string = "$rel_number, $rel_date";
