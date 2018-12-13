@@ -212,7 +212,7 @@ sub xref_from_record {
   my $prefix = substr($acc, 0, 2);
 
   # skip if acc is not of known type
-  return unless ( exists $REFSEQ_SOURCES->{$prefix} );
+  return if ( !exists $REFSEQ_SOURCES->{$prefix} );
 
 
   my $acc_source_id = $self->source_id_from_acc($acc);
