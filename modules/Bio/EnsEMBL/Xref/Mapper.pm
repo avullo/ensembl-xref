@@ -35,7 +35,7 @@ Bio::EnsEMBL::Xref::Mapper - Base mapper
 
 =head1 DESCRIPTION
 
-my $mapper = Bio::EnsEMBL::Xref::Mapper->new();
+my $mapper = Bio::EnsEMBL::Xref::Mapper->new( $xref_dba, $core_dba );
 $mapper->process_file( 'file', 1 );
 
 =cut
