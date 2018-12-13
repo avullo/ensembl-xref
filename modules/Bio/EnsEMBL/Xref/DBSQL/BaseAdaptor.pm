@@ -53,6 +53,7 @@ use Getopt::Long;
 use IO::Uncompress::AnyUncompress;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 my $base_dir = File::Spec->curdir();
 
@@ -115,6 +116,37 @@ sub dbi {
   return $self->dbc->db_handle;
 } ## end sub dbi
 
+
+=head2 dba
+  Description: Getter for the dba object
+  Return type: Bio::EnsEMBL::DBSQL::DBAdaptor instance
+  Caller     : internal
+=cut
+
+sub dba {
+    my $self = shift;
+    return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbconn => $self->dbc, -species => $self->species);
+}
+
+
+=head2 species
+  Arg [1]    : (optional) string $arg
+               The new value of the species
+  Example    : $species = $dba->species()
+  Description: Getter/Setter for the current species
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+=cut
+
+sub species{
+  my ($self, $arg) = @_;
+
+  if ( defined $arg ) {
+    $self->{_species} = $arg;
+  }
+  return $self->{_species};
+}
 
 
 =head2 get_filehandle
@@ -207,6 +239,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
