@@ -31,7 +31,6 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use FindBin '$Bin';
-use lib "$Bin/";
 
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
