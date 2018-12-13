@@ -71,13 +71,13 @@ my $REFSEQ_SOURCES = {
 };
 
 # Only scores higher than the threshold will be stored for transcripts
-Readonly my $TRANSCRIPT_SCORE_THRESHOLD => 0.75;
+my $TRANSCRIPT_SCORE_THRESHOLD = 0.75;
 
 # Only scores higher than the threshold will be stored translatable transcripts
-Readonly my $TL_TRANSCRIPT_SCORE_THRESHOLD => 0.75;
+my $TL_TRANSCRIPT_SCORE_THRESHOLD = 0.75;
 
 # If Biotypes do not match, score will be multiplied with the penalty
-Readonly my $PENALTY => 0.9;
+my $PENALTY = 0.9;
 
 
 
@@ -411,7 +411,7 @@ sub source_id_from_name {
   if ( exists $self->{source_ids}->{$name} ) {
     $source_id = $self->{source_ids}->{$name};
   } elsif ( $self->{verbose} ) {
-    print "WARNING: can't get source ID for name '$name'\n";
+    confess "Can't get source ID for name '$name'\n";
   }
 
   return $source_id;
@@ -435,7 +435,7 @@ sub source_id_from_acc {
   if ( exists $REFSEQ_SOURCES->{$prefix} ) {
     $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
   } elsif ( $self->{verbose} ) {
-    print "WARNING: can't get source ID for accession '$acc'\n";
+    confess "Can't get source ID for accession '$acc'\n";
   }
 
   return $source_id;
