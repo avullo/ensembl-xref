@@ -80,9 +80,9 @@ sub new {
     -HOST   => $args{host},
     -DBNAME => $args{dbname},
     -USER   => $args{user},
-    -PASS   => $args{pass} || '',
-    -PORT   => $args{port} || '3306',
-    -GROUP  => $args{group} || ''
+    -PASS   => $args{pass} // '',
+    -PORT   => $args{port} // '3306',
+    -GROUP  => $args{group} // ''
   ) );
   $self->verbose( $args{verbose} // 0 );
 
