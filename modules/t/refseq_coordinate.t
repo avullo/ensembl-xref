@@ -36,7 +36,7 @@ use lib "$Bin/";
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Test::MultiTestDB;
-use Smart::Comments;
+
 use_ok 'Bio::EnsEMBL::Xref::Parser';
 
 
