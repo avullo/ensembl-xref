@@ -346,69 +346,6 @@ sub _get_citation_groups {
 }
 
 
-# Parse the CC fields of the current record and produce a hash mapping
-# comments to their respective topics. Optionally, the returned data
-# can be restricted to specific topics.
-# FIXME: not used at present, which could result in it no longer
-# working by the time it has been reenabled. Either ensure it is
-# tested or remove it.
-sub _get_comments {
-  my ( $self, @topics_to_return ) = @_;
-
-  my $cc_fields = $self->{'record'}->{'CC'};
-
-  # CC is an optional field
-  if ( ! defined $cc_fields ) {
-    return {};
-  }
-
-  # FIXME: we should probably make this persist until a new record has
-  # been loaded
-  my %comments_by_topic;
-
-  # FIXME: get rid of extra whitespace from the beginning of
-  # continuation lines
-  my @topic_lines = split( qr{\s* -!- \s*}msx,
-                           join( q{ }, @{ $cc_fields } )
-                        );
-  foreach my $line ( @topic_lines ) {
-
-    my ($topic, $content)
-      = ( $line =~ m{
-                      \A
-
-                      # Topic name: one or more words in ALL CAPS
-                      ( [A-Z ]+ )
-
-                      # Separator
-                      \s*
-                      :
-                      \s*
-
-                      # Everything else is content
-                      ( .+ )
-                  }msx );
-
-    # This will bypass the first empty line of @topic_lines
-    if ( defined $topic ) {
-      # FIXME: can a record have multiple entries with the same topic???
-      $comments_by_topic{$topic} = $content;
-    }
-  }
-
-  # If we haven't been asked for specific topics, return all comments.
-  if ( scalar @topics_to_return == 0 ) {
-    return \%comments_by_topic;
-  }
-
-  my %comments_of_interest;
-  foreach my $topic ( @topics_to_return ) {
-    $comments_of_interest{$topic} = $comments_by_topic{$topic};
-  }
-  return \%comments_of_interest;
-}
-
-
 # Parse the DR fields of the current record, break them into
 # constituent parts and produce a list (or to be precise, a hash of
 # arrayrefs) of database cross-references grouped by reference.

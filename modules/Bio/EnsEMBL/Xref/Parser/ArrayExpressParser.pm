@@ -82,7 +82,7 @@ sub run {
 
   # project could be ensembl or ensemblgenomes
   my $project;
-  if ( $file =~ /project[=][>](\S+?)[,]/ ) {
+  if ( $file =~ /project[=][>](\S+?)[,]/x ) {
     $project = $1;
   }
 
@@ -179,7 +179,7 @@ sub _get_gene_adaptor {
     $gene_adaptor = $dba->get_GeneAdaptor();
   }
   else {
-    die( "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes" );
+    confess "Missing or unsupported project value. Supported values: ensembl, ensemblgenomes";
   }
 
   return $gene_adaptor;
@@ -202,7 +202,7 @@ sub _get_species {
 
   my %species_lookup;
   foreach my $file (@files) {
-    my ($species) = split( /\./, $file );
+    my ($species) = split( /\./x, $file );
     $species_lookup{$species} = 1;
   }
   return \%species_lookup;
