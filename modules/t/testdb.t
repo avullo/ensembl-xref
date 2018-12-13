@@ -93,6 +93,16 @@ my $result = $db->schema->resultset('Source')->find(
 is($result->download, 'Y', 'All VGNC sources are downloaded');
 is($result->status, 'NOIDEA', 'All VGNC sources have the same status');
 
+# We do not use URLs in the current pipeline, so it's difficult and fruitless to test
+# the source_url relationship
+
+my @species = $db->schema->resultset('Species')->search();
+is_deeply(
+  [map {$_->name} @species],
+  [qw/ciona_intestinalis vertebrates danio_rerio xenopus_tropicalis
+      pan_troglodytes homo_sapiens canis_familiaris equus_caballus 
+      bos_taurus mus_musculus rattus_norvegicus/],
+  'Species names were all stored');
 
 
 done_testing;
