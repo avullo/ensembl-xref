@@ -60,9 +60,7 @@ Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 3;
                Ensembl Gene ID can be an empty string, indicating an
                unmapped entry.
 
-  Return type: boolean. Note that it should only ever return 0,
-               indicating success; all errors should produce an
-               exception instead.
+  Return type: none
   Exceptions : throws on all processing errors
   Caller     : ParseSource in the xref pipeline
   Status     : Stable
@@ -163,7 +161,7 @@ sub run {
     printf( "Skipped %d unmapped xrefs\n", $unmapped_count );
   }
 
-  return 0;
+  return;
 } ## end sub run
 
 
