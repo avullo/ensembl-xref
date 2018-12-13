@@ -55,9 +55,7 @@ throws_ok {
   Bio::EnsEMBL::Xref::Mapper::CoreInfo->new([])
 } qr/was expected/, 'Throws with argument of incorrect class';
 
-my $mapper = Bio::EnsEMBL::Xref::Mapper->new();
-$mapper->xref( $xref_dba );
-$mapper->core( $dba );
+my $mapper = Bio::EnsEMBL::Xref::Mapper->new( xref_dba => $xref_dba, core_dba => $dba );
 
 my $coreinfo = Bio::EnsEMBL::Xref::Mapper::CoreInfo->new( $mapper );
 isa_ok( $coreinfo, 'Bio::EnsEMBL::Xref::Mapper::CoreInfo' );
