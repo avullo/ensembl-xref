@@ -161,6 +161,7 @@ sub run {
   my $release = do { local $/ = "\n*"; <$release_fh> };
   $release_fh->close();
 
+  # replace all whitespace with a single space
   $release =~ s/\s+/ /xg;
 
   # (NCBI.*Release  > match and get NCBI blablabla Release
