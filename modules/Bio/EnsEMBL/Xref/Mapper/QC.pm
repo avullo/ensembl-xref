@@ -124,7 +124,7 @@ SELECT COUNT(1)
     ON d.master_xref_id = x.xref_id
     WHERE x.xref_id IS NULL;
 COUNT1
-  
+
   my $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -140,13 +140,14 @@ COUNT1
 SELECT DISTINCT(d.master_xref_id) 
   FROM dependent_xref d LEFT JOIN xref x 
     ON d.master_xref_id = x.xref_id 
-    WHERE x.xref_id IS NULL LIMIT 10;
+    WHERE x.xref_id IS NULL 
+  LIMIT 10;
 DISTINCT1
 
     $sth = $dbi->prepare($sql);
     $sth->execute();
     $sth->bind_columns( \$xref_id );
-    
+
     print STDERR "SQL QUERY: $sql\n";
     while ( $sth->fetch ) {
       print STDERR "Problem with master xref $xref_id\n";
@@ -160,12 +161,13 @@ SELECT COUNT(1)
     ON d.dependent_xref_id = x.xref_id 
     WHERE x.xref_id IS NULL;
 COUNT2
-  
+
   $sql = (<<"DISTINCT2");
 SELECT DISTINCT(d.dependent_xref_id)
   FROM dependent_xref d LEFT JOIN xref x
     ON d.dependent_xref_id = x.xref_id 
-    WHERE x.xref_id IS NULL LIMIT 10;
+    WHERE x.xref_id IS NULL 
+  LIMIT 10;
 DISTINCT2
 
   $sth = $dbi->prepare($count_sql);
@@ -193,14 +195,15 @@ SELECT COUNT(1)
     ON d.xref_id = x.xref_id 
     WHERE x.xref_id IS NULL;
 COUNT3
-    
+
   $sql = (<<"DISTINCT3");
 SELECT DISTINCT(d.xref_id) 
   FROM primary_xref d LEFT JOIN xref x 
     ON d.xref_id = x.xref_id 
-    WHERE x.xref_id IS NULL LIMIT 10;
+    WHERE x.xref_id IS NULL 
+  LIMIT 10;
 DISTINCT3
-  
+
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -223,18 +226,19 @@ DISTINCT3
   foreach my $type (qw(transcript translation gene)) {
     $count_sql = (<<"COUNT4");
 SELECT COUNT(1) 
-  FROM ".$type."_direct_xref d LEFT JOIN xref x 
+  FROM "${type}_direct_xref" d LEFT JOIN xref x 
     ON d.general_xref_id = x.xref_id 
     WHERE x.xref_id IS NULL;
 COUNT4
 
     $sql = (<<"DISTINCT4");
 SELECT DISTINCT(d.general_xref_id) 
-  FROM ' . $type . '_direct_xref d LEFT JOIN xref x 
+  FROM ${type}_direct_xref d LEFT JOIN xref x 
     ON d.general_xref_id = x.xref_id 
-    WHERE x.xref_id IS NULL LIMIT 10;
+    WHERE x.xref_id IS NULL 
+  LIMIT 10;
 DISTINCT4
-    
+
     $sth = $dbi->prepare($count_sql);
     $sth->execute();
     $sth->bind_columns( \$count );
@@ -262,14 +266,15 @@ SELECT COUNT(1)
     ON d.xref_id = x.xref_id 
     WHERE x.xref_id IS NULL;
 COUNT5
-  
+
   $sql = (<<"DISTINCT5");
 SELECT DISTINCT(d.xref_id) 
   FROM synonym d LEFT JOIN xref x 
     ON d.xref_id = x.xref_id 
-    WHERE x.xref_id IS NULL LIMIT 10;
+    WHERE x.xref_id IS NULL 
+  LIMIT 10;
 DISTINCT5
-  
+
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -300,9 +305,10 @@ COUNT6
 SELECT DISTINCT(d.object_xref_id) 
   FROM identity_xref d LEFT JOIN object_xref o 
     ON d.object_xref_id = o.object_xref_id 
-    WHERE o.object_xref_id IS NULL LIMIT 10;
+    WHERE o.object_xref_id IS NULL 
+  LIMIT 10;
 DISTINCT6
-  
+
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -328,14 +334,15 @@ SELECT COUNT(1)
     ON d.object_xref_id = o.object_xref_id 
     WHERE o.object_xref_id IS NULL;
 COUNT7
-  
+
   $sql = (<<"DISTINCT7");
 SELECT DISTINCT(d.object_xref_id) 
   FROM go_xref d LEFT JOIN object_xref o 
     ON d.object_xref_id = o.object_xref_id 
-    WHERE o.object_xref_id IS NULL LIMIT 10;
+    WHERE o.object_xref_id IS NULL 
+  LIMIT 10;
 DISTINCT7
-  
+
   $sth = $dbi->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns( \$count );
@@ -358,16 +365,19 @@ DISTINCT7
   foreach my $type (qw(transcript translation gene)) {
     $count_sql = (<<"COUNT8");
 SELECT COUNT(1) 
-  FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x 
-    ON d.' . $type . '_id = x.internal_id 
-    WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL;
+  FROM gene_transcript_translation d LEFT JOIN ${type}_stable_id x 
+    ON d.${type}_id = x.internal_id 
+    WHERE x.internal_id IS NULL AND 
+    d.${type}_id IS NOT NULL;
 COUNT8
 
     $sql = (<<"DISTINCT8");
-SELECT DISTINCT(d.' . $type . '_id) 
-  FROM gene_transcript_translation d LEFT JOIN ' . $type . '_stable_id x 
-    ON d.' . $type . '_id = x.internal_id 
-    WHERE x.internal_id IS NULL AND d.' . $type . '_id IS NOT NULL LIMIT 10;
+SELECT DISTINCT(d.${type}_id) 
+  FROM gene_transcript_translation d LEFT JOIN ${type}_stable_id x 
+    ON d.${type}_id = x.internal_id 
+    WHERE x.internal_id IS NULL AND 
+      d.${type}_id IS NOT NULL 
+    LIMIT 10;
 DISTINCT8
 
     $sth = $dbi->prepare($count_sql);
@@ -408,7 +418,8 @@ SELECT DISTINCT(o.object_xref_id)
       s.source_id = x.source_id AND 
       s.name LIKE 'GO'          AND 
       ox_status IN ('DUMP_OUT') AND 
-      g.object_xref_id IS NULL LIMIT 10;
+      g.object_xref_id IS NULL 
+  LIMIT 10;
 DISTINCT9
 
   $sth = $dbi->prepare($count_sql);
@@ -453,9 +464,17 @@ sub entry_number_check {
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $dbi->prepare(
-'SELECT s.name, COUNT(distinct x.xref_id, ensembl_id) FROM xref x, object_xref ox, source s WHERE ox.xref_id = x.xref_id AND x.source_id = s.source_id AND ox_status = "DUMP_OUT" AND s.name NOT LIKE "AFFY%" GROUP BY s.name'
-  );
+  my $sql = (<<"SQL1");
+SELECT s.name, COUNT(distinct x.xref_id, ensembl_id)
+  FROM xref x, object_xref ox, source s
+    WHERE ox.xref_id = x.xref_id AND 
+      x.source_id = s.source_id  AND 
+      ox_status = "DUMP_OUT"     AND 
+      s.name NOT LIKE "AFFY%" 
+  GROUP BY s.name
+SQL1
+
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
 
   my ( $name, $count );
@@ -465,9 +484,17 @@ sub entry_number_check {
   }
   $sth->finish;
 
-  $sth = $self->mapper->core->dbc->prepare(
-'SELECT e.db_name, COUNT(*) FROM xref x, object_xref ox, external_db e WHERE ox.xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.db_name NOT LIKE "AFFY%" AND (x.info_type IS NULL or x.info_type != "PROJECTION") GROUP BY e.db_name'
-  );
+  $sql = (<<"SQL2");
+SELECT e.db_name, COUNT(*) 
+  FROM xref x, object_xref ox, external_db e 
+    WHERE ox.xref_id = x.xref_id          AND 
+      x.external_db_id = e.external_db_id AND 
+      e.db_name NOT LIKE "AFFY%"          AND 
+      (x.info_type IS NULL OR x.info_type != "PROJECTION") 
+  GROUP BY e.db_name
+SQL2
+
+  $sth = $self->mapper->core->dbc->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$name, \$count );
 
@@ -523,11 +550,17 @@ sub name_change_check {
   my $official_name = $self->mapper->get_official_name;
   return unless defined $official_name;
 
-  my $sql =
-'SELECT x.label, gsi.internal_id, gsi.stable_id FROM object_xref ox, xref x, gene_stable_id gsi, source s WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = "Gene" AND gsi.internal_id = ox.ensembl_id AND x.source_id = s.source_id AND s.name LIKE "'
-    . $official_name . '_%"';
+  my $sql = (<<"SQL1");
+SELECT x.label, gsi.internal_id, gsi.stable_id 
+  FROM object_xref ox, xref x, gene_stable_id gsi, source s 
+    WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = ? AND 
+      gsi.internal_id = ox.ensembl_id AND 
+      x.source_id = s.source_id       AND 
+      s.name LIKE ?;
+SQL1
+
   my $sth = $dbi->prepare($sql);
-  $sth->execute();
+  $sth->execute(qw( Gene $official_name_% ));
 
   my ( $name, $gene_id, $stable_id, $syn );
   $sth->bind_columns( \$name, \$gene_id, \$stable_id );
@@ -542,9 +575,14 @@ sub name_change_check {
 
   # Use synonyms as well.
   my %alias;
-  $sql =
-'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id and so.source_id = x.source_id AND so.name LIKE "'
-    . $official_name . '_%" ';
+  $sql = (<<"SQL2");
+SELECT x.label, sy.synonym 
+  FROM xref x, synonym sy, source so 
+    WHERE x.xref_id = sy.xref_id AND 
+      so.source_id = x.source_id AND 
+      so.name LIKE "${official_name}_%";
+SQL2
+
   $sth = $dbi->prepare($sql);
   $sth->execute();
 
@@ -556,8 +594,14 @@ sub name_change_check {
   }
   $sth->finish;
 
-  $sql =
-'SELECT x.label, sy.synonym FROM xref x, synonym sy, source so WHERE x.xref_id = sy.xref_id AND so.source_id = x.source_id AND so.name LIKE "EntrezGene"';
+  $sql = (<<SQL3);
+SELECT x.label, sy.synonym 
+  FROM xref x, synonym sy, source so 
+    WHERE x.xref_id = sy.xref_id AND 
+    so.source_id = x.source_id   AND 
+    so.name LIKE "EntrezGene"';
+SQL3
+
   $sth = $dbi->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$name, \$syn );
@@ -568,8 +612,13 @@ sub name_change_check {
   $sth->finish;
 
   # NOTE ncRNA has higher priority
-  $sql =
-"SELECT x.display_label, g.gene_id FROM gene g, xref x WHERE g.display_xref_id = x.xref_id AND biotype = 'protein_coding'";
+  $sql = (<<"SQL4");
+SELECT x.display_label, g.gene_id 
+  FROM gene g, xref x 
+    WHERE g.display_xref_id = x.xref_id AND 
+      biotype = 'protein_coding';
+SQL4
+
   $sth = $self->mapper->core->dbc->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$name, \$gene_id );
@@ -609,10 +658,16 @@ sub direct_stable_id_check {
 
   foreach my $type (qw(gene transcript translation)) {
 
-    my $sql =
-      'SELECT s.name, COUNT(*) FROM source s, xref x, ' .
-      $type . '_direct_xref gdx LEFT JOIN ' . $type .
-'_stable_id gsi ON gdx.ensembl_stable_id = gsi.stable_id WHERE s.source_id = x.source_id AND x.xref_id = gdx.general_xref_id AND gsi.stable_id IS NULL GROUP BY s.name';
+    my $sql = (<<"SQL");
+SELECT s.name, COUNT(*) 
+  FROM source s, xref x, ${type}_direct_xref gdx LEFT JOIN ${type}_stable_id gsi 
+    ON gdx.ensembl_stable_id = gsi.stable_id 
+    WHERE s.source_id = x.source_id AND 
+    x.xref_id = gdx.general_xref_id AND 
+    gsi.stable_id IS NULL 
+    GROUP BY s.name;
+SQL
+
     my $sth = $dbi->prepare($sql);
     $sth->execute();
 
@@ -628,7 +683,7 @@ sub direct_stable_id_check {
     $sth->finish;
 
     print STDERR "USEFUL SQL: $sql\n" if $total_count;
-  }
+  } ## end foreach my $type (qw(gene transcript translation))
 
   return;
 } ## end sub direct_stable_id_check
