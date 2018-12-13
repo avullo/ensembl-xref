@@ -26,19 +26,12 @@ use warnings;
 use Carp;
 
 
+# These sources are artificially populated using data from
+# crossreferences so we cannot simply read their names from the
+# input. Therefore, keep these names hardcoded in just one place
+# (i.e. here) rather than everywhere we use them.
 my $PROTEIN_ID_SOURCE_NAME = 'protein_id';
 my $UNIPROT_GN_SOURCE_NAME = 'Uniprot_gn';
-
-my %whitelisted_crossreference_sources
-  = (
-     'ChEMBL'                => 1,
-     'EMBL'                  => 1,
-     'Ensembl'               => 1,
-     'MEROPS'                => 1,
-     'PDB'                   => 1,
-     $PROTEIN_ID_SOURCE_NAME => 1,
-     $UNIPROT_GN_SOURCE_NAME => 1,
-   );
 
 my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD = 2;
 my %source_selection_criteria_for_status
@@ -97,6 +90,15 @@ sub _get_protein_id_xref_from_embldb_xref {
 =head2 new
 
   Arg [1]    : HashRef arguments for the constructor:
+                - ArrayRef accepted_crossreference_sources
+                   - list of names of crossreference sources for which
+                     we are to generate direct or dependent xrefs
+                     along with respective links. By default said list
+                     is empty, in which case only primary
+                     (sequence-mapped) xrefs are created.
+                     To emphasise the point: this option DOES control
+                     creation of direct xrefs, not just dependent
+                     ones.
                 - species_id
                    - Ensembl ID of the species under
                      consideration. Records pertaining to other
@@ -115,15 +117,24 @@ sub _get_protein_id_xref_from_embldb_xref {
 sub new {
   my ( $proto, $arg_ref ) = @_;
 
+  my $crossref_source_names
+    = $arg_ref->{'accepted_crossreference_sources'} // [];
+
   my $self = {
-              'maps'       => {},
-              'species_id' => $arg_ref->{'species_id'},
-              'xref_dba'   => $arg_ref->{'xref_dba'},
+              'crossref_source_whitelist' => {},
+              'maps'                      => {},
+              'species_id'                => $arg_ref->{'species_id'},
+              'xref_dba'                  => $arg_ref->{'xref_dba'},
             };
   my $class = ref $proto || $proto;
   bless $self, $class;
 
   $self->_load_maps();
+
+  # Store this as a hash to speed up lookups
+  while ( my $source_name = shift @{ $crossref_source_names } ) {
+    $self->{'crossref_source_whitelist'}->{$source_name} = 1;
+  }
 
   return $self;
 }
@@ -182,7 +193,7 @@ sub finish {
                 - synonyms for each of the above, as needed.
                with the exact list of cross-reference sources to
                process defined in
-               %whitelisted_crossreference_sources. It also determines
+               $self->{crossref_source_whitelist}. It also determines
                the correct source ID for the record's evidence level.
 
   Return type: HashRef
@@ -363,6 +374,8 @@ sub _make_links_from_crossreferences {
 
   my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
   my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
+  my %whitelisted_crossreference_sources
+    = %{ $self->{'crossref_source_whitelist'} };
 
   my @direct_xrefs;
   my @dependent_xrefs;
@@ -446,6 +459,9 @@ sub _make_links_from_gene_names {
   my ( $self, $primary_xref ) = @_;
 
   my @genename_xrefs;
+
+  my %whitelisted_crossreference_sources
+    = %{ $self->{'crossref_source_whitelist'} };
 
   # Are we supposed to process this xref source to begin with?
   if ( ! $whitelisted_crossreference_sources{ $UNIPROT_GN_SOURCE_NAME } ) {

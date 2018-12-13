@@ -37,6 +37,21 @@ my %source_name_for_section = (
   'TrEMBL'     => 'Uniprot/SPTREMBL',
 );
 
+# List of crossreference sources for which we want to create direct or
+# dependent xrefs along with matching links. This includes both
+# sources for crossreferences directly appearing in UniProt-KB files
+# and special sources (at present, 'Uniprot_gn' and 'protein_id')
+# xrefs for which are assembled in the transformer.
+my $crossreference_sources_of_interest = [
+  'ChEMBL',
+  'EMBL',
+  'Ensembl',
+  'MEROPS',
+  'PDB',
+  'Uniprot_gn',
+  'protein_id',
+];
+
 
 
 =head2 run
@@ -132,8 +147,9 @@ sub run {
     'xref_dba'   => $xref_dba,
   });
   my $transformer = $transformer_class->new({
-    'species_id' => $species_id,
-    'xref_dba'   => $xref_dba,
+    'accepted_crossreference_sources' => $crossreference_sources_of_interest,
+    'species_id'                      => $species_id,
+    'xref_dba'                        => $xref_dba,
   });
   my $loader = $loader_class->new({
     'batch_size'         => $loader_batch_size,
