@@ -450,6 +450,18 @@ sub _load_xref_config {
   return $config;
 }
 
+=head2 _mangle_source_block
+
+Arg 1      : String - section header, the name for the section that identifies
+                      the section we need to extract values from
+Arg 2      : Hashref - config file content, the output of _load_xref_config()
+Description: Takes a single source record from xref_config.ini and creates a
+             hashref. Some arguments are massaged to get them into the schema
+             easily
+Returntype : Hashref of a single source's properties
+Caller     : Internal
+
+=cut
 
 sub _mangle_source_block {
   my ($self, $section, $config) = @_;
