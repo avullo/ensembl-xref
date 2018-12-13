@@ -71,9 +71,7 @@ Readonly my $EXPECTED_NUMBER_OF_COLUMNS => 5;
                The former two are mandatory, the latter can be empty
                strings.
 
-  Return type: boolean. Note that it should only ever return 0,
-               indicating success; all errors should produce an
-               exception instead.
+  Return type: none
   Exceptions : throws on all processing errors
   Caller     : ParseSource in the xref pipeline
   Status     : Stable
@@ -228,7 +226,7 @@ sub run {
       . "\t" . $counters{'missed_master'} . " had missing master entries.\n";
   }
 
-  return 0;
+  return;
 } ## end sub run
 
 
