@@ -52,6 +52,18 @@ my $crossreference_sources_of_interest = [
   'protein_id',
 ];
 
+# To save memory and processing time, when we process a record in the
+# extractor we only load into memory the fields we need. Moreover, the
+# same list can later on be used to confirm that we have indeed
+# encountered all the mandatory fields.
+# Note that care must be taken when adding new prefixes to this list
+# because some of them - for instance the Rx family of fields,
+# describing publications - are not compatible with the current way of
+# processing.
+my $mandatory_prefixes_of_interest
+  = [ 'ID', 'AC', 'DE', 'OX', 'PE', 'SQ', q{  }, ];
+my $optional_prefixes_of_interest
+  = [ 'GN', 'DR', 'RG', ];
 
 
 =head2 run
@@ -143,8 +155,10 @@ sub run {
 
   my $extractor = $extractor_class->new({
     'file_names' => $files,
-    'species_id' => $species_id,
-    'xref_dba'   => $xref_dba,
+    'mandatory_prefixes' => $mandatory_prefixes_of_interest,
+    'optional_prefixes'  => $optional_prefixes_of_interest,
+    'species_id'         => $species_id,
+    'xref_dba'           => $xref_dba,
   });
   my $transformer = $transformer_class->new({
     'accepted_crossreference_sources' => $crossreference_sources_of_interest,

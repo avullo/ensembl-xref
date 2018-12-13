@@ -94,29 +94,6 @@ my $QR_SPLIT_COMMA_WITH_WHITESPACE
 my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
   = qr{ \s* ; \s* }msx;
 
-# To save memory and processing time, when we process a record we only
-# load into memory the fields we need. Conversely, the same list can
-# later on be used that we have indeed encountered all the mandatory
-# fields.
-# Note that care must be taken when adding new prefixes to this list
-# because some of them - for instance the Rx family of fields,
-# describing publications - are not compatible with the current way of
-# processing.
-# Syntax: 1 is mandatory field, 0 - an optional one
-my %prefixes_of_interest
-  = (
-     'ID'  => 1,
-     'AC'  => 1,
-     'DE'  => 1,
-     'GN'  => 0,
-     'OX'  => 1,
-     'DR'  => 0,
-     'PE'  => 1,
-     'RG'  => 0,
-     'SQ'  => 1,
-     q{  } => 1,
-   );
-
 # Syntax: 0 for database qualifiers to be ignored, otherwise a
 # reference to a function translating taxon codes from the given
 # database into Ensembl taxonomy_ids.
@@ -134,6 +111,18 @@ my %taxonomy_ids_from_taxdb_codes
                    - list of names of files to process. Note that as
                      with the old UniProtParser, and indeed most other
                      parsers, only the first one will actually be used;
+                - ArrayRef mandatory_prefixes
+                   - list of prefixes of fields that are to be read
+                     into memory and which must be present in every
+                     record. Defaults to none. Takes precedence over
+                     optional_prefixes; in the event of a prefix
+                     having been declared in both;
+                - ArrayRef optional_prefixes
+                   - list of prefixes of fields that are to be read
+                     into memory but which can in principle be absent
+                     from a record.  Defaults to none. Overridden by
+                     mandatory_prefixes in the event of a prefix
+                     having been declared in both;
                 - species_id
                    - Ensembl ID of the species under
                      consideration. Records pertaining to other
@@ -150,9 +139,11 @@ my %taxonomy_ids_from_taxdb_codes
 
 sub new {
   my ( $proto, $arg_ref ) = @_;
-  my $file_names = $arg_ref->{'file_names'};
-  my $species_id = $arg_ref->{'species_id'};
-  my $xref_dba   = $arg_ref->{'xref_dba'};
+  my $file_names         = $arg_ref->{'file_names'};
+  my $mandatory_prefixes = $arg_ref->{'mandatory_prefixes'} // [];
+  my $optional_prefixes  = $arg_ref->{'optional_prefixes'}  // [];
+  my $species_id         = $arg_ref->{'species_id'};
+  my $xref_dba           = $arg_ref->{'xref_dba'};
 
   my $filename = $file_names->[0];
   my $filehandle = $xref_dba->get_filehandle( $filename );
@@ -160,13 +151,24 @@ sub new {
   # Keep the file name for possible debugging purposes, unless we can
   # somehow retrieve it from _io_handle
   my $self = {
-              'input_name' => $filename,
-              '_io_handle' => $filehandle,
-              'species_id' => $species_id,
-              'xref_dba'   => $xref_dba,
-            };
+    'input_name'           => $filename,
+    '_io_handle'           => $filehandle,
+    'prefixes_of_interest' => {},
+    'species_id'           => $species_id,
+    'xref_dba'             => $xref_dba,
+  };
   my $class = ref $proto || $proto;
   bless $self, $class;
+
+  # Store these as a hash to speed up lookups. Process optional
+  # prefixes first so that in the event of a prefix appearing on both
+  # list, it is treated as mandatory.
+  while ( my $prefix = shift @{ $optional_prefixes } ) {
+    $self->{'prefixes_of_interest'}->{$prefix} = 0;
+  }
+  while ( my $prefix = shift @{ $mandatory_prefixes } ) {
+    $self->{'prefixes_of_interest'}->{$prefix} = 1;
+  }
 
   return $self;
 }
@@ -279,7 +281,7 @@ sub finish {
                stripping trailing newline characters and minimal
                "indexing" (see below), and even that is only performed
                on lines we know we will need (see
-               %prefixes_of_interest above).
+               $self->{'prefixes_of_interest'} above).
 
                The output in this case is a hashref assigned to the
                'record' property of the object, in which keys are
@@ -300,6 +302,7 @@ sub get_uniprot_record {
 
   my $io = $self->{'_io_handle'};
   my $uniprot_record = {};
+  my %prefixes_of_interest = %{ $self->{'prefixes_of_interest'} };
 
  INPUT_LINE:
   while ( my $file_line = $io->getline() ) {
@@ -360,6 +363,10 @@ sub _get_accession_numbers {
   my ( $self ) = @_;
 
   my $ac_fields = $self->{'record'}->{'AC'};
+  if ( ! defined $ac_fields ) {
+    return [];
+  }
+
   my @numbers
     = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE,
              join( q{}, @{ $ac_fields } ) );
@@ -381,8 +388,6 @@ sub _get_citation_groups {
   my ( $self ) = @_;
 
   my $rg_fields = $self->{'record'}->{'RG'};
-
-  # RG is an optional field
   if ( ! defined $rg_fields ) {
     return [];
   }
@@ -403,10 +408,8 @@ sub _get_database_crossreferences {
   my ( $self ) = @_;
 
   my $dr_fields = $self->{'record'}->{'DR'};
-
-  # DR is an optional field
   if ( ! defined $dr_fields ) {
-    return [];
+    return {};
   }
 
   # FIXME: we should probably make this persist until a new record has
@@ -473,6 +476,9 @@ sub _get_description {
   my ( $self ) = @_;
 
   my $de_fields = $self->{'record'}->{'DE'};
+  if ( ! defined $de_fields ) {
+    return;
+  }
 
   my @names;
   my @subdescs;
@@ -528,8 +534,6 @@ sub _get_gene_names {
   my ( $self ) = @_;
 
   my $gn_fields = $self->{'record'}->{'GN'};
-
-  # GN is an optional field
   if ( ! defined $gn_fields ) {
     return [];
   }
@@ -597,37 +601,44 @@ sub _get_gene_names {
 sub _get_quality {
   my ( $self ) = @_;
 
-  # There is only one ID line
+  my $entry_status;
+  my $evidence_level;
+
+  # There is at most one ID line
   my $id_line = $self->{'record'}->{'ID'}->[0];
-  my ( $entry_status )
-    = ( $id_line =~ m{
-                       \A
+  if ( defined $id_line ) {
+    ( $entry_status )
+      = ( $id_line =~ m{
+                         \A
 
-                       # UniProt name
-                       [0-9A-Z_]+
+                         # UniProt name
+                         [0-9A-Z_]+
 
-                       \s+
+                         \s+
 
-                       ( $QR_ID_STATUS_FIELD )
-                       \s*
-                       ;
-                   }msx );
-  if ( ! defined $entry_status ) {
-    confess "Invalid entry status in:\n\t$id_line";
+                         ( $QR_ID_STATUS_FIELD )
+                         \s*
+                         ;
+                     }msx );
+    if ( ! defined $entry_status ) {
+      confess "Invalid entry status in:\n\t$id_line";
+    }
   }
 
-  # Likewise, there is only one PE line
+  # Likewise, there is at most one PE line
   my $pe_line = $self->{'record'}->{'PE'}->[0];
-  my ( $evidence_level )
-    = ( $pe_line =~ m{
-                       \A
+  if ( defined $pe_line ) {
+    ( $evidence_level )
+      = ( $pe_line =~ m{
+                         \A
 
-                       ( [1-5] )
-                       \s*
-                       :
-                   }msx );
-  if ( ! defined $evidence_level ) {
-    confess "Invalid protein evidence level in:\n\t$pe_line";
+                         ( [1-5] )
+                         \s*
+                         :
+                     }msx );
+    if ( ! defined $evidence_level ) {
+      confess "Invalid protein evidence level in:\n\t$pe_line";
+    }
   }
 
   return {
@@ -644,6 +655,9 @@ sub _get_sequence {
   my ( $self ) = @_;
 
   my $sequence_fields = $self->{'record'}->{ q{  } };
+  if ( ! defined $sequence_fields ) {
+    return;
+  }
 
   # Concatenate the sequence into a single continuous string. We do
   # not expect to see more than whitespace at a time so instead of
@@ -666,8 +680,11 @@ sub _get_sequence {
 sub _get_taxon_codes {
   my ( $self ) = @_;
 
-  # There is only one OX line
+  # There is at most one OX line
   my $ox_line = $self->{'record'}->{'OX'}->[0];
+  if ( ! defined $ox_line ) {
+    return [];
+  }
 
   # On the one hand, according to UniProt-KB User Manual from October
   # 2018 there should only be a single taxon code per OX line and the
@@ -758,6 +775,8 @@ sub _taxon_codes_match_species_id {
 
 sub _record_has_all_needed_fields {
   my ( $self ) = @_;
+
+  my %prefixes_of_interest = %{ $self->{'prefixes_of_interest'} };
 
   # Only check mandatory fields
   my @needed_fields
