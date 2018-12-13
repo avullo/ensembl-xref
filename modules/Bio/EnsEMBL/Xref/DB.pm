@@ -114,16 +114,18 @@ sub _init_db {
     $dsn = sprintf 'dbi:%s:database=%s',$conf{driver},$conf{file};
     $self->now_function("date('now')");
   } else {
-    $dsn = sprintf 'dbi:%s:database=%s;host=%s;port=%s',$conf{driver},$conf{db},$conf{host},$conf{port};
+    $dsn = sprintf 'dbi:%s:database=%s;host=%s;port=%s', $conf{driver}, $conf{db}, $conf{host}, $conf{port};
   }
 
   my %deploy_opts = ();
   # Example deploy option $deploy_opts{add_drop_table} = 1;
   carp 'Connecting: '.$dsn."\n";
-  my $schema = Bio::EnsEMBL::Xref::Schema->connect($dsn, $conf{user},$conf{pass}, \%opts);
+  my $schema = Bio::EnsEMBL::Xref::Schema->connect($dsn, $conf{user}, $conf{pass}, \%opts);
 
   if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
-    my $dbh = DBI->connect(sprintf('DBI:%s:database=;host=%s;port=%s',$conf{driver},$conf{host},$conf{port}),$conf{user},$conf{pass}, \%opts);
+    my $dbh = DBI->connect(
+      sprintf('DBI:%s:database=;host=%s;port=%s', $conf{driver}, $conf{host}, $conf{port}), $conf{user}, $conf{pass}, \%opts
+    );
     $dbh->do('CREATE DATABASE '.$conf{db}.';');
     $dbh->disconnect;
   }
