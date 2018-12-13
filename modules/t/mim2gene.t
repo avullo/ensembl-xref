@@ -138,11 +138,9 @@ subtest 'Problems with input file' => sub {
     files      => [ "$Bin/test-data/mim2gene-NONEXISTENT.txt" ],
     xref_dba   => $xref_dba,
   );
-  is( scalar warnings {
-    throws_ok( sub { $parser->run(); },
-               qr{\A Can[ ]not[ ]open[ ]file[ ] }msx,
-               'Throws on no input file missing' );
-  }, 1, 'Trying to open missing input file produces one warning' );
+  throws_ok( sub { $parser->run(); },
+             qr{\A Can[ ]not[ ]open[ ]file[ ] }msx,
+             'Throws on no input file missing' );
 
 };
 
