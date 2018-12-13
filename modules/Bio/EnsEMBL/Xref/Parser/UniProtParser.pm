@@ -89,9 +89,7 @@ my %source_name_for_section = (
                the UniProt Knowledgebase User Manual at
                https://web.expasy.org/docs/userman.html .
 
-  Return type: boolean. Note that it should only ever return 0,
-               indicating success; all errors should produce an
-               exception instead.
+  Return type: none
   Exceptions : throws on all processing errors
   Caller     : ParseSource in the xref pipeline
   Status     : Stable
@@ -189,7 +187,7 @@ sub run {
                                                     $release_strings );
   }
 
-  return 0;
+  return;
 }
 
 
