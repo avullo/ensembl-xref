@@ -141,7 +141,9 @@ sub run {
       local $/ = "//\n";
       while ( my $genbank_rec = $refseq_fh->getline() ) {
         my $xref = $self->xref_from_record( $genbank_rec, $type );
-        push @{$xrefs}, $xref if $xref;
+         if ($xref) {
+          push @{$xrefs}, $xref;
+        }
       }
     }
 
