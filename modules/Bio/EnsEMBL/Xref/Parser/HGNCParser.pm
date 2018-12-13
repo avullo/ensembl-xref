@@ -74,7 +74,7 @@ use Carp;
 use Text::CSV;
 use Readonly;
 use utf8;
-use Smart::Comments;
+
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
@@ -221,7 +221,6 @@ CCDS
 sub process_row {
   my ($self, $data) = @_;
 
-### $data
   my $acc              = $data->{'HGNC ID'};
   my $symbol           = $data->{'Approved symbol'};
   my $name             = $data->{'Approved name'};
