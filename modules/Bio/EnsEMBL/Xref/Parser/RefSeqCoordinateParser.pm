@@ -56,13 +56,12 @@ package Bio::EnsEMBL::Xref::Parser::RefSeqCoordinateParser;
 use strict;
 use warnings;
 use Carp;
-use Readonly;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
 # Refseq sources to consider. Prefixes not in this list will be ignored
-Readonly my $REFSEQ_SOURCES => {
+my $REFSEQ_SOURCES = {
     NM => 'RefSeq_mRNA',
     NR => 'RefSeq_ncRNA',
     XM => 'RefSeq_mRNA_predicted',
