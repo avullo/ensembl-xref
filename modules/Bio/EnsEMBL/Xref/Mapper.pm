@@ -48,6 +48,7 @@ use warnings;
 use Carp;
 
 use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::AltAlleleGroupAdaptor;
 
 use Bio::EnsEMBL::Xref::Mapper::QC;
@@ -293,7 +294,7 @@ sub process_file {
     $port =
       defined $species_hash{'port'} ? $species_hash{'port'} : 3306;
 
-    $mapper->core( Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+    $mapper->core( Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                                       -host   => $host,
                                                       -port   => $port,
                                                       -user   => $user,
@@ -330,7 +331,7 @@ sub process_file {
         3306;
 
       $mapper->previous_core(
-                            Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
+                            Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                                    -host   => $pr_host,
                                                    -port   => $pr_port,
                                                    -user   => $pr_user,
