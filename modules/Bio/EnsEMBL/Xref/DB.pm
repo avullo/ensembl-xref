@@ -101,7 +101,7 @@ has now_function => (
 
 sub _init_db {
   my $self = shift;
-  carp "Setting up schema\n";
+
   $self->_init_config if ! defined $self->config;
   $self->_validate_config($self->config);
   my %conf = %{ $self->config };
@@ -119,7 +119,6 @@ sub _init_db {
 
   my %deploy_opts = ();
   # Example deploy option $deploy_opts{add_drop_table} = 1;
-  carp 'Connecting: '.$dsn."\n";
   my $schema = Bio::EnsEMBL::Xref::Schema->connect($dsn, $conf{user}, $conf{pass}, \%opts);
 
   if ($conf{create} == 1 && $conf{driver} eq 'mysql') {
