@@ -63,17 +63,6 @@ use List::Util 1.45 qw(uniq);
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
-# Refseq sources to consider. Prefixes not in this list will be ignored
-my $REFSEQ_SOURCES = {
-    NM => 'RefSeq_mRNA',
-    NR => 'RefSeq_ncRNA',
-    XM => 'RefSeq_mRNA_predicted',
-    XR => 'RefSeq_ncRNA_predicted',
-    NP => 'RefSeq_peptide',
-    XP => 'RefSeq_peptide_predicted',
-};
-
-
 
 =head2 run
   Description: Runs the RefSeqGPFFParser
@@ -96,8 +85,10 @@ sub run {
     confess "Need to pass source_id, species_id, species, files and rel_file as pairs";
   }
 
+  $self->{refseq_sources} = $xref_dba->get_refseq_sources;
+
   # get RefSeq source ids
-  while (my ($source_prefix, $source_name) = each %{$REFSEQ_SOURCES}) {
+  while (my ($source_prefix, $source_name) = each %{$self->{refseq_sources}}) {
     $self->{source_ids}->{$source_name} = $xref_dba->get_source_id_for_source_name( $source_name, undef )
   }
 
@@ -112,7 +103,7 @@ sub run {
   $self->{wiki_ids} = $xref_dba->get_valid_codes('WikiGene', $species_id );
 
   if ($verbose) {
-    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+    for my $source_name (sort values %{$self->{refseq_sources}}) {
       print "$source_name source ID = $self->{source_ids}->{$source_name}\n";
     }
   }
@@ -173,7 +164,7 @@ sub run {
 
     # set release info
     $xref_dba->set_release( $source_id, $release_string );
-    for my $source_name (sort values %{$REFSEQ_SOURCES}) {
+    for my $source_name (sort values %{$self->{refseq_sources}}) {
       $xref_dba->set_release( $self->{source_ids}->{$source_name}, $release_string );
     }
 
@@ -214,7 +205,7 @@ sub xref_from_record {
   my $prefix = substr($acc, 0, 2);
 
   # skip if acc is not of known type
-  return if ( !exists $REFSEQ_SOURCES->{$prefix} );
+  return if ( !exists $self->{refseq_sources}->{$prefix} );
 
 
   my $acc_source_id = $self->source_id_from_acc($acc);
@@ -371,8 +362,8 @@ sub source_id_from_acc {
   my $source_id;
   my $prefix = substr($acc, 0, 2);
 
-  if ( exists $REFSEQ_SOURCES->{$prefix} ) {
-    $source_id = $self->source_id_from_name( $REFSEQ_SOURCES->{$prefix} );
+  if ( exists $self->{refseq_sources}->{$prefix} ) {
+    $source_id = $self->source_id_from_name( $self->{refseq_sources}->{$prefix} );
   } else {
     confess "Can't get source ID for accession '$acc'\n";
   }
