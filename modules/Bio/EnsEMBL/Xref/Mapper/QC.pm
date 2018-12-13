@@ -594,7 +594,7 @@ SQL2
   }
   $sth->finish;
 
-  $sql = (<<SQL3);
+  $sql = (<<"SQL3");
 SELECT x.label, sy.synonym 
   FROM xref x, synonym sy, source so 
     WHERE x.xref_id = sy.xref_id AND 
