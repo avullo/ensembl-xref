@@ -44,31 +44,6 @@ my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 
 my $config = $db->config;
 
-my $xref_dba_no_source = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
-  host   => $config->{host},
-  dbname => $config->{db},
-  user   => $config->{user},
-  pass   => $config->{pass},
-  port   => $config->{port}
-);
-
-use_ok 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser';
-
-# test failure if Source not populated
-my $parser_no_source = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
- source_id  => 108,
- species_id => 9606,
- species    => 'homo_sapiens',
- files      => ["$Bin/test-data/refseq_gpff.protein.gpff"],
- rel_file   => 'stuff',
- xref_dba   => $xref_dba_no_source,
- verbose    => 1
-);
-
-isa_ok( $parser_no_source, 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser' );
-
-throws_ok{ $parser_no_source->run() } qr/No source_id for source_name/, 'Source needs to be populated';
-
 my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
   host   => $config->{host},
   dbname => $config->{db},
@@ -120,6 +95,8 @@ $db->schema->resultset('Source')->populate([
   }
 ]);
 
+use_ok 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser';
+
 my $parser_refseq_peptide = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  source_id  => 108,
  species_id => 9606,
@@ -129,6 +106,8 @@ my $parser_refseq_peptide = Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser->new(
  xref_dba   => $xref_dba,
  verbose    => 1
 );
+
+isa_ok( $parser_refseq_peptide, 'Bio::EnsEMBL::Xref::Parser::RefSeqGPFFParser' );
 
 $parser_refseq_peptide->run();
 
