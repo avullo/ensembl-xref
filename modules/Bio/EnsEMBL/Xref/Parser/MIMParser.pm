@@ -81,9 +81,7 @@ Readonly my $QR_TI_FIELD_TERMINATORS
                All the data relevant to the parser can be found in the
                TI field.
 
-  Return type: boolean. Note that it should only ever return 0,
-               indicating success; all errors should produce an
-               exception instead.
+  Return type: none
   Exceptions : throws on all processing errors
   Caller     : ParseSource in the xref pipeline
   Status     : Stable
@@ -253,7 +251,7 @@ sub run {
       . $counters{ 'removed' } . " entries removed\n";
   }
 
-  return 0;
+  return;
 } ## end sub run
 
 
