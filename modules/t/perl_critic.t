@@ -35,10 +35,11 @@ use Test::Warnings;
 
 use Test::Perl::Critic (
     -severity => 3,
-    -profile => '.perlcriticrc');
+    -profile => '.perlcriticrc',
+    -exclude => [ 'ProhibitExcessComplexity' ]);
 
-#chdir into the file's target & request cwd() which should be fully resolved now.
-##then go back
+# chdir into the file's target & request cwd() which should be fully resolved now.
+## then go back
 my $file_dir = dirname(__FILE__);
 my $original_dir = cwd();
 chdir($file_dir);
@@ -47,4 +48,3 @@ chdir($original_dir);
 my $root = File::Spec->catdir($cur_dir, File::Spec->updir(),File::Spec->updir());
 
 all_critic_ok("$root/modules/Bio");
-
