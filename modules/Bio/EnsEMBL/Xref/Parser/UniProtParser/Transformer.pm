@@ -33,6 +33,13 @@ use Carp;
 my $PROTEIN_ID_SOURCE_NAME = 'protein_id';
 my $UNIPROT_GN_SOURCE_NAME = 'Uniprot_gn';
 
+# List of all 1:1 mapping from a primary-xref sequence type to the
+# Ensembl type of corresponding direct xrefs. One-to-many mappings
+# (e.g. for the type 'dna') have to be handled the hard way.
+my %direct_xref_type_for_seq_type = (
+  'peptide' => 'Translation',
+);
+
 my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD = 2;
 my %source_selection_criteria_for_status
   = (
@@ -98,11 +105,17 @@ sub _get_protein_id_xref_from_embldb_xref {
                      (sequence-mapped) xrefs are created.
                      To emphasise the point: this option DOES control
                      creation of direct xrefs, not just dependent
-                     ones.
+                     ones;
+                - default_direct_xref_type
+                   - Ensembl type (e.g. Gene, Transcript, Translation)
+                     to be assigned to direct xrefs in the event of
+                     either being unable to unambiguously determine it
+                     from sequence type or having failed to extract
+                     the sequence type to begin with;
                 - species_id
                    - Ensembl ID of the species under
                      consideration. Records pertaining to other
-                     species will be quietly ignored.
+                     species will be quietly ignored;
                 - xref_dba
                    - DBAdaptor object passed from the xref pipeline
   Description: Constructor.
@@ -121,11 +134,12 @@ sub new {
     = $arg_ref->{'accepted_crossreference_sources'} // [];
 
   my $self = {
-              'crossref_source_whitelist' => {},
-              'maps'                      => {},
-              'species_id'                => $arg_ref->{'species_id'},
-              'xref_dba'                  => $arg_ref->{'xref_dba'},
-            };
+    'crossref_source_whitelist' => {},
+    'default_direct_xref_type'  => $arg_ref->{'default_direct_xref_type'},
+    'maps'                      => {},
+    'species_id'                => $arg_ref->{'species_id'},
+    'xref_dba'                  => $arg_ref->{'xref_dba'},
+  };
   my $class = ref $proto || $proto;
   bless $self, $class;
 
@@ -391,13 +405,27 @@ sub _make_links_from_crossreferences {
 
     if ( $source eq 'Ensembl' ) {
 
+      # If we cannot unambiguously deduce Ensembl type from the
+      # sequence type of the primary xref (or if it hasn't been
+      # extracted at all), fall back to the global default. Should be
+      # safe enough because on the one hand if we do enable creation
+      # of direct xrefs from specific input we really ought to have an
+      # idea of what type they are, and on the other unless the
+      # database schema changes a lot the loader should complain VERY
+      # loudly when it tries to insert data into the very much
+      # nonexistent table '_direct_xref' if the global default is
+      # omitted.
+      my $direct_xref_type
+        = $direct_xref_type_for_seq_type{ $primary_xref->{'SEQUENCE_TYPE'} }
+        // $self->{'default_direct_xref_type'};
+
     DIRECT_XREF:
       foreach my $direct_ref ( @{ $entries } ) {
         my $xref_link
           = {
              # We want translation ID and 'id' for these is TRANSCRIPT ID
              'STABLE_ID'    => $direct_ref->{'optional_info'}->[0],
-             'ENSEMBL_TYPE' => 'Translation',  # FIXME: this shouldn't be hardcoded!!!
+             'ENSEMBL_TYPE' => $direct_xref_type,
              'LINKAGE_TYPE' => 'DIRECT',
              'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
              'ACCESSION'    => $primary_xref->{'ACCESSION'},

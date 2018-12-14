@@ -162,6 +162,7 @@ sub run {
   });
   my $transformer = $transformer_class->new({
     'accepted_crossreference_sources' => $crossreference_sources_of_interest,
+    'default_direct_xref_type'        => 'Translation',  # just in case
     'species_id'                      => $species_id,
     'xref_dba'                        => $xref_dba,
   });
