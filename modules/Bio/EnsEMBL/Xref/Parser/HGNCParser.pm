@@ -72,14 +72,13 @@ use strict;
 use warnings;
 use Carp;
 use Text::CSV;
-use Readonly;
 use utf8;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 
 # HGNC sources to be processed
-Readonly my @SOURCES => (
+my @SOURCES = (
   'ccds',
   'entrezgene_manual',
   'refseq_manual',
