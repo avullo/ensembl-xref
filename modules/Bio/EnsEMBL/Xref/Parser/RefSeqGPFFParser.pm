@@ -231,7 +231,7 @@ sub xref_from_record {
                                   (.*)                # get the description
                                   \s+ACCESSION/xms;   # until the next field
 
-  # TODO remove when upload_xref_object_graphs() in BaseParser is updated to do this automatically
+  # TODO remove when upload_xref_object_graphs() in BaseAdaptor is updated to do this automatically
   # remove any newlines and spaces, and make sure is within mysql limits
   $description =~ s/\n//xg;
   $description =~ s/\s+/ /xg;
