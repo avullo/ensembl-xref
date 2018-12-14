@@ -137,7 +137,8 @@ sub run {
 CCDS
 
   my $sth = $core_dba->dbc->prepare($sql);
-  $sth->execute() or croak( $core_dba->dbc->errstr() );
+  $sth->execute() or confess( $core_dba->dbc->errstr() );
+
   while ( my ($ccds_id, $ens_id) = $sth->fetchrow_array() ) {
     # Remove version
     $ccds_id =~ s/\.\d+//x;
@@ -167,7 +168,7 @@ CCDS
     empty_is_undef => 1,
     binary         => 1,
     auto_diag      => 1
-  }) or croak "Cannot use file $file: ".Text::CSV->error_diag ();
+  }) or confess "Cannot use file $file: ".Text::CSV->error_diag ();
 
   my $disk_fh = $xref_dba->get_filehandle($file);
   if ( !defined $disk_fh ) {
