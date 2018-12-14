@@ -334,9 +334,9 @@ sub process_row {
       }
 
       $self->{xref_dba}->add_synonyms_for_hgnc_vgnc({
-          source_id  => $self->{source_id},
+          source_id  => $self->{source_ids}->{'refseq_manual'}
           name       => $acc,
-          species_id => $self->{source_ids}->{'refseq_manual'},
+          species_id => $self->{species_id},
           dead       => $previous_symbols,
           alias      => $synonyms
       });
