@@ -171,7 +171,7 @@ sub run {
     print "RefSeq release: '$release_string'\n" if $verbose;
 
   } else {
-    warn "Could not set release info from release file '$release_file'\n";
+    print "Could not set release info from release file '$release_file'\n";
   }
 
   return 0;
@@ -224,7 +224,7 @@ sub xref_from_record {
     $xref->{LABEL} = "${acc}.${ver_num}";
     $xref->{VERSION} = $ver_num;
   } else {
-    warn "WARNING: accession $acc mismatch with version ${acc}.${ver_num}\n" if $self->{verbose};
+    print "WARNING: accession $acc mismatch with version ${acc}.${ver_num}\n" if $self->{verbose};
   }
 
   my ($description) = $genbank_rec =~ /DEFINITION\s+  # Find the field identifier
