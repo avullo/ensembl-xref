@@ -94,6 +94,24 @@ my $QR_SPLIT_COMMA_WITH_WHITESPACE
 my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
   = qr{ \s* ; \s* }msx;
 
+# The default value of sequence type is a longish random string in
+# order to minimise the risk of a database schema change resulting in
+# whatever we put in here suddenly becoming an accepted value, as it
+# could conceivably be the case for e.g. 'unknown'. It is in a package
+# constant so that it will be easy to reach by any validation routines
+# we might add at some point.
+my $SEQUENCE_TYPE_UNDEFINED = 'b0MkJApqLUNCJwp5U3JmXgpzQmtACmZGfScKP1h';
+
+# Translates the sequence unit from the SQ line into Ensembl sequence
+# type as used in e.g. primary xrefs. We do it in the extractor and
+# not in a transformer because sequence-type identification depends on
+# the input format, and if we touch it to begin with why not output it
+# in form which will not require further transformation.
+my %sequence_type_for_unit = (
+  'AA' => 'peptide',
+  'BP' => 'dna',
+);
+
 # Syntax: 0 for database qualifiers to be ignored, otherwise a
 # reference to a function translating taxon codes from the given
 # database into Ensembl taxonomy_ids.
@@ -231,7 +249,7 @@ sub extract {
        'description'       => $self->_get_description() // undef,
        'gene_names'        => $self->_get_gene_names(),
        'quality'           => $self->_get_quality(),
-       'sequence'          => $self->_get_sequence() // undef,
+       'sequence'          => $self->_get_sequence(),
      };
 
   return $entry_object;
@@ -648,29 +666,68 @@ sub _get_quality {
 }
 
 
-# Parse the sequence ('  ') fields of the current record and produce
-# its polypeptide sequence. as a continuous string i.e. without
-# decorative whitespace.
+# Parse the sequence-metadata ('SQ') and sequence (' ') fields of the
+# current record, attempt to extract its type, and transform its
+# sequence into a continuous string i.e. without decorative whitespace
+# or mid-sequence counts.
 sub _get_sequence {
   my ( $self ) = @_;
 
-  my $sequence_fields = $self->{'record'}->{ q{  } };
-  if ( ! defined $sequence_fields ) {
-    return;
+  my $seq_object = {
+    'type' => $SEQUENCE_TYPE_UNDEFINED,
+    'seq'  => undef,
+  };
+
+  my $metadata_line = $self->{'record'}->{'SQ'}->[0];
+  if ( defined $metadata_line ) {
+
+    # Different input types use different capitalisation here so just
+    # do a case-insensitive match. At least so far they have all
+    # followed the same basic syntax.
+    my ( $unit ) = ( $metadata_line =~ m{
+                                          \A
+                                          sequence
+                                          \s+
+                                          \d+
+                                          \s+
+                                          ( \w+ )
+                                          ;
+                                      }imsx );
+    if ( defined $unit ) {
+      $seq_object->{'type'} = $sequence_type_for_unit{ uc( $unit ) };
+    }
   }
 
-  # Concatenate the sequence into a single continuous string. We do
-  # not expect to see more than whitespace at a time so instead of
-  # trying to match as long a string of them as possible in order to
-  # minimise the number of independent substitutions, we always match
-  # on one in order to avoid unnecessary backtracking.
-  # Note that we use non-destructive substitution.
-  my $sequence = ( join( q{}, @{ $sequence_fields } ) =~ s{ \s }{}grmsx );
+  my $sequence_fields = $self->{'record'}->{ q{  } };
+  if ( defined $sequence_fields ) {
 
-  # We could in principle directly return substitution result but then
-  # we would have to make sure we always call get_sequence() in scalar
-  # context. Safer to simply return a scalar instead.
-  return $sequence;
+    my $sequence = q{};
+
+  SEQUENCE_LINE:
+    while ( my $line = shift @{ $sequence_fields } ) {
+      # Strip mid-sequence counts (and surrounding whitespace) from
+      # the end of each line
+      $line =~ s{
+                  \s+ \d+
+                  \s* \z
+              }{}msx;
+
+      # Get rid of all the remaining whitespace. Apart from the blanks
+      # preceding mid-sequence counts, which have already been taken
+      # care of, we do not expect to see more than whitespace at a
+      # time - so instead of trying to match as long a string of them
+      # as possible in order to minimise the number of independent
+      # substitutions, we always match on one in order to avoid
+      # unnecessary backtracking.
+      $line =~ s{ \s }{}gmsx;
+
+      $sequence .= $line;
+    }
+
+    $seq_object->{'seq'} = $sequence;
+  }
+
+  return $seq_object;
 }
 
 

@@ -212,14 +212,16 @@ sub transform {
     = @{ $extracted_record->{'accession_numbers'} };
   my $source_id = $self->_get_source_id();
 
+  my $sequence_data = $extracted_record->{'sequence'};
+
   my $xref_graph_node
     = {
        'ACCESSION'     => $accession,
        'DESCRIPTION'   => $extracted_record->{'description'},
        'INFO_TYPE'     => 'SEQUENCE_MATCH',
        'LABEL'         => $accession,
-       'SEQUENCE'      => $extracted_record->{'sequence'},
-       'SEQUENCE_TYPE' => 'peptide',
+       'SEQUENCE'      => $sequence_data->{'seq'},
+       'SEQUENCE_TYPE' => $sequence_data->{'type'},
        'SOURCE_ID'     => $source_id,
        'SPECIES_ID'    => $self->{'species_id'},
        'STATUS'        => 'experimental',
@@ -395,7 +397,7 @@ sub _make_links_from_crossreferences {
           = {
              # We want translation ID and 'id' for these is TRANSCRIPT ID
              'STABLE_ID'    => $direct_ref->{'optional_info'}->[0],
-             'ENSEMBL_TYPE' => 'Translation',
+             'ENSEMBL_TYPE' => 'Translation',  # FIXME: this shouldn't be hardcoded!!!
              'LINKAGE_TYPE' => 'DIRECT',
              'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
              'ACCESSION'    => $primary_xref->{'ACCESSION'},
