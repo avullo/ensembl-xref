@@ -229,7 +229,7 @@ sub process_row {
 
   my $seen = 0;
 
-  # Direct CCDS to ENST mappings
+  # Direct CCDS to ENS mappings
   my $ccds = $data->{'CCDS IDs'};
   my @ccds_list;
 
