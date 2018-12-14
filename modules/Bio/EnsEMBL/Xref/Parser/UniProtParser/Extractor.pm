@@ -218,7 +218,7 @@ sub extract {
 
   # Only proceed if at least one taxon code in the entry maps
   # to the current species ID, and skip unreviewed entries.
-  if ( ( ! $self->_taxon_codes_match_species_id() )
+  if ( ( ! $self->_record_species_matches() )
        || ( $self->_entry_is_unreviewed( $accession_numbers ) ) ) {
     return 'SKIP';
   }
@@ -746,6 +746,16 @@ sub _get_taxon_codes {
   }
 
   return \@extracted_taxon_codes;
+}
+
+
+# Check if the species indicated in the current record matches the one
+# for which we are running the parser. Specific implementation might
+# vary depending on the input data.
+sub _record_species_matches {
+  my ( $self ) = @_;
+
+  return $self->_taxon_codes_match_species_id();
 }
 
 
