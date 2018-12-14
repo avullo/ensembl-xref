@@ -142,7 +142,8 @@ my %taxonomy_ids_from_taxdb_codes
                      mandatory_prefixes in the event of a prefix
                      having been declared in both;
                 - species_id
-                   - Ensembl ID of the species under
+                - species_name
+                   - Ensembl ID and/or name of the species under
                      consideration. Records pertaining to other
                      species will be quietly ignored.
                 - xref_dba
@@ -161,6 +162,7 @@ sub new {
   my $mandatory_prefixes = $arg_ref->{'mandatory_prefixes'} // [];
   my $optional_prefixes  = $arg_ref->{'optional_prefixes'}  // [];
   my $species_id         = $arg_ref->{'species_id'};
+  my $species_name       = $arg_ref->{'species_name'};
   my $xref_dba           = $arg_ref->{'xref_dba'};
 
   my $filename = $file_names->[0];
@@ -173,6 +175,7 @@ sub new {
     '_io_handle'           => $filehandle,
     'prefixes_of_interest' => {},
     'species_id'           => $species_id,
+    'species_name'         => $species_name,
     'xref_dba'             => $xref_dba,
   };
   my $class = ref $proto || $proto;
