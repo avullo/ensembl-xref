@@ -114,6 +114,7 @@ sub run {
       }
     }
   }
+  return 0;
 }
 
 =head2 parse_stockholm_format
