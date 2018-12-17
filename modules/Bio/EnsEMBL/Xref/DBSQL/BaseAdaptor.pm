@@ -50,7 +50,7 @@ use Carp;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Xref::FetchFiles;
 use Getopt::Long;
-use IO::Uncompress::AnyUncompress;
+use IO::Uncompress::AnyUncompress '$AnyUncompressError';
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -187,7 +187,7 @@ sub get_filehandle {
   # It should be on by default but set it just in case.
   $io = IO::Uncompress::AnyUncompress->new($file_name,
                                            'Transparent' => 1 )
-    || confess("Can not open file '$file_name'");
+    || confess("Can not open file '$file_name' because: $AnyUncompressError");
 
   if ($verbose) {
     print "Reading from '$file_name'...\n";
