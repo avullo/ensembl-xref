@@ -86,7 +86,7 @@ sub run {
   my $input_file = Text::CSV->new(
     { sep_char => "\t", empty_is_undef => 1, allow_loose_quotes => 1 } )
     or
-    croak "Cannot use file $file: " . Text::CSV->error_diag();
+    confess "Cannot use file $file: " . Text::CSV->error_diag();
 
   # process header
   $input_file->column_names( @{ $input_file->getline($eg_io) } );
@@ -99,7 +99,7 @@ sub run {
   while ( my $data = $input_file->getline_hr($eg_io) ) {
     # species_id corresponds to the species taxonomy id, see:
     # https://github.com/Ensembl/ensembl-xref/pull/31#issuecomment-445838474
-    next unless $data->{'#tax_id'} eq "$species_id";
+    next unless $data->{'#tax_id'} eq $species_id;
 
     my $acc = $data->{'GeneID'};
     next if exists $seen{$acc};
