@@ -111,7 +111,7 @@ is( scalar @xrefs, 2, 'Sample EntrezGene/WikiGene xrefs inserted' );
 
 # check synonyms have been inserted as well
 foreach my $syn ( qw/ AAC2 NAT-2 PNAT / ) {
-  ok( $db->schema->resultset('Synonym')->search( { syn => $syn } ), 'Synonym inserted' );
+  ok( $db->schema->resultset('Synonym')->search( { synonym => $syn } ), 'Synonym inserted' );
 } 
 
 @xrefs = $db->schema->resultset('Xref')->search(
@@ -126,7 +126,7 @@ foreach my $syn ( qw/ AAC2 NAT-2 PNAT / ) {
 is( scalar @xrefs, 2, 'Sample EntrezGene/WikiGene xrefs inserted' );
 
 foreach my $syn ( qw/ CES5A1 DAC / ) {
-  ok( $db->schema->resultset('Synonym')->search( { syn => $syn } ), 'Synonym inserted' );
+  ok( $db->schema->resultset('Synonym')->search( { synonym => $syn } ), 'Synonym inserted' );
 } 
 
 # Test if all 10 entries were inserted (twice)
