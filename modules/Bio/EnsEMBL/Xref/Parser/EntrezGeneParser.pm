@@ -1,8 +1,8 @@
+
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2018] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,7 +23,7 @@ Bio::EnsEMBL::Xref::Parser::EntrezGeneParser
 
 =head1 DESCRIPTION
 
-This parser will read and creates dependent xrefs from a simple 
+This parser will read and create dependent xrefs from a simple 
 comma-delimited file downloaded from the EntrezGene database.
 
 =head1 SYNOPSIS
@@ -60,7 +60,7 @@ use parent qw( Bio::EnsEMBL::Xref::Parser );
 
 sub run {
 
-  my ( $self ) = @_;
+  my ($self)       = @_;
   my $source_id    = $self->{source_id};
   my $species_id   = $self->{species_id};
   my $species_name = $self->{species};
@@ -68,17 +68,19 @@ sub run {
   my $verbose      = $self->{verbose} // 0;
   my $xref_dba     = $self->{xref_dba};
 
-  confess "Need to pass source_id, species_id and files"
-    unless defined $source_id and
-    defined $species_id and
-    defined $files;
+  unless ( defined $source_id and
+           defined $species_id and
+           defined $files )
+  {
+    confess "Need to pass source_id, species_id and files";
+  }
 
-  my $file = shift @{ $files };
+  my $file = shift @{$files};
 
   my $wiki_source_id =
-   $xref_dba->get_source_id_for_source_name( "WikiGene", undef );
-  
-  my $eg_io = $xref_dba->get_filehandle( $file );
+    $xref_dba->get_source_id_for_source_name( "WikiGene", undef );
+
+  my $eg_io = $xref_dba->get_filehandle($file);
   confess "Could not open $file" unless defined $eg_io;
 
   my $input_file = Text::CSV->new(
@@ -87,46 +89,46 @@ sub run {
     croak "Cannot use file $file: " . Text::CSV->error_diag();
 
   # process header
-  $input_file->column_names( @{ $input_file->getline( $eg_io ) } );
+  $input_file->column_names( @{ $input_file->getline($eg_io) } );
 
   # read data and load xrefs
   my $xref_count = 0;
   my $syn_count  = 0;
   my %seen;    # record already processed xrefs
 
-  while ( my $data = $input_file->getline_hr( $eg_io ) ) {
+  while ( my $data = $input_file->getline_hr($eg_io) ) {
     # species_id corresponds to the species taxonomy id, see:
     # https://github.com/Ensembl/ensembl-xref/pull/31#issuecomment-445838474
     next unless $data->{'#tax_id'} eq "$species_id";
 
     my $acc = $data->{'GeneID'};
-    next if $seen{$acc};
+    next if exists $seen{$acc};
 
     my $symbol = $data->{'Symbol'};
     my $desc   = $data->{'description'};
 
     $xref_dba->add_xref(
-                     { acc        => $acc,
-                       label      => $symbol,
-                       desc       => $desc,
-                       source_id  => $source_id,
-                       species_id => $species_id,
-                       info_type  => "DEPENDENT" } );
+                         { acc        => $acc,
+                           label      => $symbol,
+                           desc       => $desc,
+                           source_id  => $source_id,
+                           species_id => $species_id,
+                           info_type  => "DEPENDENT" } );
 
     $xref_dba->add_xref(
-                     { acc        => $acc,
-                       label      => $symbol,
-                       desc       => $desc,
-                       source_id  => $wiki_source_id,
-                       species_id => $species_id,
-                       info_type  => "DEPENDENT" }
-    );
+                         { acc        => $acc,
+                           label      => $symbol,
+                           desc       => $desc,
+                           source_id  => $wiki_source_id,
+                           species_id => $species_id,
+                           info_type  => "DEPENDENT" } );
     $xref_count++;
 
     my (@syn) = split( /\|/, $data->{'Synonyms'} );
-    foreach my $synonym ( @syn ) {
+    foreach my $synonym (@syn) {
       if ( $synonym ne "-" ) {
-        $xref_dba->add_to_syn( $acc, $source_id, $synonym, $species_id );
+        $xref_dba->add_to_syn( $acc, $source_id, $synonym,
+                               $species_id );
         $syn_count++;
       }
     }
@@ -135,7 +137,7 @@ sub run {
   } ## end while ( my $data = $input_file...)
 
   $input_file->eof or
-    croak "Error parsing file $file: " . $input_file->error_diag();
+    confess "Error parsing file $file, should be EOF: " . $input_file->error_diag();
   $eg_io->close();
 
   print $xref_count.
