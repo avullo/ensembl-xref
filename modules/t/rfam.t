@@ -50,7 +50,7 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 my $core_test_db = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $core_dba = $core_test_db->get_DBAdaptor('core');
 
-my $test_file = File::Spec->catfile($Bin,'test-data','Rfam.seed');
+my $test_file = File::Spec->catfile($Bin,'test-data','rfam.seed');
 
 my $parser = Bio::EnsEMBL::Xref::Parser::RFAMParser->new(
   source_id => 1,
