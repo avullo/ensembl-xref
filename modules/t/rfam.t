@@ -94,7 +94,7 @@ done_testing();
 
 
 
-# returns a test transcript that will match a custom RFAM alignment
+# Generates features and DNAAlignFeatures that will match a custom RFAM alignment
 sub populate_test_supporting_features {
   my $dba = shift;
 
@@ -200,5 +200,5 @@ sub populate_test_supporting_features {
   my $sf_adaptor = $dba->get_SupportingFeatureAdaptor;
   $sf_adaptor->store($exon->dbID, [$alignment, $rfam_matching_alignment]);
 
-  return $transcript;
+  return;
 };
