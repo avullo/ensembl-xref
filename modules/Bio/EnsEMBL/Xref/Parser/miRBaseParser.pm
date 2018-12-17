@@ -115,7 +115,7 @@ sub run {
   load $loader_class;
 
   my $extractor = $extractor_class->new({
-    'file_names' => $files,
+    'file_names'         => $files,
     'mandatory_prefixes' => $mandatory_prefixes_of_interest,
     'species_name'       => $species_name,
     'xref_dba'           => $xref_dba,
