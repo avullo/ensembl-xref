@@ -94,7 +94,7 @@ sub _species_name_matches {
   my ( $record_species )
     = ( $de_line =~ m{
                        \A
-                       ( .+ )
+                       ( [^\n]+ )
                        \s+
                        \S+  # miRNA identifier
                        \s+
