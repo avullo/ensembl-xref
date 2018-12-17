@@ -112,6 +112,11 @@ sub _get_protein_id_xref_from_embldb_xref {
                      either being unable to unambiguously determine it
                      from sequence type or having failed to extract
                      the sequence type to begin with;
+                - general_source_id
+                   - Xref-source ID as provided by the xref
+                     pipeline. Note that certain parsers, most notably
+                     those distributing xrefs across several different
+                     sources, do not use this information.
                 - species_id
                    - Ensembl ID of the species under
                      consideration. Records pertaining to other
@@ -136,6 +141,7 @@ sub new {
   my $self = {
     'crossref_source_whitelist' => {},
     'default_direct_xref_type'  => $arg_ref->{'default_direct_xref_type'},
+    'general_source_id'         => $arg_ref->{'general_source_id'},
     'maps'                      => {},
     'species_id'                => $arg_ref->{'species_id'},
     'xref_dba'                  => $arg_ref->{'xref_dba'},
@@ -221,25 +227,24 @@ sub transform {
   my ( $self, $extracted_record ) = @_;
 
   $self->{'extracted_record'} = $extracted_record;
+  $self->{'cache'} = {};
 
   my ( $accession, @synonyms )
     = @{ $extracted_record->{'accession_numbers'} };
-  my $source_id = $self->_get_source_id();
-
-  my $sequence_data = $extracted_record->{'sequence'};
+  my $record_source_id = $self->_get_record_source_id();
 
   my $xref_graph_node
     = {
-       'ACCESSION'     => $accession,
+       'ACCESSION'     => $self->_get_accession(),
        'DESCRIPTION'   => $extracted_record->{'description'},
        'INFO_TYPE'     => 'SEQUENCE_MATCH',
-       'LABEL'         => $accession,
-       'SEQUENCE'      => $sequence_data->{'seq'},
-       'SEQUENCE_TYPE' => $sequence_data->{'type'},
-       'SOURCE_ID'     => $source_id,
+       'LABEL'         => $self->_prepare_label(),
+       'SEQUENCE'      => $self->_prepare_sequence(),
+       'SEQUENCE_TYPE' => $extracted_record->{'sequence'}->{'type'},
+       'SOURCE_ID'     => $record_source_id,
        'SPECIES_ID'    => $self->{'species_id'},
        'STATUS'        => 'experimental',
-       'SYNONYMS'      => \@synonyms,
+       'SYNONYMS'      => $self->_get_synonyms(),
      };
 
   # UniProt Gene Names links come from the 'gene_names' fields
@@ -360,9 +365,39 @@ sub _entry_is_from_ensembl {
 }
 
 
+# Get primary accession of the extracted record.
+sub _get_accession {
+  my ( $self ) = @_;
+
+  if ( ! exists $self->{'cache'}->{'accession'} ) {
+    my ( $accession, @synonyms )
+      = @{ $self->{'extracted_record'}->{'accession_numbers'} };
+    $self->{'cache'}->{'accession'} = $accession;
+    $self->{'cache'}->{'synonyms'} = \@synonyms;
+  }
+
+  return $self->{'cache'}->{'accession'};
+}
+
+
+# Get synonyms (secondary accessions) of the extracted record.
+sub _get_synonyms {
+  my ( $self ) = @_;
+
+  if ( ! exists $self->{'cache'}->{'synonyms'} ) {
+    my ( $accession, @synonyms )
+      = @{ $self->{'extracted_record'}->{'accession_numbers'} };
+    $self->{'cache'}->{'accession'} = $accession;
+    $self->{'cache'}->{'synonyms'} = \@synonyms;
+  }
+
+  return $self->{'cache'}->{'synonyms'};
+}
+
+
 # Translate quality of the extracted entry into the matching Ensembl
 # source_id, optionally with an override of priority.
-sub _get_source_id {
+sub _get_source_id_from_quality {
   my ( $self, $priority_override ) = @_;
 
   my $source_id_map = $self->{'maps'}->{'named_source_ids'};
@@ -547,6 +582,33 @@ sub _make_links_from_gene_names {
   }
 
   return \@genename_xrefs;
+}
+
+
+# UniProt-specific implementation of the source-ID getter: select the
+# right one depending on quality of the entry.
+sub _get_record_source_id {
+  my ( $self ) = @_;
+
+  return $self->_get_source_id_from_quality();
+}
+
+
+# UniProt-specific implementation of the label getter: should be the
+# same as the primary accession.
+sub _prepare_label {
+  my ( $self ) = @_;
+
+  return $self->_get_accession();
+}
+
+
+# UniProt-specific implementation of the sequence getter: no
+# transformations needed.
+sub _prepare_sequence {
+  my ( $self ) = @_;
+
+  return $self->{'extracted_record'}->{'sequence'}->{'seq'};
 }
 
 
