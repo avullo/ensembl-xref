@@ -784,6 +784,13 @@ sub _get_taxon_codes {
  TAXON_ENTRY:
   while ( my ( $db_qualifier, $taxon_code ) = splice( @ox_captures, 0, 2 ) ) {
 
+    # FIXME: as it is, i.e. with /g above, it is not possible for
+    # either $db_qualifier or $taxon_code to be undefined - if the
+    # match fails for any OX entry Perl will simply not push its
+    # captures to @ox_captures. We need something better... Or perhaps
+    # we could just drop support for multiple taxon codes and stop
+    # messing around with /g.
+
     if ( ( ! defined $db_qualifier )
          || ( ! exists $taxonomy_ids_from_taxdb_codes{$db_qualifier} ) ) {
       # Abort on malformed or new database qualifiers
