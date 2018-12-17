@@ -120,7 +120,7 @@ sub populate_test_supporting_features {
     -hend => 851,
     -hstrand => 1,
     -analysis => $rfam_analysis,
-    -align_type => 'irrelevant',
+    -align_type => 'cigar', # Doesn't really matter here, but needs to be something
     -cigar_string => 'STOGIE'
   );
 
@@ -140,7 +140,7 @@ sub populate_test_supporting_features {
     -hend => 851,
     -hstrand => 1,
     -analysis => $rfam_analysis,
-    -align_type => 'irrelevant',
+    -align_type => 'cigar',
     -cigar_string => 'CUBAN'
   );
 
