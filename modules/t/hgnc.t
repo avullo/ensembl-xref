@@ -67,39 +67,31 @@ $db->schema->resultset('Source')->populate([
     source_id            => 45,
     name                 => 'HGNC',
     priority_description => 'ccds',
-    ordered              => 30
   },{
     source_id            => 46,
     name                 => 'HGNC',
     priority_description => 'entrezgene_manual',
-    ordered              => 30
   },{
     source_id            => 47,
     name                 => 'HGNC',
     priority_description => 'refseq_manual',
-    ordered              => 30
   },{
     source_id            => 48,
     name                 => 'HGNC',
     priority_description => 'ensembl_manual',
-    ordered              => 30
   },{
     source_id            => 49,
     name                 => 'HGNC',
     priority_description => 'desc_only',
-    ordered              => 30
   },{
     source_id            => 54,
     name                 => 'LRG_HGNC_notransfer',
-    ordered              => 30
   },{
     source_id            => 23,
     name                 => 'EntrezGene',
-    ordered              => 10
   },{
     source_id            => 146,
     name                 => 'WikiGene',
-    ordered              => 100
   }
 ]);
 
