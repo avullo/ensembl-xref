@@ -76,7 +76,6 @@ my $source = $db->schema->resultset('Source')->create({
   download             => 'Y',
   priority             => 1,
   priority_description => 'Like a boss',
-  ordered              => 10
 });
 
 ok(defined $source->source_id, 'Was the source created in the DB?');
@@ -117,7 +116,6 @@ my $source2 = $db->schema->resultset('Source')->create({
   download             => 'Y',
   priority             => 1,
   priority_description => 'Like a boss',
-  ordered              => 10
 });
 
 is(
