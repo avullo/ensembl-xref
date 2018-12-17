@@ -63,6 +63,15 @@ use Carp;
 
 use parent 'Bio::EnsEMBL::Xref::Parser';
 
+=head2 run
+
+Description: Reimplements Bio::EnsEMBL::Xref::Parser::run . Requires source_id,
+             species_id, a list containing the Rfam seed file, and database
+             adaptors for core DB and xref DB
+Caller     : Xref pipeline ParseSource
+
+=cut
+
 sub run {
   my ( $self ) = @_;
   my $source_id    = $self->{source_id};
