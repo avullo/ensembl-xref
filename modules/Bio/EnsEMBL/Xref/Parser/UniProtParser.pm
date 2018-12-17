@@ -38,10 +38,11 @@ my %source_name_for_section = (
 );
 
 # List of crossreference sources for which we want to create direct or
-# dependent xrefs along with matching links. This includes both
-# sources for crossreferences directly appearing in UniProt-KB files
-# and special sources (at present, 'Uniprot_gn' and 'protein_id')
-# xrefs for which are assembled in the transformer.
+# dependent xrefs along with matching links.
+# Note that this includes sources such as 'Uniprot_gn' and 'protein_id'
+# which do not actually appear in UniProt-KB files but which are
+# synthesised from other data; omitting them from this list simply
+# means they will not be generated.
 my $crossreference_sources_of_interest = [
   'ChEMBL',
   'EMBL',
