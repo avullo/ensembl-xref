@@ -305,11 +305,10 @@ sub get_source_name_for_source_id {
     $source_name = $row[0];
   }
   else {
-    print "There is no entity with source-id  $source_id  in the source-table of the \n";
-    print "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n";
-    print "and in the parser\n";
-    print "Couldn't get source name for source ID $source_id\n";
-    $source_name = '-1';
+    confess "There is no entity with source-id  $source_id  in the source-table of the \n" .
+      "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n" .
+      "and in the parser\n" .
+      "Couldn't get source name for source ID $source_id\n";
   }
 
   return $source_name;
