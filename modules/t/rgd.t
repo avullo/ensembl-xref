@@ -30,9 +30,10 @@ use strict;
 use warnings;
 use Test::More;
 use FindBin '$Bin';
-use Bio::EnsEMBL::Xref::Parser::RGDParser;
 use Bio::EnsEMBL::Xref::Test::TestDB;
 use Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor;
+
+use_ok('Bio::EnsEMBL::Xref::Parser::RGDParser');
 
 my $db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 
