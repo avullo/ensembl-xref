@@ -100,17 +100,14 @@ my $optional_prefixes_of_interest
                 - for entries with cross-references to Ensembl
                   we create additional direct xrefs as well
                   as corresponding translation_direct_xref links;
-                - for entries with cross-references to ChEMBL, EMBL,
-                  MEROPS or PDB (this is in principle extensible but
-                  for the time being the list of whitelisted
-                  cross-reference sources is hardcoded into
-                  Transformer ), we create dependent xrefs as well as
-                  corresponding dependent_xref links;
-                - if requested, special dependent xrefs and
-                  corresponding mappings can be created for protein
-                  IDs (extracted from ChEMBL and EMBL
-                  cross-references) and UniProt gene names (from
-                  dedicated fields).
+                - for entries with cross-references to specified
+                  databases (see $crossreference_sources_of_interest
+                  above), we create dependent xrefs as well as
+                  corresponding dependent_xref links; - if requested,
+                  special dependent xrefs and corresponding mappings
+                  can be created for protein IDs (extracted from
+                  ChEMBL and EMBL cross-references) and UniProt gene
+                  names (from dedicated fields).
 
                UniProt-KB dat files are record-based, with individual
                fields identified by prefixes. For details, please see
