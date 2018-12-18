@@ -92,25 +92,17 @@ sub run {
 
     next if ( $record =~ /^File:/ ); # skip header
 
-    my ( $header, $sequence ) = $record =~ /^>?(.+?)\n([^>]*)/xs or
+    my ( $accession, $sequence ) = $record =~ /^>?(.+?)\n([^>]*)/xs or
       confess "Can't parse FASTA entry: $record";
 
-    my $accession = $header;
-
     # split header in different ways according to source name
-    if ( $source_name =~ m/cint_jgi_v1/x ) {
+    if ( $source_name =~ m/cint_aniseed_.*v1|cint_jgi_v1/x ) {
       # header format is  >ci0100146277
       # JGI 1.0
       # we want accession 146277 from above
-      ( $accession = $header ) =~ s/\w{6}//x;
+      $accession =~ s/\w{6}//x;
 
-    }
-    elsif ( $source_name =~ m/cint_aniseed_.*v1/x ) {
-      # header format is  >ci0100146277, we want this
-      # JGI 1.0
-      ( $accession = $header ) =~ s/\w{6}//x;
-    }
-    else {
+    } else {
       confess
         "The source-name specified ($source_name) is not matching\n" .
         "the different cases specified in JGI_Parser.pm - please\n" .
