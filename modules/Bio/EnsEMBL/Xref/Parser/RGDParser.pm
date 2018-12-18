@@ -51,7 +51,7 @@ sub run {
   my $xref_dba     = $self->{xref_dba};
 
   if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
-    confess "Need to pass source_id, species_id and files as pairs";
+    confess "Need to pass source_id, species_id and files list";
   }
   $verbose //= 0;
 
@@ -180,7 +180,7 @@ my %refseq_priorities = (
 
 =head2 sort_refseq_accessions
 
-Arg [1..n]  : Original list of accession
+Arg [1..n]  : Original list of accessions
 Description : Filter out any accessions which are not in the "normal" set of
               genomic features. The column in question contains EMBL accessions
               as well as other things, and we don't have the ability to make
