@@ -259,6 +259,22 @@ is(
    'get_xref_id'
 );
 
+# Test for a new coordinate_xref
+my $new_coordinate_xref = {
+  accession    => 'ucsc.1',
+  chromosome   => 5,
+  strand       => 1,
+  txStart      => 1,
+  txEnd        => 10,
+  exonStarts   => 1,
+  exonEnds     => 10,
+  species_id   => '9606',
+  source_id    => $source->source_id
+};
+my $coordinate_xref_id_new = $xref_dba->add_coordinate_xref( $new_coordinate_xref );
+ok( defined $coordinate_xref_id_new, "ucsc.1 (coordinate_xref_id: $coordinate_xref_id_new) was loaded to the xref table" );
+is( _check_db( $db, 'CoordinateXref', { coord_xref_id => $coordinate_xref_id_new } )->accession, 'ucsc.1', 'Coordinate_xref loaded' );
+
 
 # add_xref
 # Test for xref that already exists

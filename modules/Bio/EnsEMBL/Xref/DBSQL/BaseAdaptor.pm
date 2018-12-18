@@ -981,6 +981,54 @@ sub get_object_xref {
   return;
 } ## end sub get_object_xref
 
+=head2 add_coordinate_xref
+  Arg [1]    : coordinate_xref
+  Description: Create an entry in the coordinate_xref table
+               and return a new coordinate_xref_id.
+  Return type: integer
+  Caller     : internal
+
+=cut
+
+sub add_coordinate_xref {
+  my ( $self, $arg_ref ) = @_;
+
+  my $accession    = $arg_ref->{accession} || confess 'add_coordinate_xref needs an accession';
+  my $source_id    = $arg_ref->{source_id} || confess 'add_coordinate_xref needs a source_id';
+  my $species_id   = $arg_ref->{species_id} || confess 'add_coordinate_xref needs a species_id';
+  my $chromosome   = $arg_ref->{chromosome} || confess 'add_coordinate_xref needs a chromosome';
+  my $strand       = $arg_ref->{strand} || confess 'add_coordinate_xref needs a strand';
+  my $txStart      = $arg_ref->{txStart} || confess 'add_coordinate_xref needs a txSTart';
+  my $txEnd        = $arg_ref->{txEnd} || confess 'add_coordinate_xref needs a txEnd';
+  my $cdsStart     = $arg_ref->{cdsStart};
+  my $cdsEnd       = $arg_ref->{cdsEnd};
+  my $exonStarts   = $arg_ref->{exonStarts} || confess 'add_coordinate_xref needs exonStarts';
+  my $exonEnds     = $arg_ref->{exonEnds} || confess 'add_coordinate_xref needs exonEnds';
+
+  my $sql = (<<"AXS");
+  INSERT INTO coordinate_xref
+  ( source_id,  species_id,
+    accession,
+    chromosome, strand,
+    txStart,    txEnd,
+    cdsStart,   cdsEnd,
+    exonStarts, exonEnds )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+AXS
+
+  my $add_coordinate_xref_sth = 
+    $self->dbi->prepare_cached( $sql );
+
+  # Add the xref and confess if it fails
+  $add_coordinate_xref_sth->execute( $source_id, $species_id, $accession, $chromosome,
+                          $strand, $txStart, $txEnd, $cdsStart, $cdsEnd,
+                          $exonStarts, $exonEnds ) or
+    confess $self->dbi->errstr() . "\n$accession\t$source_id\t$species_id\n";
+
+  return $add_coordinate_xref_sth->{'mysql_insertid'};
+
+} ## end sub add_coordinate_xref
+
 
 =head2 add_xref
   Arg [1]    : xref
