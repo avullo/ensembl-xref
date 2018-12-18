@@ -119,30 +119,13 @@ sub run_coordinatemapping {
     confess "Cannot access output directory at $output_dir";
   }
 
-  my $sth_stat =
-    $self->xref->dbc->prepare( "INSERT INTO process_status (status, date) "
-      . "VALUES('coordinate_xrefs_started',now())" );
-  $sth_stat->execute();
-  $sth_stat->finish();
-
   my $xref_db = $self->xref();
   my $core_db = $self->core();
 
   my $species = $core_db->species();
 
-  $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species )
-    unless defined $species_id;
-
-  if ( !defined $species_id ) { return; }
-
   # We only do coordinate mapping for mouse and human for now.
-  if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
-
-    my $sth_stat = $self->xref->dbc->prepare(
-          "INSERT INTO process_status (status, date) "
-        . "VALUES ('coordinate_xref_finished',now())" );
-    $sth_stat->execute();
-    $sth_stat->finish();
+  unless ( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) {
     return;
   }
 
@@ -611,12 +594,6 @@ sub run_coordinatemapping {
     $self->upload_data( 'object_xref', $object_xref_filename, $external_db_id );
     $self->upload_data( 'xref', $xref_filename, $external_db_id );
   }
-
-  $sth_stat =
-    $self->xref->dbc->prepare( "INSERT INTO process_status (status, date) "
-      . "VALUES ('coordinate_xref_finished',now())" );
-  $sth_stat->execute();
-  $sth_stat->finish();
 
   $self->biomart_fix( "UCSC", "Translation", "Gene" );
   $self->biomart_fix( "UCSC", "Transcript",  "Gene" );
