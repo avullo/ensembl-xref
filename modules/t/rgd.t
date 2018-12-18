@@ -99,5 +99,18 @@ my $hit = $db->schema->resultset('DependentXref')->fetch_dependent_xref('NM1234'
 ok($hit,'Found a dependent Xref');
 is ($hit->dependent_xref->accession, '1500000', 'RGD xref is dependent on RefSeq accession');
 
+# Test utility functions
+my @sorted = $parser->sort_refseq_accessions(qw/XR100 XP400 NP03201 NM1 NM2/);
+
+is_deeply(\@sorted, [qw/NM1 NM2 NP03201 XP400 XR100/], 'RefSeq accessions are sorted into reasonable order of evidence and utility');
+
+@sorted = $parser->sort_refseq_accessions(qw/a b c d e/);
+is_deeply(\@sorted, [], 'Unsanctioned accessions are not included in the sorted output');
+
+my $count = $parser->process_synonyms($refseq_xref->xref_id, 'resistance;is;futile');
+
+cmp_ok($count, '==', 3, 'Three synonyms added from one string');
+ok( $db->schema->resultset('Synonym')->check_synonym($refseq_xref->xref_id, 'futile'), 'Third synonym was attached to RefSeq Xref');
+
 
 done_testing();
