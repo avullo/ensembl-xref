@@ -33,6 +33,8 @@ Bio::EnsEMBL::Xref::Parser::UCSC_human_parser
 =head1 DESCRIPTION
 
 A parser class to parse UCSC data for human.
+This module replicates the generic UCSC parser for human specific data
+This prevents cross-mapping between species by treating each species as a separate source
 
 -data_uri = ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/database/knownGene.txt.gz
 -file_format = TSV
