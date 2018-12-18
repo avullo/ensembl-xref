@@ -184,15 +184,12 @@ sub get_filehandle {
 
   # 'Transparent' lets IO::Uncompress modules read uncompressed input.
   # It should be on by default but set it just in case.
-  $io =
-    IO::Uncompress::AnyUncompress->new( $file_name, 'Transparent' => 1 )
-    || confess(
-         "Can not open file '$file_name' because: $AnyUncompressError");
+  $io = IO::Uncompress::AnyUncompress->new($file_name,
+                                           'Transparent' => 1 )
+    || confess("Can not open file '$file_name' because: $AnyUncompressError");
 
-  if ($verbose) {
-    print "Reading from '$file_name'...\n";
-  }
-
+  print "Reading from '$file_name'...\n" if $verbose;
+  
   return $io;
 } ## end sub get_filehandle
 

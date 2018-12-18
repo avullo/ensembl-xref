@@ -90,9 +90,9 @@ sub run {
 
   while ( my $record = $file_io->getline() ) {
 
-    next if ( $record =~ /^File:/ );    # skip header
+    next if ( $record =~ /^File:/ ); # skip header
 
-    my ( $header, $sequence ) = $record =~ /^>?(.+?)\n([^>]*)/s or
+    my ( $header, $sequence ) = $record =~ /^>?(.+?)\n([^>]*)/xs or
       confess "Can't parse FASTA entry: $record";
 
     my $accession = $header;
