@@ -152,7 +152,7 @@ sub new {
   $self->_load_maps();
 
   # Store this as a hash to speed up lookups
-  while ( my $source_name = shift @{ $crossref_source_names } ) {
+  foreach my $source_name ( @{ $crossref_source_names } ) {
     $self->{'crossref_source_whitelist'}->{$source_name} = 1;
   }
 
