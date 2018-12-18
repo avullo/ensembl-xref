@@ -596,6 +596,12 @@ sub _get_gene_names {
                                     }gmsx );
 
     while ( my ( $key, $value ) = splice( @entry_captures, 0, 2 ) ) {
+      # Strip possible evidence codes - again, that they can appear
+      # here isn't mentioned in the User Manual but does appear in the
+      # data. Leave the whitespace alone, splitting should take care
+      # of it.
+      $value =~ s{ $QR_OX_DE_EVIDENCE_CODE_LIST }{}gmsx;
+
       my @split_value = split( $QR_SPLIT_COMMA_WITH_WHITESPACE, $value );
 
       $parsed_entry->{$key}
