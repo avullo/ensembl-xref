@@ -218,25 +218,6 @@ my $xref_sources = $xref_dba->get_xref_sources();
 ok( defined $xref_sources, 'There are sources in the db');
 
 
-# species_id2taxonomy - There are tests ready for this in another branch
-# Add an example source to the db
-my $species = $db->schema->resultset('Species')->create({
-  species_id  => 1,
-  taxonomy_id => 9606,
-  name        => 'Homo sapiens',
-  aliases     => 'Human'
-});
-
-my %species_id2t = $xref_dba->species_id2taxonomy();
-is( $species_id2t{1}[0], 9606, 'species_id2taxonomy' );
-
-
-# species_id2name - There are tests ready for this in another branch
-my %species_id2n = $xref_dba->species_id2name();
-is( $species_id2n{1}[0], 'Homo sapiens', 'species_id2name' );
-is( $species_id2n{1}[1], 'Human', 'species_id2name' );
-
-
 # get_xref_id
 throws_ok
   { $xref_dba->get_xref_id() }
@@ -265,6 +246,22 @@ is(
    2,
    'get_xref_id'
 );
+
+# Test for a new coordinate_xref
+my $new_coordinate_xref = {
+  accession    => 'ucsc.1',
+  chromosome   => 5,
+  strand       => 1,
+  txStart      => 1,
+  txEnd        => 10,
+  exonStarts   => 1,
+  exonEnds     => 10,
+  species_id   => '9606',
+  source_id    => $source->source_id
+};
+my $coordinate_xref_id_new = $xref_dba->add_coordinate_xref( $new_coordinate_xref );
+ok( defined $coordinate_xref_id_new, "ucsc.1 (coordinate_xref_id: $coordinate_xref_id_new) was loaded to the xref table" );
+is( _check_db( $db, 'CoordinateXref', { coord_xref_id => $coordinate_xref_id_new } )->accession, 'ucsc.1', 'Coordinate_xref loaded' );
 
 
 # add_xref

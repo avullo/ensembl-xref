@@ -801,74 +801,6 @@ sub get_xref_sources {
   return %sourcename_to_sourceid;
 }
 
-=head2 species_id2taxonomy
-  Description: Create and return a hash that that goes from species_id to taxonomy_id
-  Return type: Hashref
-  Caller     : internal
-
-=cut
-
-sub species_id2taxonomy {
-
-  my $self = shift;
-
-  my %species_id2taxonomy;
-
-  my $sth = $self->dbi->prepare_cached(
-                         'SELECT species_id, taxonomy_id FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id  = $row[0];
-    my $taxonomy_id = $row[1];
-    if ( defined $species_id2taxonomy{$species_id} ) {
-      push @{ $species_id2taxonomy{$species_id} }, $taxonomy_id;
-    }
-    else {
-      $species_id2taxonomy{$species_id} = [$taxonomy_id];
-    }
-  }
-
-  return %species_id2taxonomy;
-}
-
-=head2 species_id2name
-  Description: Create and return a hash that that goes from species_id to species name
-  Return type:
-  Caller     : internal
-
-=cut
-
-sub species_id2name {
-  my $self = shift;
-
-  my %species_id2name;
-
-  my $sth =
-    $self->dbi->prepare_cached('SELECT species_id, name FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    my $name       = $row[1];
-    $species_id2name{$species_id} = [$name];
-  }
-
-  ##############################################
-  # Also populate the hash with all the aliases.
-  ##############################################
-  $sth = $self->dbi->prepare_cached(
-                             'SELECT species_id, aliases FROM species');
-  $sth->execute() or croak( $self->dbi->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    my $species_id = $row[0];
-    foreach my $name ( split /,\s*/xms, $row[1] ) {
-      $species_id2name{$species_id} ||= [];
-      push @{ $species_id2name{$species_id} }, $name;
-    }
-  }
-
-  return %species_id2name;
-} ## end sub species_id2name
-
 =head2 get_xref_id
   Arg [1]    : xref entry
   Description: Get the xref internal id
@@ -918,29 +850,6 @@ sub primary_xref_id_exists {
   $sth->finish();
 
   return $exists;
-}
-
-=head2 get_taxonomy_from_species_id
-  Arg [1]    : species ID
-  Description: Get the taxon id for a particular species id
-  Return type: Hashref
-  Caller     : internal
-
-=cut
-
-sub get_taxonomy_from_species_id {
-  my ( $self, $species_id ) = @_;
-  my %hash;
-
-  my $sth = $self->dbi->prepare_cached(
-      "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute( $species_id ) or croak( $self->dbi->errstr() );
-
-  while ( my @row = $sth->fetchrow_array() ) {
-    $hash{ $row[0] } = 1;
-  }
-
-  return \%hash;
 }
 
 =head2 get_direct_xref
@@ -1067,7 +976,56 @@ sub get_object_xref {
   }
 
   return;
-}
+} ## end sub get_object_xref
+
+=head2 add_coordinate_xref
+  Arg [1]    : coordinate_xref
+  Description: Create an entry in the coordinate_xref table
+               and return a new coordinate_xref_id.
+  Return type: integer
+  Caller     : internal
+
+=cut
+
+sub add_coordinate_xref {
+  my ( $self, $arg_ref ) = @_;
+
+  my $accession    = $arg_ref->{accession} || confess 'add_coordinate_xref needs an accession';
+  my $source_id    = $arg_ref->{source_id} || confess 'add_coordinate_xref needs a source_id';
+  my $species_id   = $arg_ref->{species_id} || confess 'add_coordinate_xref needs a species_id';
+  my $chromosome   = $arg_ref->{chromosome} || confess 'add_coordinate_xref needs a chromosome';
+  my $strand       = $arg_ref->{strand} || confess 'add_coordinate_xref needs a strand';
+  my $txStart      = $arg_ref->{txStart} || confess 'add_coordinate_xref needs a txSTart';
+  my $txEnd        = $arg_ref->{txEnd} || confess 'add_coordinate_xref needs a txEnd';
+  my $cdsStart     = $arg_ref->{cdsStart};
+  my $cdsEnd       = $arg_ref->{cdsEnd};
+  my $exonStarts   = $arg_ref->{exonStarts} || confess 'add_coordinate_xref needs exonStarts';
+  my $exonEnds     = $arg_ref->{exonEnds} || confess 'add_coordinate_xref needs exonEnds';
+
+  my $sql = (<<"AXS");
+  INSERT INTO coordinate_xref
+  ( source_id,  species_id,
+    accession,
+    chromosome, strand,
+    txStart,    txEnd,
+    cdsStart,   cdsEnd,
+    exonStarts, exonEnds )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+AXS
+
+  my $add_coordinate_xref_sth = 
+    $self->dbi->prepare_cached( $sql );
+
+  # Add the xref and confess if it fails
+  $add_coordinate_xref_sth->execute( $source_id, $species_id, $accession, $chromosome,
+                          $strand, $txStart, $txEnd, $cdsStart, $cdsEnd,
+                          $exonStarts, $exonEnds ) or
+    confess $self->dbi->errstr() . "\n$accession\t$source_id\t$species_id\n";
+
+  return $add_coordinate_xref_sth->{'mysql_insertid'};
+
+} ## end sub add_coordinate_xref
+
 
 =head2 add_xref
   Arg [1]    : xref
@@ -2495,6 +2453,28 @@ sub _get_alt_allele_hashes {
 
   return \%alt_to_ref, \%ref_to_alts;
 } ## end sub _get_alt_allele_hashes
+
+
+=head2 _update_xref_description
+  Description: Refseq sources to consider. Prefixes not in this list will be ignored.
+               To be used by RefSeq parsers
+  Return type: hashref
+  Caller     : internal
+
+=cut
+
+sub get_refseq_sources {
+  return {
+      NM => 'RefSeq_mRNA',
+      NR => 'RefSeq_ncRNA',
+      XM => 'RefSeq_mRNA_predicted',
+      XR => 'RefSeq_ncRNA_predicted',
+      NP => 'RefSeq_peptide',
+      XP => 'RefSeq_peptide_predicted',
+  };
+}
+
+
 
 1;
 
