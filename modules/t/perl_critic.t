@@ -35,7 +35,7 @@ use Test::Warnings;
 
 use Test::Perl::Critic (
     -severity => 3,
-    -profile => '.perlcriticrc');
+    -profile => '.perlcriticrc' );
 
 #chdir into the file's target & request cwd() which should be fully resolved now.
 ##then go back
