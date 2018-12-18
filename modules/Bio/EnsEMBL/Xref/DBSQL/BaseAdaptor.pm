@@ -590,7 +590,7 @@ sub upload_xref_object_graphs {
       "update_label" => 1, "update_desc" => 1 } );
 
     # If there are any direct_xrefs, add these to the relevant tables
-    $self->add_multiple_direct_xrefs( @{ $xref->{DIRECT_XREFS} } );
+    $self->add_multiple_direct_xrefs( $xref->{DIRECT_XREFS} );
 
     # create entry in primary_xref table with sequence; if this is a "cumulative"
     # entry it may already exist, and require an UPDATE rather than an INSERT
@@ -844,7 +844,7 @@ sub get_taxonomy_from_species_id {
 
   my $sth = $self->dbi->prepare_cached(
       "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute() or croak( $self->dbi->errstr() );
+  $sth->execute( $species_id ) or croak( $self->dbi->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $hash{ $row[0] } = 1;
   }
@@ -1353,14 +1353,14 @@ sub add_multiple_dependent_xrefs {
     my %dep = %{$depref};
 
     # Insert the xref
-    my $dep_xref_id = $self->add_xref( (
+    my $dep_xref_id = $self->add_xref( {
       "acc"        => $dep{ACCESSION},
       "version"    => $dep{VERSION}     // 1,
       "label"      => $dep{LABEL}       // $dep{ACCESSION},
       "desc"       => $dep{DESCRIPTION},
       "source_id"  => $dep{SOURCE_ID},
       "species_id" => $dep{SPECIES_ID},
-      "info_type"  => 'DEPENDENT' ) );
+      "info_type"  => 'DEPENDENT' } );
 
     # Add the linkage_annotation and source id it came from
     $self->add_dependent_xref_maponly(
