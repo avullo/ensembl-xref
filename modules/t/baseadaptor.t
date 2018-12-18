@@ -202,6 +202,13 @@ ok( defined $xref_id, "NM01235 (xref_id: $xref_id) was added to the xref table" 
 
 
 # add_meta_pair
+throws_ok {
+  $xref_dba->add_meta_pair()
+} qr/Need to specify/, 'Throws with required arguments not provided';
+throws_ok {
+  $xref_dba->add_meta_pair( 'fake_key' )
+} qr/Need to specify/, 'Throws with required arguments not provided';
+
 ok( !defined $xref_dba->add_meta_pair( 'fake_key', 'fake_value' ), 'add_meta_pair' );
 is( _check_db( $db, 'Meta', { meta_key => 'fake_key' } )->meta_value, 'fake_value', 'Metadata pair added' );
 
@@ -550,6 +557,55 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 
 # _update_xref_description - This should have already been covered by previous tests
 # Specific tests can be added later
+
+note 'Test methods to support base mapper';
+
+throws_ok {
+  $xref_dba->get_id_from_species_name()
+} qr/Undefined/, 'Throws with no name argument';
+
+throws_ok {
+  $xref_dba->get_id_from_species_name( 'Vampire' )
+} qr/No ID/, 'Throws with unavailable species';
+
+is( $xref_dba->get_id_from_species_name('Homo sapiens'), 1, 'Species id from name' );
+my $names = $xref_dba->get_species_names();
+is( scalar @{ $names }, 1, 'Number of species names' );
+is( $names->[0], 'Homo sapiens', 'Species name' );
+
+throws_ok {
+  $xref_dba->add_alt_allele()
+} qr/Need to specify/, 'Throws with missing arguments';
+  
+my $gene_stable_id = $db->schema->resultset('GeneStableId')->create({
+  internal_id          => 1,
+  stable_id            => 'FakeStableId0001'
+});
+
+$xref_dba->add_alt_allele( 10, 1, 1 );
+is( _check_db( $db, 'AltAllele', { alt_allele_id => 10 } )->gene_id, 1, 'Add alt allele' );
+
+$xref_dba->update_process_status( 'alt_alleles_added' );
+is( _check_db( $db, 'ProcessStatus', { status => 'alt_alleles_added' } )->id, 1, 'Update process status' );
+
+is( $xref_dba->xref_latest_status(), 'alt_alleles_added', 'Latest status' );
+
+$xref_dba->delete_alt_alleles();
+ok( !_check_db( $db, 'AltAllele' ), 'No alt alleles after deletion');
+
+throws_ok {
+  $xref_dba->update_mapping_jobs_status()
+} qr/not given/, 'Throws with missing arguments';
+
+my $mapping_job = $db->schema->resultset('MappingJob')->create({
+  root_dir          => '/fake_dir/',
+  status            => 'SUBMITTED',
+  job_id            => 1
+});
+is( _check_db( $db, 'MappingJob', { job_id => 1 } )->status, 'SUBMITTED', 'Added mapping job' );
+
+$xref_dba->update_mapping_jobs_status( 'SUCCESS' );
+is( _check_db( $db, 'MappingJob', { job_id => 1 } )->status, 'SUCCESS', 'Updated mapping job status' );
 
 # get/set_species
 ok( !defined($xref_dba->species), "Species not defined yet");
