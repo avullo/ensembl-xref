@@ -60,13 +60,11 @@ my $species = $db->schema->resultset('Species')->create({
 my $reactome_gene_source = $db->schema->resultset('Source')->create({
   source_id => 86,
   name      => 'reactome_gene',
-  ordered   => 1
 });
 
 my $reactome_transcript_source = $db->schema->resultset('Source')->create({
   source_id => 87,
   name      => 'reactome_transcript',
-  ordered   => 1
 });
 
 use_ok 'Bio::EnsEMBL::Xref::Parser::ReactomeDirectParser';

@@ -61,13 +61,11 @@ my $reactome_uniprot_source = $db->schema->resultset('Source')->create({
   source_id            => 86,
   name                 => 'reactome_translation',
   priority_description => 'uniprot',
-  ordered              => 1
 });
 
 my $uniprot_source = $db->schema->resultset('Source')->create({
   source_id            => 1,
   name                 => 'UniProt/SWISSPROT',
-  ordered              => 1
 });
 
 my $uniprot_xref = $db->schema->resultset('Xref')->create({
