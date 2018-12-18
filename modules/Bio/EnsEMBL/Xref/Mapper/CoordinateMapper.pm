@@ -530,7 +530,7 @@ sub run_coordinatemapping {
   # Make all dumps.  Order is important.
   $self->dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
   $self->dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
-  $self->dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped, $core_dbh );
+  $self->dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped );
   $self->dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id, $analysis_id, \%unmapped );
 
   if ($do_upload) {
@@ -636,7 +636,6 @@ sub dump_object_xref {
   Arg [1]    : filename to write
   Arg [2]    : unmapped id from coordinate xref table
   Arg [3]    : container of unmapped ids
-  Arg [4]    : core dbh
   Description: Dump unmapped reason to a txt file (eg: "Did not meet threshold")
   Return type: None
   Caller     : internal
@@ -644,7 +643,7 @@ sub dump_object_xref {
 =cut
 
 sub dump_unmapped_reason {
-  my ( $self, $filename, $unmapped_reason_id, $unmapped, $core_dbh ) = @_;
+  my ( $self, $filename, $unmapped_reason_id, $unmapped ) = @_;
 
   # Create a list of the unique reasons.
   my %reasons;
@@ -662,6 +661,8 @@ sub dump_unmapped_reason {
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
   $self->log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
+
+  my $core_dbh = $self->core->dbc->db_handle;
 
   my $sth =
     $core_dbh->prepare( 'SELECT unmapped_reason_id '
@@ -843,6 +844,7 @@ sub log_progress {
 
   return if ( ! $self->verbose );
   printf( STDERR "COORD==> %s", sprintf( $fmt, @params ) );
+  return;
 }
 
 1;
