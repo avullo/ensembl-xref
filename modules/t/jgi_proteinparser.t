@@ -31,7 +31,6 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Data::Dumper;
 
 use FindBin '$Bin';
 
@@ -51,7 +50,7 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 
 use_ok 'Bio::EnsEMBL::Xref::Parser::JGI_ProteinParser';
 
-# add EntrezGene/WikiGene source to the db
+# add ciona species related sources to the db
 $db->schema->populate(
   'Source',
   [

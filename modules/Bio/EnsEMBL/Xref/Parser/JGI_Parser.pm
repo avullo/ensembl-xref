@@ -29,7 +29,7 @@ just implement the method to set sequence type
 
 =head1 SYNOPSIS
 
-  my $parser = Bio::EnsEMBL::Xref::Parser::EntrezGeneParser->new(
+  my $parser = Bio::EnsEMBL::Xref::Parser::JGI_Parser->new(
     source_id  => 70,
     species_id => 7719,
     files      => [ "ciona.prot.fasta.gz" ],
