@@ -544,7 +544,7 @@ sub run_coordinatemapping {
 
   $self->biomart_fix( "UCSC", "Translation", "Gene" );
   $self->biomart_fix( "UCSC", "Transcript",  "Gene" );
-
+  return;
 } ## end sub run_coordinatemapping
 
 =head2 dump_xref
@@ -591,7 +591,7 @@ sub dump_xref {
   $fh->close();
 
   $self->log_progress("Dumping for 'xref' done\n");
-
+  return;
 } ## end sub dump_xref
 
 =head2 dump_object_xref
@@ -629,7 +629,7 @@ sub dump_object_xref {
   $fh->close();
 
   $self->log_progress("Dumping for 'object_xref' done\n");
-
+  return;
 } ## end sub dump_objexref
 
 =head2 dump_unmapped_reason
@@ -702,7 +702,7 @@ sub dump_unmapped_reason {
     $xref->{'reason'}      = $reasons{ $xref->{'reason_full'} };
     $xref->{'reason_full'} = undef;
   }
-
+  return;
 } ## end sub dump_unmapped_reason
 
 =head2 dump_unmapped_object
@@ -752,7 +752,7 @@ sub dump_unmapped_object {
   $fh->close();
 
   $self->log_progress("Dumping for 'unmapped_object' done\n");
-
+  return;
 } ## end sub dump_unmapped_object
 
 =head2 upload_data
@@ -826,7 +826,7 @@ sub upload_data {
   $dbh->do("OPTIMIZE TABLE $table_name") or confess( $dbh->errstr() );
 
   $self->log_progress( "Uploading for '%s' done (%d rows)\n", $table_name, $rows );
-
+  return;
 } ## end sub upload_data
 
 =head2 log_progress
