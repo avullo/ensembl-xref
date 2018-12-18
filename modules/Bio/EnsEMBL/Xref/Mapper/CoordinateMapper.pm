@@ -466,23 +466,21 @@ sub run_coordinatemapping {
             $best_score ||= $score;
 
             if ( sprintf( "%.3f", $score ) eq sprintf( "%.3f", $best_score ) ) {
-              if ( exists( $unmapped{$coord_xref_id} ) ) {
+              if ( exists $unmapped{$coord_xref_id} ) {
                 $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
-                delete( $unmapped{$coord_xref_id} );
+                delete $unmapped{$coord_xref_id};
                 $mapped{$coord_xref_id}{'reason'}      = undef;
                 $mapped{$coord_xref_id}{'reason_full'} = undef;
               }
 
-              push(
-                @{ $mapped{$coord_xref_id}{'mapped_to'} },
+              push @{ $mapped{$coord_xref_id}{'mapped_to'} },
                 {
                   'ensembl_id'          => $transcript->dbID(),
                   'ensembl_object_type' => 'Transcript'
-                }
-              );
+                };
 
               # This is now a candidate Xref for the gene.
-              if ( !defined( $gene_result{$coord_xref_id} )
+              if ( !defined $gene_result{$coord_xref_id} 
                 || $gene_result{$coord_xref_id} < $score )
               {
                 $gene_result{$coord_xref_id} = $score;
@@ -492,9 +490,9 @@ sub run_coordinatemapping {
             elsif ( exists( $unmapped{$coord_xref_id} ) ) {
               $unmapped{$coord_xref_id}{'reason'} = 'Was not best match';
               $unmapped{$coord_xref_id}{'reason_full'} =
-                sprintf( "Did not top best transcript match score (%.2f)",
-                $best_score );
-              if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+                sprintf( 'Did not top best transcript match score (%.2f)',
+                  $best_score );
+              if ( !defined $unmapped{$coord_xref_id}{'score'}
                 || $score > $unmapped{$coord_xref_id}{'score'} )
               {
                 $unmapped{$coord_xref_id}{'score'} = $score;
@@ -504,19 +502,19 @@ sub run_coordinatemapping {
             }
 
           }
-          elsif ( exists( $unmapped{$coord_xref_id} )
+          elsif ( exists $unmapped{$coord_xref_id}
             && $unmapped{$coord_xref_id}{'reason'} ne 'Was not best match' )
           {
             $unmapped{$coord_xref_id}{'reason'}      = 'Did not meet threshold';
             $unmapped{$coord_xref_id}{'reason_full'} = sprintf(
-              "Match score for transcript " . "lower than threshold (%.2f)",
+              'Match score for transcript lower than threshold (%.2f)',
               $transcript_score_threshold
             );
-            if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+            if ( !defined $unmapped{$coord_xref_id}{'score'}
               || $score > $unmapped{$coord_xref_id}{'score'} )
             {
               $unmapped{$coord_xref_id}{'score'} = $score;
-              $unmapped{$coord_xref_id}{'ensembl_id'} =
+              $unmapped{$coord_xref_id}{'ensembl_id'} = 
                 $transcript->dbID();
             }
           }
@@ -566,7 +564,7 @@ sub dump_xref {
 
   $self->log_progress( "Dumping for 'xref' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$unmapped} ), values( %{$mapped} ) ) {
+  foreach my $xref ( values %{$unmapped}, values %{$mapped} ) {
 
     # Assign 'xref_id' to this Xref.
     $xref->{'xref_id'} = ++$xref_id;
@@ -648,8 +646,8 @@ sub dump_unmapped_reason {
   # Create a list of the unique reasons.
   my %reasons;
 
-  foreach my $xref ( values( %{$unmapped} ) ) {
-    if ( !exists( $reasons{ $xref->{'reason_full'} } ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
+    if ( !exists $reasons{ $xref->{'reason_full'} } ) {
       $reasons{ $xref->{'reason_full'} } = {
         'summary' => $xref->{'reason'},
         'full'    => $xref->{'reason_full'}
@@ -670,7 +668,7 @@ sub dump_unmapped_reason {
       . 'WHERE full_description = ?' );
 
   foreach
-    my $reason ( sort( { $a->{'full'} cmp $b->{'full'} } values(%reasons) ) )
+    my $reason ( sort { $a->{'full'} cmp $b->{'full'} } values(%reasons) )
   {
     # Figure out 'unmapped_reason_id' from the core database.
     $sth->bind_param( 1, $reason->{'full'}, SQL_VARCHAR );
@@ -681,7 +679,7 @@ sub dump_unmapped_reason {
     $sth->bind_col( 1, \$id );
     $sth->fetch();
 
-    if ( defined($id) ) {
+    if ( defined $id ) {
       $reason->{'unmapped_reason_id'} = $id;
     }
     else {
@@ -699,7 +697,7 @@ sub dump_unmapped_reason {
   $self->log_progress("Dumping for 'unmapped_reason' done\n");
 
   # Assign reasons to the unmapped Xrefs from %reasons.
-  foreach my $xref ( values( %{$unmapped} ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
     $xref->{'reason'}      = $reasons{ $xref->{'reason_full'} };
     $xref->{'reason_full'} = undef;
   }
@@ -725,7 +723,7 @@ sub dump_unmapped_object {
 
   $self->log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$unmapped} ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
 
     # Assign 'unmapped_object_id' to this Xref.
     $xref->{'unmapped_object_id'} = ++$unmapped_object_id;
