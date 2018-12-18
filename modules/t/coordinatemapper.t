@@ -92,7 +92,7 @@ my $coord_mapper =
 
 # pass species_id and base_path as arguments
 my $species_id = "9606";
-my $base_path = tempdir( CLEANUP => 0 );
+my $base_path = tempdir( CLEANUP => 1 );
 $coord_mapper->run_coordinatemapping( 1, $species_id, $base_path );
 
 # check if base_path dir exists
