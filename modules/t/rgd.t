@@ -81,6 +81,8 @@ my $parser = Bio::EnsEMBL::Xref::Parser::RGDParser->new(
   files => [ "$Bin/test-data/rgd.txt" ]
 );
 
+isa_ok($parser, 'Bio::EnsEMBL::Xref::Parser::RGDParser');
+
 # Test without any prior RefSeq entries
 $parser->run();
 
