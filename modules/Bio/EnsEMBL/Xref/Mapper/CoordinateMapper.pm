@@ -62,8 +62,6 @@ my $ens_weight    = 3;
 my $transcript_score_threshold = 0.75; 
 # 75% identity is required at the minimum for transcript coordinates to match
 
-my $verbose = 0;
-
 =head2 new
   Arg [1]    : class
   Arg [2]    : Xref DB Adaptor
@@ -82,7 +80,6 @@ sub new {
 
   $self->core($core_dba);
   $self->xref($xref_dba);
-  $verbose = $self->verbose() // 0;
 
   return $self;
 }
@@ -151,10 +148,10 @@ sub run_coordinatemapping {
   my $unmapped_reason_id = $core_dbh->selectall_arrayref(
     'SELECT MAX(unmapped_reason_id) FROM unmapped_reason')->[0][0];
 
-  log_progress( "Last used xref_id            is %d\n", $xref_id );
-  log_progress( "Last used object_xref_id     is %d\n", $object_xref_id );
-  log_progress( "Last used unmapped_object_id is %d\n", $unmapped_object_id );
-  log_progress( "Last used unmapped_reason_id is %d\n", $unmapped_reason_id );
+  $self->log_progress( "Last used xref_id            is %d\n", $xref_id );
+  $self->log_progress( "Last used object_xref_id     is %d\n", $object_xref_id );
+  $self->log_progress( "Last used unmapped_object_id is %d\n", $unmapped_object_id );
+  $self->log_progress( "Last used unmapped_reason_id is %d\n", $unmapped_reason_id );
 
   ######################################################################
   # Get an 'analysis_id', or discover that we need to add our analysis #
@@ -188,7 +185,7 @@ sub run_coordinatemapping {
   }
 
   if ( defined($analysis_id) ) {
-    log_progress( "Analysis ID                  is %d\n", $analysis_id );
+    $self->log_progress( "Analysis ID                  is %d\n", $analysis_id );
   }
 
   ######################################################################
@@ -222,10 +219,7 @@ sub run_coordinatemapping {
   }
   $xref_sth->finish();
 
-  if ( !defined($external_db_id) ) {
-    die "External_db_id is undefined  species_id = $species_id\n";
-  }
-
+  
   ######################################################################
   # Do coordinate matching.                                            #
   ######################################################################
@@ -250,11 +244,11 @@ sub run_coordinatemapping {
   foreach my $chromosome (@chromosomes) {
     my $chr_name = $chromosome->seq_region_name();
 
-    log_progress( "Processing chromsome '%s'\n", $chr_name );
+    $self->log_progress( "Processing chromsome '%s'\n", $chr_name );
 
     my @genes = @{ $chromosome->get_all_Genes( undef, undef, 1 ) };
 
-    log_progress( "There are %4d genes on chromosome '%s'\n",
+    $self->log_progress( "There are %4d genes on chromosome '%s'\n",
       scalar(@genes), $chr_name );
 
     while ( my $gene = shift(@genes) ) {
@@ -534,10 +528,10 @@ sub run_coordinatemapping {
   } ## end foreach my $chromosome (@chromosomes)
 
   # Make all dumps.  Order is important.
-  dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
-  dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
-  dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped, $core_dbh );
-  dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id, $analysis_id, \%unmapped );
+  $self->dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
+  $self->dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
+  $self->dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped, $core_dbh );
+  $self->dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id, $analysis_id, \%unmapped );
 
   if ($do_upload) {
 
@@ -565,12 +559,12 @@ sub run_coordinatemapping {
 =cut
 
 sub dump_xref {
-  my ( $filename, $xref_id, $mapped, $unmapped ) = @_;
+  my ( $self, $filename, $xref_id, $mapped, $unmapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'xref' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'xref' to '%s'\n", $filename );
 
   foreach my $xref ( values( %{$unmapped} ), values( %{$mapped} ) ) {
 
@@ -596,7 +590,7 @@ sub dump_xref {
   }
   $fh->close();
 
-  log_progress("Dumping for 'xref' done\n");
+  $self->log_progress("Dumping for 'xref' done\n");
 
 } ## end sub dump_xref
 
@@ -611,14 +605,14 @@ sub dump_xref {
 =cut
 
 sub dump_object_xref {
-  my ( $filename, $object_xref_id, $mapped ) = @_;
+  my ( $self, $filename, $object_xref_id, $mapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'object_xref' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'object_xref' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$mapped} ) ) {
+  foreach my $xref ( values %{$mapped} ) {
     foreach my $object_xref ( @{ $xref->{'mapped_to'} } ) {
 
       # Assign 'object_xref_id' to this Object Xref.
@@ -634,7 +628,7 @@ sub dump_object_xref {
   }
   $fh->close();
 
-  log_progress("Dumping for 'object_xref' done\n");
+  $self->log_progress("Dumping for 'object_xref' done\n");
 
 } ## end sub dump_objexref
 
@@ -650,7 +644,7 @@ sub dump_object_xref {
 =cut
 
 sub dump_unmapped_reason {
-  my ( $filename, $unmapped_reason_id, $unmapped, $core_dbh ) = @_;
+  my ( $self, $filename, $unmapped_reason_id, $unmapped, $core_dbh ) = @_;
 
   # Create a list of the unique reasons.
   my %reasons;
@@ -667,7 +661,7 @@ sub dump_unmapped_reason {
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
 
   my $sth =
     $core_dbh->prepare( 'SELECT unmapped_reason_id '
@@ -701,7 +695,7 @@ sub dump_unmapped_reason {
   }
   $fh->close();
 
-  log_progress("Dumping for 'unmapped_reason' done\n");
+  $self->log_progress("Dumping for 'unmapped_reason' done\n");
 
   # Assign reasons to the unmapped Xrefs from %reasons.
   foreach my $xref ( values( %{$unmapped} ) ) {
@@ -723,12 +717,12 @@ sub dump_unmapped_reason {
 =cut
 
 sub dump_unmapped_object {
-  my ( $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
+  my ( $self, $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
 
   foreach my $xref ( values( %{$unmapped} ) ) {
 
@@ -757,7 +751,7 @@ sub dump_unmapped_object {
   }
   $fh->close();
 
-  log_progress("Dumping for 'unmapped_object' done\n");
+  $self->log_progress("Dumping for 'unmapped_object' done\n");
 
 } ## end sub dump_unmapped_object
 
@@ -815,23 +809,23 @@ sub upload_data {
   my $load_sql =
     sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
 
-  log_progress( "Removing old data (external_db_id = '%d') from table '%s'\n",
+  $self->log_progress( "Removing old data (external_db_id = '%d') from table '%s'\n",
     $external_db_id, $table_name );
 
   my $dbh = $self->core->dbc->db_handle();
   my $rows = $dbh->do( $cleanup_sql, undef, $external_db_id )
     or confess( $dbh->strerr() );
 
-  log_progress( "Removed %d rows\n", $rows );
+  $self->log_progress( "Removed %d rows\n", $rows );
 
-  log_progress( "Uploading for '%s' from '%s'\n", $table_name, $filename );
+  $self->log_progress( "Uploading for '%s' from '%s'\n", $table_name, $filename );
 
   $rows = $dbh->do( $load_sql, undef, $filename )
     or confess( $dbh->errstr() );
 
   $dbh->do("OPTIMIZE TABLE $table_name") or confess( $dbh->errstr() );
 
-  log_progress( "Uploading for '%s' done (%d rows)\n", $table_name, $rows );
+  $self->log_progress( "Uploading for '%s' done (%d rows)\n", $table_name, $rows );
 
 } ## end sub upload_data
 
@@ -845,9 +839,9 @@ sub upload_data {
 =cut
 
 sub log_progress {
-  my ( $fmt, @params ) = @_;
+  my ( $self, $fmt, @params ) = @_;
 
-  return if ( !$verbose );
+  return if ( ! $self->verbose );
   printf( STDERR "COORD==> %s", sprintf( $fmt, @params ) );
 }
 
