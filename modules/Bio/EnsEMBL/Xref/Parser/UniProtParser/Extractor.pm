@@ -28,7 +28,6 @@ require 5.014_000;
 
 use Carp;
 use List::Util;
-use Readonly;
 use charnames ':full';
 
 
@@ -37,42 +36,41 @@ use charnames ':full';
 # ONE capture group, the isoform identifier.
 # Use named sequences for square brackets to avoid excessive
 # escaping as well as for better readability.
-Readonly my $QR_DR_ISOFORM_FIELD_PATTERN
-  => qr{
-         \s*
-         \N{LEFT SQUARE BRACKET}
-         \s*
-         ( [^\N{RIGHT SQUARE BRACKET}]+ )
-         \s*
-         \N{RIGHT SQUARE BRACKET}
-         \s*
-     }msx;
+my $QR_DR_ISOFORM_FIELD_PATTERN
+  = qr{
+        \s*
+        \N{LEFT SQUARE BRACKET}
+        \s*
+        ( [^\N{RIGHT SQUARE BRACKET}]+ )
+        \s*
+        \N{RIGHT SQUARE BRACKET}
+        \s*
+    }msx;
 
 # While processing ID fields, used to confirm that the status of an
 # entry matches an expected value. Declares NO capture groups.
-Readonly my $QR_ID_STATUS_FIELD
-  => qr{
-         (?: Unreviewed )
-       | (?: Reviewed )
-     }msx;
+my $QR_ID_STATUS_FIELD
+  = qr{
+        Unreviewed | Reviewed
+    }msx;
 
 # While processing OX fields i.e. taxonomy cross-references, used to
 # extract both the taxon code and the database qualifier. Declares TWO
 # capture groups: the database qualifier, and the taxonomic code.
-Readonly my $QR_OX_TAXON_DB_ENTRY
-  => qr{
-         # Database qualifier. Chances are the list of
-         # allowed characters will change should DBs
-         # other than NCBI ever become supported here.
-         ( [A-Za-z_]+ )
+my $QR_OX_TAXON_DB_ENTRY
+  = qr{
+        # Database qualifier. Chances are the list of
+        # allowed characters will change should DBs
+        # other than NCBI ever become supported here.
+        ( [A-Za-z_]+ )
 
-         \s*  # just in case
-         =
-         \s*  # same
+        \s*  # just in case
+        =
+        \s*  # same
 
-         # Taxon ID. This is almost certainly NCBI-specific.
-         ( [0-9]+ )
-     }msx;
+        # Taxon ID. This is almost certainly NCBI-specific.
+        ( [0-9]+ )
+    }msx;
 
 # While processing OX or DE fields, i.e. taxonomy cross-references or
 # descriptions, allows accounting for the fact some entries might be
@@ -80,15 +78,21 @@ Readonly my $QR_OX_TAXON_DB_ENTRY
 # declared in UniProt-KB User Manual yet frequently encountered in
 # data files.  Use named sequences for curly brackets to avoid
 # excessive escaping as well as for better readability.
-Readonly my $QR_OX_DE_EVIDENCE_CODE_LIST
-  => qr{
-         \N{LEFT CURLY BRACKET}
-         \s*
-         [^\N{RIGHT CURLY BRACKET}]+
-         \s*
-         \N{RIGHT CURLY BRACKET}
-         \s*
-     }msx;
+my $QR_OX_DE_EVIDENCE_CODE_LIST
+  = qr{
+        \N{LEFT CURLY BRACKET}
+        \s*
+        [^\N{RIGHT CURLY BRACKET}]+
+        \s*
+        \N{RIGHT CURLY BRACKET}
+        \s*
+    }msx;
+
+# Various field separators
+my $QR_SPLIT_COMMA_WITH_WHITESPACE
+  = qr{ \s* , \s* }msx;
+my $QR_SPLIT_SEMICOLON_WITH_WHITESPACE
+  = qr{ \s* ; \s* }msx;
 
 # To save memory and processing time, when we process a record we only
 # load into memory the fields we need. Conversely, the same list can
@@ -99,37 +103,51 @@ Readonly my $QR_OX_DE_EVIDENCE_CODE_LIST
 # describing publications - are not compatible with the current way of
 # processing.
 # Syntax: 1 is mandatory field, 0 - an optional one
-Readonly my %prefixes_of_interest
-  => (
-      'ID'  => 1,
-      'AC'  => 1,
-      'DE'  => 1,
-      'GN'  => 0,
-      'OX'  => 1,
-      'DR'  => 0,
-      'PE'  => 1,
-      'RG'  => 0,
-      'SQ'  => 1,
-      q{  } => 1,
-    );
+my %prefixes_of_interest
+  = (
+     'ID'  => 1,
+     'AC'  => 1,
+     'DE'  => 1,
+     'GN'  => 0,
+     'OX'  => 1,
+     'DR'  => 0,
+     'PE'  => 1,
+     'RG'  => 0,
+     'SQ'  => 1,
+     q{  } => 1,
+   );
 
 # Syntax: 0 for database qualifiers to be ignored, otherwise a
 # reference to a function translating taxon codes from the given
 # database into Ensembl taxonomy_ids.
-Readonly my %taxonomy_ids_from_taxdb_codes
-  => (
-      # NCBI taxon codes and Ensembl taxonomy IDs are identical
-      'NCBI_TaxID' => sub { return $_[0]; },
-    );
+my %taxonomy_ids_from_taxdb_codes
+  = (
+     # NCBI taxon codes and Ensembl taxonomy IDs are identical
+     'NCBI_TaxID' => sub { return $_[0]; },
+   );
 
 
+=head2 new
 
-# FIXME: at the moment the extractor only handles one input file at a
-# time for backwards compatibility with the old UniProtParser, that
-# said there is no reason for it not to be able to handle multiple
-# files. Should we want to support this, we should stop opening the
-# filehandle in the constructor because it would no longer be a fixed
-# property of the object.
+  Arg [1]    : HashRef arguments for the constructor:
+                - ArrayRef file_names
+                   - list of names of files to process. Note that as
+                     with the old UniProtParser, and indeed most other
+                     parsers, only the first one will actually be used;
+                - species_id
+                   - Ensembl ID of the species under
+                     consideration. Records pertaining to other
+                     species will be quietly ignored.
+                - xref_dba
+                   - DBAdaptor object passed from the xref pipeline
+  Description: Constructor.
+  Return type: Extractor object
+  Exceptions : throws on failure to acquire the file handle
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub new {
   my ( $proto, $arg_ref ) = @_;
   my $file_names = $arg_ref->{'file_names'};
@@ -144,19 +162,18 @@ sub new {
   my $self = {
               'input_name' => $filename,
               '_io_handle' => $filehandle,
-              'maps'       => {},
               'species_id' => $species_id,
               'xref_dba'   => $xref_dba,
             };
   my $class = ref $proto || $proto;
   bless $self, $class;
 
-  $self->_load_maps();
-
   return $self;
 }
 
 
+# Destructor. Makes sure the clean-up code gets executed regardless of
+# whether the user has explicitly called finish() or not.
 sub DESTROY {
   my ( $self ) = @_;
 
@@ -166,14 +183,29 @@ sub DESTROY {
 }
 
 
-sub close_input {
-  my ( $self ) = @_;
+=head2 extract
 
-  $self->{'_io_handle'}->close();
+  Description: Extract information from the UniProt-KB record loaded
+               into memory by get_uniprot_record(), apply basic sanity
+               and metadata checks, and produce a key-value
+               representation of the record suitable for further
+               processing.
 
-  return;
-}
+               Note that the purpose of this method is purely to
+               provide an input format-independent representation of
+               provided data regardless of whether it has come from a
+               plain-text file (as it is the case here), an XML dump,
+               or directly from the database; anything beyond that
+               belongs to the transform stage. It also should
+               generally avoid performing actual retrieval of input
+               data.
 
+  Return type: HashRef
+  Exceptions : throws on processing errors
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub extract {
   my ( $self ) = @_;
@@ -204,14 +236,64 @@ sub extract {
 }
 
 
+=head2 finish
+
+  Description: Wrap-up routine. At the moment all it does is close the
+               file handle, could also e.g. print statistics.
+  Return type: none
+  Exceptions : none
+  Caller     : destructor, UniProtParser::run()
+  Status     : Stable
+
+=cut
+
 sub finish {
   my ( $self ) = @_;
 
-  $self->close_input();
+  $self->{'_io_handle'}->close();
 
   return;
 }
 
+
+=head2 get_uniprot_record
+
+  Description: Load the next record from input, if any, into memory,
+               and indicate availability of new data through the
+               return value.
+
+               One thing that this method absolutely *must* do is
+               indicate if the input contains another *complete*
+               UniProt-KB record. Everything else, including whether
+               or not the record is actually retrieved, scheduled for
+               asynchronous retrieval or merely prepared for lazy
+               loading may depend on the specific input type, as long
+               there is a reasonable level of confidence that we
+               *will* eventually get a complete record.
+
+               In case of plain-text files processed by this
+               particular implementation, we have to read the input in
+               line by line because there is nothing in either the
+               format or the data that would allow us to skip
+               ahead. We do, however, avoid any processing other than
+               stripping trailing newline characters and minimal
+               "indexing" (see below), and even that is only performed
+               on lines we know we will need (see
+               %prefixes_of_interest above).
+
+               The output in this case is a hashref assigned to the
+               'record' property of the object, in which keys are
+               names of fields and values are arrayrefs containing
+               matching lines (minus the field name and the
+               three-blank separator) in the order they appeared in
+               the input file.
+
+  Return type: boolean 1 if a record has been loaded, 0 if end of input
+  Exceptions : throws on processing errors
+  Caller     : UniProtParser::run()
+  Status     : Stable
+
+=cut
 
 sub get_uniprot_record {
   my ( $self ) = @_;
@@ -221,24 +303,12 @@ sub get_uniprot_record {
 
  INPUT_LINE:
   while ( my $file_line = $io->getline() ) {
-    chomp $file_line;
-
-    my ( $prefix, $content )
-      = ( $file_line =~ m{ \A
-                           ([A-Z /]{2})  # prefix
-                           (?:
-                             \s{3}       # leading spaces are important in e.g. DE, FT
-                             (.+)        # content
-                           )?            # end-of-record line will not have any of this
-                           \z
-                       }msx );
-    if ( ! defined $prefix ) {
-      confess "Malformed prefix in line:\n\t${file_line}";
-    }
+    my $prefix = substr( $file_line, 0, 2 );
 
     if ( $prefix eq q{//} ) {
       # End of record, return what we have got so far
       $self->{'record'} = $uniprot_record;
+
       return 1;
     }
 
@@ -247,9 +317,8 @@ sub get_uniprot_record {
       next INPUT_LINE;
     }
 
-    if ( ! exists $uniprot_record->{$prefix} ) {
-      $uniprot_record->{$prefix} = [];
-    }
+    chomp ( my $content = substr( $file_line, 5 ) );
+
     push @{ $uniprot_record->{$prefix} }, $content;
 
   }
@@ -263,26 +332,6 @@ sub get_uniprot_record {
   # EOF
   return 0;
 }
-
-
-sub _load_maps {
-  my ( $self ) = @_;
-
-  my $xref_dba = $self->{'xref_dba'};
-
-  my $taxonomy_ids_for_species
-    = $xref_dba->get_taxonomy_from_species_id( $self->{'species_id'} );
-  # If the map is empty, something is wrong
-  if ( scalar keys %{ $taxonomy_ids_for_species } == 0 ) {
-    confess "Got zero taxonomy_ids for species_id '"
-      . $self->{'species_id'} . q{'};
-  }
-  $self->{'maps'}->{'taxonomy_ids_for_species'}
-    = $taxonomy_ids_for_species;
-
-  return;
-}
-
 
 
 # Returns true if the current record describes an entry tagged as
@@ -312,7 +361,8 @@ sub _get_accession_numbers {
 
   my $ac_fields = $self->{'record'}->{'AC'};
   my @numbers
-    = split( qr{\s* ; \s*}msx, join( q{}, @{ $ac_fields } ) );
+    = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE,
+             join( q{}, @{ $ac_fields } ) );
   # FIXME: we should probably make this persist until a new record has
   # been loaded
 
@@ -339,7 +389,7 @@ sub _get_citation_groups {
 
   # FIXME: we should probably make this persist until a new record has
   # been loaded
-  my @citation_groups = split( qr{ \s*;\s* }msx,
+  my @citation_groups = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE,
                                join( q{}, @{ $rg_fields } ) );
 
   return \@citation_groups;
@@ -364,7 +414,8 @@ sub _get_database_crossreferences {
   my $crossreferences = {};
 
   foreach my $dr_line ( @{ $dr_fields } ) {
-    my ( $res_abbrev, $res_id, @opts ) = split( qr{ ;\s* }msx, $dr_line);
+    my ( $res_abbrev, $res_id, @opts )
+      = split( $QR_SPLIT_SEMICOLON_WITH_WHITESPACE, $dr_line);
 
     my ( $last_opt, $isoform )
       = ( $opts[-1] =~ m{
@@ -520,7 +571,7 @@ sub _get_gene_names {
                                     }gmsx );
 
     while ( my ( $key, $value ) = splice( @entry_captures, 0, 2 ) ) {
-      my @split_value = split( qr{ \s*,\s* }msx, $value );
+      my @split_value = split( $QR_SPLIT_COMMA_WITH_WHITESPACE, $value );
 
       $parsed_entry->{$key}
         = ( $key eq 'Name' ) ? $value : \@split_value;
@@ -687,7 +738,6 @@ sub _taxon_codes_match_species_id {
   my ( $self ) = @_;
 
   my $taxon_codes = $self->_get_taxon_codes();
-  my $tid4s_map = $self->{'maps'}->{'taxonomy_ids_for_species'};
 
   my @taxonomy_ids;
   foreach my $taxon ( @{ $taxon_codes } ) {
@@ -697,7 +747,7 @@ sub _taxon_codes_match_species_id {
   }
 
   foreach my $taxonomy_id ( @taxonomy_ids ) {
-    if ( exists $tid4s_map->{$taxonomy_id} ) {
+    if ( $taxonomy_id == $self->{'species_id'} ) {
       return 1;
     }
   }
