@@ -37,6 +37,34 @@ my %source_name_for_section = (
   'TrEMBL'     => 'Uniprot/SPTREMBL',
 );
 
+# List of crossreference sources for which we want to create direct or
+# dependent xrefs along with matching links.
+# Note that this includes sources such as 'Uniprot_gn' and 'protein_id'
+# which do not actually appear in UniProt-KB files but which are
+# synthesised from other data; omitting them from this list simply
+# means they will not be generated.
+my $crossreference_sources_of_interest = [
+  'ChEMBL',
+  'EMBL',
+  'Ensembl',
+  'MEROPS',
+  'PDB',
+  'Uniprot_gn',
+  'protein_id',
+];
+
+# To save memory and processing time, when we process a record in the
+# extractor we only load into memory the fields we need. Moreover, the
+# same list can later on be used to confirm that we have indeed
+# encountered all the mandatory fields.
+# Note that care must be taken when adding new prefixes to this list
+# because some of them - for instance the Rx family of fields,
+# describing publications - are not compatible with the current way of
+# processing.
+my $mandatory_prefixes_of_interest
+  = [ 'ID', 'AC', 'DE', 'OX', 'PE', 'SQ', q{  }, ];
+my $optional_prefixes_of_interest
+  = [ 'GN', 'DR', 'RG', ];
 
 
 =head2 run
@@ -128,12 +156,16 @@ sub run {
 
   my $extractor = $extractor_class->new({
     'file_names' => $files,
-    'species_id' => $species_id,
-    'xref_dba'   => $xref_dba,
+    'mandatory_prefixes' => $mandatory_prefixes_of_interest,
+    'optional_prefixes'  => $optional_prefixes_of_interest,
+    'species_id'         => $species_id,
+    'xref_dba'           => $xref_dba,
   });
   my $transformer = $transformer_class->new({
-    'species_id' => $species_id,
-    'xref_dba'   => $xref_dba,
+    'accepted_crossreference_sources' => $crossreference_sources_of_interest,
+    'default_direct_xref_type'        => 'Translation',  # just in case
+    'species_id'                      => $species_id,
+    'xref_dba'                        => $xref_dba,
   });
   my $loader = $loader_class->new({
     'batch_size'         => $loader_batch_size,

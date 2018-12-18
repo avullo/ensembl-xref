@@ -26,19 +26,19 @@ use warnings;
 use Carp;
 
 
+# These sources are artificially populated using data from
+# crossreferences so we cannot simply read their names from the
+# input. Therefore, keep these names hardcoded in just one place
+# (i.e. here) rather than everywhere we use them.
 my $PROTEIN_ID_SOURCE_NAME = 'protein_id';
 my $UNIPROT_GN_SOURCE_NAME = 'Uniprot_gn';
 
-my %whitelisted_crossreference_sources
-  = (
-     'ChEMBL'                => 1,
-     'EMBL'                  => 1,
-     'Ensembl'               => 1,
-     'MEROPS'                => 1,
-     'PDB'                   => 1,
-     $PROTEIN_ID_SOURCE_NAME => 1,
-     $UNIPROT_GN_SOURCE_NAME => 1,
-   );
+# List of all 1:1 mapping from a primary-xref sequence type to the
+# Ensembl type of corresponding direct xrefs. One-to-many mappings
+# (e.g. for the type 'dna') have to be handled the hard way.
+my %direct_xref_type_for_seq_type = (
+  'peptide' => 'Translation',
+);
 
 my $MAX_TREMBL_EVIDENCE_LEVEL_FOR_STANDARD = 2;
 my %source_selection_criteria_for_status
@@ -97,10 +97,30 @@ sub _get_protein_id_xref_from_embldb_xref {
 =head2 new
 
   Arg [1]    : HashRef arguments for the constructor:
+                - ArrayRef accepted_crossreference_sources
+                   - list of names of crossreference sources for which
+                     we are to generate direct or dependent xrefs
+                     along with respective links. By default said list
+                     is empty, in which case only primary
+                     (sequence-mapped) xrefs are created.
+                     To emphasise the point: this option DOES control
+                     creation of direct xrefs, not just dependent
+                     ones;
+                - default_direct_xref_type
+                   - Ensembl type (e.g. Gene, Transcript, Translation)
+                     to be assigned to direct xrefs in the event of
+                     either being unable to unambiguously determine it
+                     from sequence type or having failed to extract
+                     the sequence type to begin with;
+                - general_source_id
+                   - Xref-source ID as provided by the xref
+                     pipeline. Note that certain parsers, most notably
+                     those distributing xrefs across several different
+                     sources, do not use this information.
                 - species_id
                    - Ensembl ID of the species under
                      consideration. Records pertaining to other
-                     species will be quietly ignored.
+                     species will be quietly ignored;
                 - xref_dba
                    - DBAdaptor object passed from the xref pipeline
   Description: Constructor.
@@ -115,15 +135,26 @@ sub _get_protein_id_xref_from_embldb_xref {
 sub new {
   my ( $proto, $arg_ref ) = @_;
 
+  my $crossref_source_names
+    = $arg_ref->{'accepted_crossreference_sources'} // [];
+
   my $self = {
-              'maps'       => {},
-              'species_id' => $arg_ref->{'species_id'},
-              'xref_dba'   => $arg_ref->{'xref_dba'},
-            };
+    'crossref_source_whitelist' => {},
+    'default_direct_xref_type'  => $arg_ref->{'default_direct_xref_type'},
+    'general_source_id'         => $arg_ref->{'general_source_id'},
+    'maps'                      => {},
+    'species_id'                => $arg_ref->{'species_id'},
+    'xref_dba'                  => $arg_ref->{'xref_dba'},
+  };
   my $class = ref $proto || $proto;
   bless $self, $class;
 
   $self->_load_maps();
+
+  # Store this as a hash to speed up lookups
+  while ( my $source_name = shift @{ $crossref_source_names } ) {
+    $self->{'crossref_source_whitelist'}->{$source_name} = 1;
+  }
 
   return $self;
 }
@@ -182,7 +213,7 @@ sub finish {
                 - synonyms for each of the above, as needed.
                with the exact list of cross-reference sources to
                process defined in
-               %whitelisted_crossreference_sources. It also determines
+               $self->{crossref_source_whitelist}. It also determines
                the correct source ID for the record's evidence level.
 
   Return type: HashRef
@@ -196,23 +227,24 @@ sub transform {
   my ( $self, $extracted_record ) = @_;
 
   $self->{'extracted_record'} = $extracted_record;
+  $self->{'cache'} = {};
 
   my ( $accession, @synonyms )
     = @{ $extracted_record->{'accession_numbers'} };
-  my $source_id = $self->_get_source_id();
+  my $record_source_id = $self->_get_record_source_id();
 
   my $xref_graph_node
     = {
-       'ACCESSION'     => $accession,
+       'ACCESSION'     => $self->_get_accession(),
        'DESCRIPTION'   => $extracted_record->{'description'},
        'INFO_TYPE'     => 'SEQUENCE_MATCH',
-       'LABEL'         => $accession,
-       'SEQUENCE'      => $extracted_record->{'sequence'},
-       'SEQUENCE_TYPE' => 'peptide',
-       'SOURCE_ID'     => $source_id,
+       'LABEL'         => $self->_prepare_label(),
+       'SEQUENCE'      => $self->_prepare_sequence(),
+       'SEQUENCE_TYPE' => $extracted_record->{'sequence'}->{'type'},
+       'SOURCE_ID'     => $record_source_id,
        'SPECIES_ID'    => $self->{'species_id'},
        'STATUS'        => 'experimental',
-       'SYNONYMS'      => \@synonyms,
+       'SYNONYMS'      => $self->_get_synonyms(),
      };
 
   # UniProt Gene Names links come from the 'gene_names' fields
@@ -333,9 +365,39 @@ sub _entry_is_from_ensembl {
 }
 
 
+# Get primary accession of the extracted record.
+sub _get_accession {
+  my ( $self ) = @_;
+
+  if ( ! exists $self->{'cache'}->{'accession'} ) {
+    my ( $accession, @synonyms )
+      = @{ $self->{'extracted_record'}->{'accession_numbers'} };
+    $self->{'cache'}->{'accession'} = $accession;
+    $self->{'cache'}->{'synonyms'} = \@synonyms;
+  }
+
+  return $self->{'cache'}->{'accession'};
+}
+
+
+# Get synonyms (secondary accessions) of the extracted record.
+sub _get_synonyms {
+  my ( $self ) = @_;
+
+  if ( ! exists $self->{'cache'}->{'synonyms'} ) {
+    my ( $accession, @synonyms )
+      = @{ $self->{'extracted_record'}->{'accession_numbers'} };
+    $self->{'cache'}->{'accession'} = $accession;
+    $self->{'cache'}->{'synonyms'} = \@synonyms;
+  }
+
+  return $self->{'cache'}->{'synonyms'};
+}
+
+
 # Translate quality of the extracted entry into the matching Ensembl
 # source_id, optionally with an override of priority.
-sub _get_source_id {
+sub _get_source_id_from_quality {
   my ( $self, $priority_override ) = @_;
 
   my $source_id_map = $self->{'maps'}->{'named_source_ids'};
@@ -363,6 +425,8 @@ sub _make_links_from_crossreferences {
 
   my $crossreferences = $self->{'extracted_record'}->{'crossreferences'};
   my $dependent_sources = $self->{'maps'}->{'dependent_sources'};
+  my %whitelisted_crossreference_sources
+    = %{ $self->{'crossref_source_whitelist'} };
 
   my @direct_xrefs;
   my @dependent_xrefs;
@@ -376,13 +440,27 @@ sub _make_links_from_crossreferences {
 
     if ( $source eq 'Ensembl' ) {
 
+      # If we cannot unambiguously deduce Ensembl type from the
+      # sequence type of the primary xref (or if it hasn't been
+      # extracted at all), fall back to the global default. Should be
+      # safe enough because on the one hand if we do enable creation
+      # of direct xrefs from specific input we really ought to have an
+      # idea of what type they are, and on the other unless the
+      # database schema changes a lot the loader should complain VERY
+      # loudly when it tries to insert data into the very much
+      # nonexistent table '_direct_xref' if the global default is
+      # omitted.
+      my $direct_xref_type
+        = $direct_xref_type_for_seq_type{ $primary_xref->{'SEQUENCE_TYPE'} }
+        // $self->{'default_direct_xref_type'};
+
     DIRECT_XREF:
       foreach my $direct_ref ( @{ $entries } ) {
         my $xref_link
           = {
              # We want translation ID and 'id' for these is TRANSCRIPT ID
              'STABLE_ID'    => $direct_ref->{'optional_info'}->[0],
-             'ENSEMBL_TYPE' => 'Translation',
+             'ENSEMBL_TYPE' => $direct_xref_type,
              'LINKAGE_TYPE' => 'DIRECT',
              'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
              'ACCESSION'    => $primary_xref->{'ACCESSION'},
@@ -447,6 +525,9 @@ sub _make_links_from_gene_names {
 
   my @genename_xrefs;
 
+  my %whitelisted_crossreference_sources
+    = %{ $self->{'crossref_source_whitelist'} };
+
   # Are we supposed to process this xref source to begin with?
   if ( ! $whitelisted_crossreference_sources{ $UNIPROT_GN_SOURCE_NAME } ) {
     return [];
@@ -501,6 +582,33 @@ sub _make_links_from_gene_names {
   }
 
   return \@genename_xrefs;
+}
+
+
+# UniProt-specific implementation of the source-ID getter: select the
+# right one depending on quality of the entry.
+sub _get_record_source_id {
+  my ( $self ) = @_;
+
+  return $self->_get_source_id_from_quality();
+}
+
+
+# UniProt-specific implementation of the label getter: should be the
+# same as the primary accession.
+sub _prepare_label {
+  my ( $self ) = @_;
+
+  return $self->_get_accession();
+}
+
+
+# UniProt-specific implementation of the sequence getter: no
+# transformations needed.
+sub _prepare_sequence {
+  my ( $self ) = @_;
+
+  return $self->{'extracted_record'}->{'sequence'}->{'seq'};
 }
 
 
