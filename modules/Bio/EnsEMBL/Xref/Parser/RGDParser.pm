@@ -50,7 +50,7 @@ sub run {
   my $verbose      = $self->{verbose};
   my $xref_dba     = $self->{xref_dba};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+  unless (defined $source_id && defined $species_id && defined $files) {
     confess "Need to pass source_id, species_id and files list";
   }
   $verbose //= 0;
