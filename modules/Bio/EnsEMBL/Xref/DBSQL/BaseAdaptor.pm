@@ -184,9 +184,10 @@ sub get_filehandle {
 
   # 'Transparent' lets IO::Uncompress modules read uncompressed input.
   # It should be on by default but set it just in case.
-  $io = IO::Uncompress::AnyUncompress->new($file_name,
-                                           'Transparent' => 1 )
-    || confess("Can not open file '$file_name' because: $AnyUncompressError");
+  $io =
+    IO::Uncompress::AnyUncompress->new( $file_name, 'Transparent' => 1 )
+    || confess(
+         "Can not open file '$file_name' because: $AnyUncompressError");
 
   if ($verbose) {
     print "Reading from '$file_name'...\n";
@@ -311,7 +312,7 @@ sub get_source_ids_for_source_name_pattern {
   }
 
   my $sth = $self->dbi->prepare_cached(
-              'SELECT source_id FROM source WHERE UPPER(name) LIKE ?' );
+               'SELECT source_id FROM source WHERE UPPER(name) LIKE ?');
 
   my $big_name = uc $source_name;
   $sth->execute("%${big_name}%");
@@ -350,10 +351,11 @@ sub get_source_name_for_source_id {
     $source_name = $row[0];
   }
   else {
-    confess "There is no entity with source-id  $source_id  in the source-table of the \n" .
-      "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n" .
-      "and in the parser\n" .
-      "Couldn't get source name for source ID $source_id\n";
+    confess
+"There is no entity with source-id  $source_id  in the source-table of the \n"
+      . "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n"
+      . "and in the parser\n"
+      . "Couldn't get source name for source ID $source_id\n";
   }
 
   return $source_name;
@@ -930,8 +932,8 @@ sub get_taxonomy_from_species_id {
   my %hash;
 
   my $sth = $self->dbi->prepare_cached(
-      "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute( $species_id ) or croak( $self->dbi->errstr() );
+                "SELECT taxonomy_id FROM species WHERE species_id = ?");
+  $sth->execute($species_id) or croak( $self->dbi->errstr() );
 
   while ( my @row = $sth->fetchrow_array() ) {
     $hash{ $row[0] } = 1;
@@ -1446,14 +1448,15 @@ sub add_multiple_dependent_xrefs {
     my %dep = %{$depref};
 
     # Insert the xref
-    my $dep_xref_id = $self->add_xref( {
-      "acc"        => $dep{ACCESSION},
-      "version"    => $dep{VERSION}     // 1,
-      "label"      => $dep{LABEL}       // $dep{ACCESSION},
-      "desc"       => $dep{DESCRIPTION},
-      "source_id"  => $dep{SOURCE_ID},
-      "species_id" => $dep{SPECIES_ID},
-      "info_type"  => 'DEPENDENT' } );
+    my $dep_xref_id =
+      $self->add_xref(
+                       { "acc"        => $dep{ACCESSION},
+                         "version"    => $dep{VERSION} // 1,
+                         "label"      => $dep{LABEL} // $dep{ACCESSION},
+                         "desc"       => $dep{DESCRIPTION},
+                         "source_id"  => $dep{SOURCE_ID},
+                         "species_id" => $dep{SPECIES_ID},
+                         "info_type"  => 'DEPENDENT' } );
 
     # Add the linkage_annotation and source id it came from
     $self->add_dependent_xref_maponly(
@@ -1569,7 +1572,7 @@ sub add_multiple_synonyms {
 =cut
 
 sub add_synonyms_for_hgnc_vgnc {
-  my ($self, $ref_arg) = @_;
+  my ( $self, $ref_arg ) = @_;
 
   my $source_id    = $ref_arg->{source_id};
   my $name         = $ref_arg->{name};
@@ -1578,25 +1581,25 @@ sub add_synonyms_for_hgnc_vgnc {
   my $alias_string = $ref_arg->{alias};
 
   # dead name, add to synonym
-  if (defined $dead_string) {
+  if ( defined $dead_string ) {
     $dead_string =~ s/"//xg;
     my @dead_array = split( ',\s', $dead_string );
-    foreach my $dead (@dead_array){
-      $self->add_to_syn($name, $source_id, $dead, $species_id);
+    foreach my $dead (@dead_array) {
+      $self->add_to_syn( $name, $source_id, $dead, $species_id );
     }
   }
 
   # alias name, add to synonym
-  if (defined $alias_string) {
+  if ( defined $alias_string ) {
     $alias_string =~ s/"//xg;
     my @alias_array = split( ',\s', $alias_string );
-    foreach my $alias (@alias_array){
-      $self->add_to_syn($name, $source_id, $alias, $species_id);
+    foreach my $alias (@alias_array) {
+      $self->add_to_syn( $name, $source_id, $alias, $species_id );
     }
   }
 
   return;
-}
+} ## end sub add_synonyms_for_hgnc_vgnc
 
 =head2 get_label_to_acc
   Arg [1]    : description
@@ -2311,6 +2314,21 @@ sub get_gene_specific_list {
   }
 
   return \@used_list;
+}
+
+=head2 get_refseq_sources
+
+=cut 
+
+sub get_refseq_sources {
+  my $self = shift;
+
+  return { NM => 'RefSeq_mRNA',
+           NR => 'RefSeq_ncRNA',
+           XM => 'RefSeq_mRNA_predicted',
+           XR => 'RefSeq_ncRNA_predicted',
+           NP => 'RefSeq_peptide',
+           XP => 'RefSeq_peptide_predicted', };
 }
 
 =head2 _update_xref_info_type
