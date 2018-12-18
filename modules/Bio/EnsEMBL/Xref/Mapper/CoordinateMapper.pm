@@ -606,10 +606,10 @@ sub run_coordinatemapping {
   if ($do_upload) {
 
     # Order is important!
-    upload_data( 'unmapped_reason', $unmapped_reason_filename, $external_db_id, $core_dbh );
-    upload_data( 'unmapped_object', $unmapped_object_filename, $external_db_id, $core_dbh );
-    upload_data( 'object_xref', $object_xref_filename, $external_db_id, $core_dbh );
-    upload_data( 'xref', $xref_filename, $external_db_id, $core_dbh );
+    $self->upload_data( 'unmapped_reason', $unmapped_reason_filename, $external_db_id );
+    $self->upload_data( 'unmapped_object', $unmapped_object_filename, $external_db_id );
+    $self->upload_data( 'object_xref', $object_xref_filename, $external_db_id );
+    $self->upload_data( 'xref', $xref_filename, $external_db_id );
   }
 
   $sth_stat =
@@ -843,7 +843,7 @@ sub dump_unmapped_object {
 =cut
 
 sub upload_data {
-  my ( $table_name, $filename, $external_db_id, $dbh ) = @_;
+  my ( $self, $table_name, $filename, $external_db_id ) = @_;
 
   if ( !-r $filename ) {
     confess( sprintf( "Can not open '%s' for reading", $filename ) );
@@ -888,6 +888,7 @@ sub upload_data {
   log_progress( "Removing old data (external_db_id = '%d') from table '%s'\n",
     $external_db_id, $table_name );
 
+  my $dbh = $self->core->dbc->db_handle();
   my $rows = $dbh->do( $cleanup_sql, undef, $external_db_id )
     or confess( $dbh->strerr() );
 
