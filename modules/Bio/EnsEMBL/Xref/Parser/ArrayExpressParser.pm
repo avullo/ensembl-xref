@@ -78,6 +78,8 @@ sub run {
   my $xref_dba     = $self->{xref_dba};
   my $dba          = $self->{dba};
 
+  defined $species_name or confess "Species name is required";
+  
   my $file = shift @{$files};
 
   my $species_lookup      = $self->_get_species($verbose);

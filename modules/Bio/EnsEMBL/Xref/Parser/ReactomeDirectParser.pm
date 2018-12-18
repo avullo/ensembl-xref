@@ -107,17 +107,17 @@ sub run {
   my ($reactome_source_id, $type, $species);
   while ( my $data = $input_file->getline_hr( $file_io ) ) {
     $species = $data->{'species'};
-    $species =~ s/\s/_/;
+    $species =~ s/\s/_/x;
     $species = lc($species);
     # Skipping non-standard characters which cannot be stored in MySQL
-    if ($data->{'description'} !~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/) { next; }
+    if ($data->{'description'} !~ /^[A-Za-z0-9_,\(\)\/\-\.:\+'&;"\/\?%>\s\[\]]+$/x) { next; }
     if ( $species ne $species_name ) {
       next;
     }
-    if ( $data->{'ensembl_stable_id'} =~ /G[0-9]*$/) {
+    if ( $data->{'ensembl_stable_id'} =~ /G[0-9]*$/x) {
       $type = 'gene';
       $reactome_source_id = $gene_reactome_source_id;
-    } elsif ( $data->{'ensembl_stable_id'} =~ /T[0-9]*$/) {
+    } elsif ( $data->{'ensembl_stable_id'} =~ /T[0-9]*$/x) {
       $type = 'transcript';
       $reactome_source_id = $transcript_reactome_source_id;
     } else {
