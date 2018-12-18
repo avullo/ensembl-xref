@@ -190,7 +190,10 @@ Returntype  : List of sorted and filtered accessions
 =cut
 sub sort_refseq_accessions {
   my ($self,@accessions) = @_;
-  @accessions = sort { $refseq_priorities{substr $a, 0,2} <=> $refseq_priorities{substr $b, 0,2} } 
+  @accessions = sort {
+                  $refseq_priorities{substr $a, 0,2} <=> $refseq_priorities{substr $b, 0,2}
+                  || $a cmp $b
+                }
                 grep { exists $refseq_priorities{substr $_, 0,2} } @accessions;
   return @accessions;
 }
