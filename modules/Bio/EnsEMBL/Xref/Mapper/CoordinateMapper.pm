@@ -140,7 +140,7 @@ sub run_coordinatemapping {
   ######################################################################
   # Figure out the last used 'xref_id', 'object_xref_id',              #
   # 'unmapped_object_id', and 'unmapped_reason_id' from the Core       #
-  # database.                                                          #
+  # database so we can cheat on bulk insert                            #
   ######################################################################
 
   my $xref_id = $core_dbh->selectall_arrayref('SELECT MAX(xref_id) FROM xref')->[0][0];
@@ -167,72 +167,25 @@ sub run_coordinatemapping {
       . "transcript_score_threshold=" . "%.2f",
     $coding_weight, $ens_weight, $transcript_score_threshold );
 
-  my $analysis_sql = qq(
-    SELECT  analysis_id
-    FROM    analysis
-    WHERE   logic_name = 'xrefcoordinatemapping'
-    AND     parameters = ?
-  );
+  my $analysis_adaptor = $self->core->get_AnalysisAdaptor;
+  my $analysis = $analysis_adaptor->fetch_by_logic_name('xrefcoordinatemapping');
 
-  my $analysis_sth = $core_dbh->prepare($analysis_sql);
-  $analysis_sth->bind_param( 1, $analysis_params, SQL_VARCHAR );
+  my $analysis_id;
+  if (! defined $analysis ) {
+    $analysis_id = $analysis_adaptor->store(
+      Bio::EnsEMBL::Analysis->new(
+        -logic_name => 'xrefcoordinatemapping',
+        -program => 'Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping',
+        -parameters => $analysis_params,
+        -program_file => 'CoordinateMapper.pm'
+      )
+    );
+  } elsif ( $analysis->parameters ne $analysis_params && $do_upload ) {
 
-  $analysis_sth->execute();
+    $analysis->parameters($analysis_params);
+    $analysis_id = $analysis_adaptor->update($analysis);
 
-  my $analysis_id = $analysis_sth->fetchall_arrayref()->[0][0];
-  if ( !defined($analysis_id) ) {
-    $analysis_id = $core_dbh->selectall_arrayref( "SELECT analysis_id FROM analysis "
-        . "WHERE logic_name = 'xrefcoordinatemapping'" )->[0][0];
-
-    if ( defined($analysis_id) && $do_upload ) {
-      log_progress( "Will update 'analysis' table " . "with new parameter settings\n" );
-
-      #-----------------------------------------------------------------
-      # Update an existing analysis.
-      #-----------------------------------------------------------------
-
-      my $sql = qq(
-        UPDATE  analysis
-        SET     created = now(), parameters = ?
-        WHERE   analysis_id = ?
-      );
-
-      $core_dbh->do( $sql, undef, $analysis_params, $analysis_id );
-
-    }
-    else {
-      log_progress("Can not find analysis ID for this analysis:\n");
-      log_progress("  logic_name = 'xrefcoordinatemapping'\n");
-      log_progress( "  parameters = '%s'\n", $analysis_params );
-
-      if ($do_upload) {
-
-        #---------------------------------------------------------------
-        # Store a new analysis.
-        #---------------------------------------------------------------
-
-        log_progress("A new analysis will be added\n");
-
-        $analysis_id =
-          $core_dbh->selectall_arrayref('SELECT MAX(analysis_id) FROM analysis')->[0][0];
-        log_progress( "Last used analysis_id is %d\n", $analysis_id );
-
-        my $sql =
-            'INSERT INTO analysis '
-          . 'VALUES(?, now(), ?, \N, \N, \N, ?, '
-          . '\N, \N, ?, ?, \N, \N, \N)';
-        my $sth = $core_dbh->prepare($sql);
-
-        $sth->bind_param( 1, ++$analysis_id,          SQL_INTEGER );
-        $sth->bind_param( 2, 'xrefcoordinatemapping', SQL_VARCHAR );
-        $sth->bind_param( 3, 'xref_mapper.pl',        SQL_VARCHAR );
-        $sth->bind_param( 4, $analysis_params,        SQL_VARCHAR );
-        $sth->bind_param( 5, 'CoordinateMapper.pm',   SQL_VARCHAR );
-
-        $sth->execute();
-      }
-    } ## end else [ if ( defined($analysis_id...
-  } ## end if ( !defined($analysis_id...
+  }
 
   if ( defined($analysis_id) ) {
     log_progress( "Analysis ID                  is %d\n", $analysis_id );
