@@ -51,7 +51,7 @@ use Carp;
 use Bio::EnsEMBL::Utils::Exception;
 use Bio::EnsEMBL::Xref::FetchFiles;
 use Getopt::Long;
-use IO::Uncompress::AnyUncompress;
+use IO::Uncompress::AnyUncompress '$AnyUncompressError';
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -184,9 +184,9 @@ sub get_filehandle {
 
   # 'Transparent' lets IO::Uncompress modules read uncompressed input.
   # It should be on by default but set it just in case.
-  $io =
-    IO::Uncompress::AnyUncompress->new( $file_name, 'Transparent' => 1 )
-    || confess("Can not open file '$file_name'");
+  $io = IO::Uncompress::AnyUncompress->new($file_name,
+                                           'Transparent' => 1 )
+    || confess("Can not open file '$file_name' because: $AnyUncompressError");
 
   if ($verbose) {
     print "Reading from '$file_name'...\n";
@@ -287,6 +287,7 @@ sub get_source_id_for_source_name {
     }
     confess $msg;
   }
+  $sth->finish();
 
   return $source_id;
 } ## end sub get_source_id_for_source_name
@@ -631,7 +632,7 @@ sub upload_xref_object_graphs {
                         "update_desc"  => 1 } );
 
     # If there are any direct_xrefs, add these to the relevant tables
-    $self->add_multiple_direct_xrefs( @{ $xref->{DIRECT_XREFS} } );
+    $self->add_multiple_direct_xrefs( $xref->{DIRECT_XREFS} );
 
 # create entry in primary_xref table with sequence; if this is a "cumulative"
 # entry it may already exist, and require an UPDATE rather than an INSERT
@@ -932,8 +933,9 @@ sub get_taxonomy_from_species_id {
   my %hash;
 
   my $sth = $self->dbi->prepare_cached(
-                "SELECT taxonomy_id FROM species WHERE species_id = ?");
-  $sth->execute() or croak( $self->dbi->errstr() );
+      "SELECT taxonomy_id FROM species WHERE species_id = ?");
+  $sth->execute( $species_id ) or croak( $self->dbi->errstr() );
+
   while ( my @row = $sth->fetchrow_array() ) {
     $hash{ $row[0] } = 1;
   }
@@ -1447,15 +1449,14 @@ sub add_multiple_dependent_xrefs {
     my %dep = %{$depref};
 
     # Insert the xref
-    my $dep_xref_id =
-      $self->add_xref(
-                       ( "acc"        => $dep{ACCESSION},
-                         "version"    => $dep{VERSION} // 1,
-                         "label"      => $dep{LABEL} // $dep{ACCESSION},
-                         "desc"       => $dep{DESCRIPTION},
-                         "source_id"  => $dep{SOURCE_ID},
-                         "species_id" => $dep{SPECIES_ID},
-                         "info_type"  => 'DEPENDENT' ) );
+    my $dep_xref_id = $self->add_xref( {
+      "acc"        => $dep{ACCESSION},
+      "version"    => $dep{VERSION}     // 1,
+      "label"      => $dep{LABEL}       // $dep{ACCESSION},
+      "desc"       => $dep{DESCRIPTION},
+      "source_id"  => $dep{SOURCE_ID},
+      "species_id" => $dep{SPECIES_ID},
+      "info_type"  => 'DEPENDENT' } );
 
     # Add the linkage_annotation and source id it came from
     $self->add_dependent_xref_maponly(
@@ -1562,6 +1563,43 @@ sub add_multiple_synonyms {
 
   return;
 }    ## sub add_multiple_synonyms
+
+=head2 add_synonyms_for_hgnc_vgnc
+  Arg [1]    : hashref : source_id, name, species_id, dead, alias
+  Description: Specialized class to add synonyms from HGNC and VGNC data
+  Return type: N/A
+  Caller     : internal
+=cut
+
+sub add_synonyms_for_hgnc_vgnc {
+  my ($self, $ref_arg) = @_;
+
+  my $source_id    = $ref_arg->{source_id};
+  my $name         = $ref_arg->{name};
+  my $species_id   = $ref_arg->{species_id};
+  my $dead_string  = $ref_arg->{dead};
+  my $alias_string = $ref_arg->{alias};
+
+  # dead name, add to synonym
+  if (defined $dead_string) {
+    $dead_string =~ s/"//xg;
+    my @dead_array = split( ',\s', $dead_string );
+    foreach my $dead (@dead_array){
+      $self->add_to_syn($name, $source_id, $dead, $species_id);
+    }
+  }
+
+  # alias name, add to synonym
+  if (defined $alias_string) {
+    $alias_string =~ s/"//xg;
+    my @alias_array = split( ',\s', $alias_string );
+    foreach my $alias (@alias_array){
+      $self->add_to_syn($name, $source_id, $alias, $species_id);
+    }
+  }
+
+  return;
+}
 
 =head2 get_label_to_acc
   Arg [1]    : description
