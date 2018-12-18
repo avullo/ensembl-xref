@@ -54,14 +54,13 @@ use Carp;
 use IO::File;
 use File::Spec::Functions;
 
-use base qw( Exporter Bio::EnsEMBL::Xref::Mapper );
+use parent qw( Exporter Bio::EnsEMBL::Xref::Mapper );
 
-our @EXPORT = qw( run_coordinatemapping );
+my $coding_weight = 2;
+my $ens_weight    = 3;
 
-our $coding_weight = 2;
-our $ens_weight    = 3;
-
-our $transcript_score_threshold = 0.75;
+my $transcript_score_threshold = 0.75; 
+# 75% identity is required at the minimum for transcript coordinates to match
 
 my $verbose = 0;
 
@@ -70,7 +69,7 @@ my $verbose = 0;
   Arg [2]    : Xref DB Adaptor
   Arg [3]    : Core DB Adaptor
   Description: Initialisation class for the CoordinateMapper
-  Return type: self
+  Return type: Bio::EnsEMBL::Xref::Mapper::CoordinateMapper
   Caller     : Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping
 
 =cut
@@ -94,21 +93,22 @@ sub new {
   Arg [3]    : output dir
   Description: Main routine that calculates the overlap score between the ensembl transcripts and 
                the other data source transcripts (eg: ucsc)
+
+              For each Ensembl transcript:
+                1. Register all Ensembl exons in a RangeRegistry.
+                2. Find all transcripts in the external database that are within the range of
+                   this Ensembl transcript
+              
+              For each of those external transcripts:
+                3. Calculate the overlap of the exons of the external transcript with the Ensembl
+                   exons using the overlap_size() method in the RangeRegistry.
+                4. Register the external exons in their own RangeRegistry.
+                5. Calculate the overlap of the Ensembl exons with the external exons as in step 3
+                6. Calculate the match score.
+                7. Decide whether or not to keep the match.
+
   Return type: None
   Caller     : Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping
-
-
-  For each Ensembl transcript:
-    1. Register all Ensembl exons in a RangeRegistry.
-    2. Find all transcripts in the external database that are within the range of this Ensembl transcript
-  
-  For each of those external transcripts:
-    3. Calculate the overlap of the exons of the external transcript with the Ensembl exons using the
-       overlap_size() method in the RangeRegistry.
-    4. Register the external exons in their own RangeRegistry.
-    5. Calculate the overlap of the Ensembl exons with the external exons as in step 3
-    6. Calculate the match score.
-    7. Decide whether or not to keep the match.
 
 =cut
 
