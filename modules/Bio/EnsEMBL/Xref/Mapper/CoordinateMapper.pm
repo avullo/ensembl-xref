@@ -237,8 +237,6 @@ sub run_coordinatemapping {
 
       foreach my $transcript ( sort { $a->start() <=> $b->start() } @transcripts )
       {
-        print "Transcript stable id ", $transcript->stable_id, "\n";
-
         my @exons = @{ $transcript->get_all_Exons() };
 
         my %transcript_result;
@@ -308,17 +306,6 @@ sub run_coordinatemapping {
           my @exonStarts = split( /,\s*/, $exonStarts );
           my @exonEnds   = split( /,\s*/, $exonEnds );
           my $exonCount  = scalar(@exonStarts);
-
-          if ( $transcript->stable_id eq "ENST00000217347" ) {
-            print "coord_xref_id ", $coord_xref_id, "\n";
-            print "accession ",     $accession,     "\n";
-            print "txStart ",       $txStart,       "\n";
-            print "txEnd ",         $txEnd,         "\n";
-            print "cdsStart ",      $cdsStart,      "\n";
-            print "cdsEnd ",        $cdsEnd,        "\n";
-            print "exonStarts ",    $exonStarts,    "\n";
-            print "exonEnds ",      $exonEnds,      "\n";
-          }
 
           # '$rr2' is the RangeRegistry holding exons from the external
           # transcript, for one transcript at a time.
