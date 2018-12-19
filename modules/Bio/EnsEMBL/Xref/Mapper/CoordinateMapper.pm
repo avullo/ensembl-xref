@@ -54,39 +54,13 @@ use Carp;
 use IO::File;
 use File::Spec::Functions;
 
-use base qw( Exporter Bio::EnsEMBL::Xref::Mapper );
+use parent qw( Bio::EnsEMBL::Xref::Mapper );
 
-our @EXPORT = qw( run_coordinatemapping );
+my $coding_weight = 2;
+my $ens_weight    = 3;
 
-our $coding_weight = 2;
-our $ens_weight    = 3;
-
-our $transcript_score_threshold = 0.75;
-
-my $verbose = 0;
-
-=head2 new
-  Arg [1]    : class
-  Arg [2]    : Xref DB Adaptor
-  Arg [3]    : Core DB Adaptor
-  Description: Initialisation class for the CoordinateMapper
-  Return type: self
-  Caller     : Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping
-
-=cut
-
-sub new {
-  my ( $class, $xref_dba, $core_dba ) = @_;
-
-  my $self = {};
-  bless $self, $class;
-
-  $self->core($core_dba);
-  $self->xref($xref_dba);
-  $verbose = $self->verbose() // 0;
-
-  return $self;
-}
+my $transcript_score_threshold = 0.75; 
+# 75% identity is required at the minimum for transcript coordinates to match
 
 =head2 run_coordinatemapping
   Arg [1]    : boolean flag set to upload result to table or not
@@ -94,21 +68,22 @@ sub new {
   Arg [3]    : output dir
   Description: Main routine that calculates the overlap score between the ensembl transcripts and 
                the other data source transcripts (eg: ucsc)
+
+              For each Ensembl transcript:
+                1. Register all Ensembl exons in a RangeRegistry.
+                2. Find all transcripts in the external database that are within the range of
+                   this Ensembl transcript
+              
+              For each of those external transcripts:
+                3. Calculate the overlap of the exons of the external transcript with the Ensembl
+                   exons using the overlap_size() method in the RangeRegistry.
+                4. Register the external exons in their own RangeRegistry.
+                5. Calculate the overlap of the Ensembl exons with the external exons as in step 3
+                6. Calculate the match score.
+                7. Decide whether or not to keep the match.
+
   Return type: None
   Caller     : Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping
-
-
-  For each Ensembl transcript:
-    1. Register all Ensembl exons in a RangeRegistry.
-    2. Find all transcripts in the external database that are within the range of this Ensembl transcript
-  
-  For each of those external transcripts:
-    3. Calculate the overlap of the exons of the external transcript with the Ensembl exons using the
-       overlap_size() method in the RangeRegistry.
-    4. Register the external exons in their own RangeRegistry.
-    5. Calculate the overlap of the Ensembl exons with the external exons as in step 3
-    6. Calculate the match score.
-    7. Decide whether or not to keep the match.
 
 =cut
 
@@ -119,30 +94,13 @@ sub run_coordinatemapping {
     confess "Cannot access output directory at $output_dir";
   }
 
-  my $sth_stat =
-    $self->xref->dbc->prepare( "INSERT INTO process_status (status, date) "
-      . "VALUES('coordinate_xrefs_started',now())" );
-  $sth_stat->execute();
-  $sth_stat->finish();
-
   my $xref_db = $self->xref();
   my $core_db = $self->core();
 
   my $species = $core_db->species();
 
-  $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species )
-    unless defined $species_id;
-
-  if ( !defined $species_id ) { return; }
-
   # We only do coordinate mapping for mouse and human for now.
-  if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
-
-    my $sth_stat = $self->xref->dbc->prepare(
-          "INSERT INTO process_status (status, date) "
-        . "VALUES ('coordinate_xref_finished',now())" );
-    $sth_stat->execute();
-    $sth_stat->finish();
+  unless ( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) {
     return;
   }
 
@@ -157,7 +115,7 @@ sub run_coordinatemapping {
   ######################################################################
   # Figure out the last used 'xref_id', 'object_xref_id',              #
   # 'unmapped_object_id', and 'unmapped_reason_id' from the Core       #
-  # database.                                                          #
+  # database so we can cheat on bulk insert                            #
   ######################################################################
 
   my $xref_id = $core_dbh->selectall_arrayref('SELECT MAX(xref_id) FROM xref')->[0][0];
@@ -168,10 +126,10 @@ sub run_coordinatemapping {
   my $unmapped_reason_id = $core_dbh->selectall_arrayref(
     'SELECT MAX(unmapped_reason_id) FROM unmapped_reason')->[0][0];
 
-  log_progress( "Last used xref_id            is %d\n", $xref_id );
-  log_progress( "Last used object_xref_id     is %d\n", $object_xref_id );
-  log_progress( "Last used unmapped_object_id is %d\n", $unmapped_object_id );
-  log_progress( "Last used unmapped_reason_id is %d\n", $unmapped_reason_id );
+  $self->log_progress( "Last used xref_id            is %d\n", $xref_id );
+  $self->log_progress( "Last used object_xref_id     is %d\n", $object_xref_id );
+  $self->log_progress( "Last used unmapped_object_id is %d\n", $unmapped_object_id );
+  $self->log_progress( "Last used unmapped_reason_id is %d\n", $unmapped_reason_id );
 
   ######################################################################
   # Get an 'analysis_id', or discover that we need to add our analysis #
@@ -184,75 +142,28 @@ sub run_coordinatemapping {
       . "transcript_score_threshold=" . "%.2f",
     $coding_weight, $ens_weight, $transcript_score_threshold );
 
-  my $analysis_sql = qq(
-    SELECT  analysis_id
-    FROM    analysis
-    WHERE   logic_name = 'xrefcoordinatemapping'
-    AND     parameters = ?
-  );
+  my $analysis_adaptor = $self->core->get_AnalysisAdaptor;
+  my $analysis = $analysis_adaptor->fetch_by_logic_name('xrefcoordinatemapping');
 
-  my $analysis_sth = $core_dbh->prepare($analysis_sql);
-  $analysis_sth->bind_param( 1, $analysis_params, SQL_VARCHAR );
+  my $analysis_id;
+  if (! defined $analysis ) {
+    $analysis_id = $analysis_adaptor->store(
+      Bio::EnsEMBL::Analysis->new(
+        -logic_name => 'xrefcoordinatemapping',
+        -program => 'Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping',
+        -parameters => $analysis_params,
+        -program_file => 'CoordinateMapper.pm'
+      )
+    );
+  } elsif ( $analysis->parameters ne $analysis_params && $do_upload ) {
 
-  $analysis_sth->execute();
+    $analysis->parameters($analysis_params);
+    $analysis_id = $analysis_adaptor->update($analysis);
 
-  my $analysis_id = $analysis_sth->fetchall_arrayref()->[0][0];
-  if ( !defined($analysis_id) ) {
-    $analysis_id = $core_dbh->selectall_arrayref( "SELECT analysis_id FROM analysis "
-        . "WHERE logic_name = 'xrefcoordinatemapping'" )->[0][0];
-
-    if ( defined($analysis_id) && $do_upload ) {
-      log_progress( "Will update 'analysis' table " . "with new parameter settings\n" );
-
-      #-----------------------------------------------------------------
-      # Update an existing analysis.
-      #-----------------------------------------------------------------
-
-      my $sql = qq(
-        UPDATE  analysis
-        SET     created = now(), parameters = ?
-        WHERE   analysis_id = ?
-      );
-
-      $core_dbh->do( $sql, undef, $analysis_params, $analysis_id );
-
-    }
-    else {
-      log_progress("Can not find analysis ID for this analysis:\n");
-      log_progress("  logic_name = 'xrefcoordinatemapping'\n");
-      log_progress( "  parameters = '%s'\n", $analysis_params );
-
-      if ($do_upload) {
-
-        #---------------------------------------------------------------
-        # Store a new analysis.
-        #---------------------------------------------------------------
-
-        log_progress("A new analysis will be added\n");
-
-        $analysis_id =
-          $core_dbh->selectall_arrayref('SELECT MAX(analysis_id) FROM analysis')->[0][0];
-        log_progress( "Last used analysis_id is %d\n", $analysis_id );
-
-        my $sql =
-            'INSERT INTO analysis '
-          . 'VALUES(?, now(), ?, \N, \N, \N, ?, '
-          . '\N, \N, ?, ?, \N, \N, \N)';
-        my $sth = $core_dbh->prepare($sql);
-
-        $sth->bind_param( 1, ++$analysis_id,          SQL_INTEGER );
-        $sth->bind_param( 2, 'xrefcoordinatemapping', SQL_VARCHAR );
-        $sth->bind_param( 3, 'xref_mapper.pl',        SQL_VARCHAR );
-        $sth->bind_param( 4, $analysis_params,        SQL_VARCHAR );
-        $sth->bind_param( 5, 'CoordinateMapper.pm',   SQL_VARCHAR );
-
-        $sth->execute();
-      }
-    } ## end else [ if ( defined($analysis_id...
-  } ## end if ( !defined($analysis_id...
+  }
 
   if ( defined($analysis_id) ) {
-    log_progress( "Analysis ID                  is %d\n", $analysis_id );
+    $self->log_progress( "Analysis ID                  is %d\n", $analysis_id );
   }
 
   ######################################################################
@@ -286,10 +197,7 @@ sub run_coordinatemapping {
   }
   $xref_sth->finish();
 
-  if ( !defined($external_db_id) ) {
-    die "External_db_id is undefined  species_id = $species_id\n";
-  }
-
+  
   ######################################################################
   # Do coordinate matching.                                            #
   ######################################################################
@@ -314,11 +222,11 @@ sub run_coordinatemapping {
   foreach my $chromosome (@chromosomes) {
     my $chr_name = $chromosome->seq_region_name();
 
-    log_progress( "Processing chromsome '%s'\n", $chr_name );
+    $self->log_progress( "Processing chromsome '%s'\n", $chr_name );
 
     my @genes = @{ $chromosome->get_all_Genes( undef, undef, 1 ) };
 
-    log_progress( "There are %4d genes on chromosome '%s'\n",
+    $self->log_progress( "There are %4d genes on chromosome '%s'\n",
       scalar(@genes), $chr_name );
 
     while ( my $gene = shift(@genes) ) {
@@ -536,23 +444,21 @@ sub run_coordinatemapping {
             $best_score ||= $score;
 
             if ( sprintf( "%.3f", $score ) eq sprintf( "%.3f", $best_score ) ) {
-              if ( exists( $unmapped{$coord_xref_id} ) ) {
+              if ( exists $unmapped{$coord_xref_id} ) {
                 $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
-                delete( $unmapped{$coord_xref_id} );
+                delete $unmapped{$coord_xref_id};
                 $mapped{$coord_xref_id}{'reason'}      = undef;
                 $mapped{$coord_xref_id}{'reason_full'} = undef;
               }
 
-              push(
-                @{ $mapped{$coord_xref_id}{'mapped_to'} },
+              push @{ $mapped{$coord_xref_id}{'mapped_to'} },
                 {
                   'ensembl_id'          => $transcript->dbID(),
                   'ensembl_object_type' => 'Transcript'
-                }
-              );
+                };
 
               # This is now a candidate Xref for the gene.
-              if ( !defined( $gene_result{$coord_xref_id} )
+              if ( !defined $gene_result{$coord_xref_id} 
                 || $gene_result{$coord_xref_id} < $score )
               {
                 $gene_result{$coord_xref_id} = $score;
@@ -562,9 +468,9 @@ sub run_coordinatemapping {
             elsif ( exists( $unmapped{$coord_xref_id} ) ) {
               $unmapped{$coord_xref_id}{'reason'} = 'Was not best match';
               $unmapped{$coord_xref_id}{'reason_full'} =
-                sprintf( "Did not top best transcript match score (%.2f)",
-                $best_score );
-              if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+                sprintf( 'Did not top best transcript match score (%.2f)',
+                  $best_score );
+              if ( !defined $unmapped{$coord_xref_id}{'score'}
                 || $score > $unmapped{$coord_xref_id}{'score'} )
               {
                 $unmapped{$coord_xref_id}{'score'} = $score;
@@ -574,19 +480,19 @@ sub run_coordinatemapping {
             }
 
           }
-          elsif ( exists( $unmapped{$coord_xref_id} )
+          elsif ( exists $unmapped{$coord_xref_id}
             && $unmapped{$coord_xref_id}{'reason'} ne 'Was not best match' )
           {
             $unmapped{$coord_xref_id}{'reason'}      = 'Did not meet threshold';
             $unmapped{$coord_xref_id}{'reason_full'} = sprintf(
-              "Match score for transcript " . "lower than threshold (%.2f)",
+              'Match score for transcript lower than threshold (%.2f)',
               $transcript_score_threshold
             );
-            if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+            if ( !defined $unmapped{$coord_xref_id}{'score'}
               || $score > $unmapped{$coord_xref_id}{'score'} )
             {
               $unmapped{$coord_xref_id}{'score'} = $score;
-              $unmapped{$coord_xref_id}{'ensembl_id'} =
+              $unmapped{$coord_xref_id}{'ensembl_id'} = 
                 $transcript->dbID();
             }
           }
@@ -598,29 +504,23 @@ sub run_coordinatemapping {
   } ## end foreach my $chromosome (@chromosomes)
 
   # Make all dumps.  Order is important.
-  dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
-  dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
-  dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped, $core_dbh );
-  dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id, $analysis_id, \%unmapped );
+  $self->dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
+  $self->dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
+  $self->dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id, \%unmapped );
+  $self->dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id, $analysis_id, \%unmapped );
 
   if ($do_upload) {
 
     # Order is important!
-    upload_data( 'unmapped_reason', $unmapped_reason_filename, $external_db_id, $core_dbh );
-    upload_data( 'unmapped_object', $unmapped_object_filename, $external_db_id, $core_dbh );
-    upload_data( 'object_xref', $object_xref_filename, $external_db_id, $core_dbh );
-    upload_data( 'xref', $xref_filename, $external_db_id, $core_dbh );
+    $self->upload_data( 'unmapped_reason', $unmapped_reason_filename, $external_db_id );
+    $self->upload_data( 'unmapped_object', $unmapped_object_filename, $external_db_id );
+    $self->upload_data( 'object_xref', $object_xref_filename, $external_db_id );
+    $self->upload_data( 'xref', $xref_filename, $external_db_id );
   }
-
-  $sth_stat =
-    $self->xref->dbc->prepare( "INSERT INTO process_status (status, date) "
-      . "VALUES ('coordinate_xref_finished',now())" );
-  $sth_stat->execute();
-  $sth_stat->finish();
 
   $self->biomart_fix( "UCSC", "Translation", "Gene" );
   $self->biomart_fix( "UCSC", "Transcript",  "Gene" );
-
+  return;
 } ## end sub run_coordinatemapping
 
 =head2 dump_xref
@@ -635,14 +535,14 @@ sub run_coordinatemapping {
 =cut
 
 sub dump_xref {
-  my ( $filename, $xref_id, $mapped, $unmapped ) = @_;
+  my ( $self, $filename, $xref_id, $mapped, $unmapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'xref' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'xref' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$unmapped} ), values( %{$mapped} ) ) {
+  foreach my $xref ( values %{$unmapped}, values %{$mapped} ) {
 
     # Assign 'xref_id' to this Xref.
     $xref->{'xref_id'} = ++$xref_id;
@@ -666,8 +566,8 @@ sub dump_xref {
   }
   $fh->close();
 
-  log_progress("Dumping for 'xref' done\n");
-
+  $self->log_progress("Dumping for 'xref' done\n");
+  return;
 } ## end sub dump_xref
 
 =head2 dump_object_xref
@@ -681,14 +581,14 @@ sub dump_xref {
 =cut
 
 sub dump_object_xref {
-  my ( $filename, $object_xref_id, $mapped ) = @_;
+  my ( $self, $filename, $object_xref_id, $mapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'object_xref' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'object_xref' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$mapped} ) ) {
+  foreach my $xref ( values %{$mapped} ) {
     foreach my $object_xref ( @{ $xref->{'mapped_to'} } ) {
 
       # Assign 'object_xref_id' to this Object Xref.
@@ -704,15 +604,14 @@ sub dump_object_xref {
   }
   $fh->close();
 
-  log_progress("Dumping for 'object_xref' done\n");
-
+  $self->log_progress("Dumping for 'object_xref' done\n");
+  return;
 } ## end sub dump_objexref
 
 =head2 dump_unmapped_reason
   Arg [1]    : filename to write
   Arg [2]    : unmapped id from coordinate xref table
   Arg [3]    : container of unmapped ids
-  Arg [4]    : core dbh
   Description: Dump unmapped reason to a txt file (eg: "Did not meet threshold")
   Return type: None
   Caller     : internal
@@ -720,13 +619,13 @@ sub dump_object_xref {
 =cut
 
 sub dump_unmapped_reason {
-  my ( $filename, $unmapped_reason_id, $unmapped, $core_dbh ) = @_;
+  my ( $self, $filename, $unmapped_reason_id, $unmapped ) = @_;
 
   # Create a list of the unique reasons.
   my %reasons;
 
-  foreach my $xref ( values( %{$unmapped} ) ) {
-    if ( !exists( $reasons{ $xref->{'reason_full'} } ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
+    if ( !exists $reasons{ $xref->{'reason_full'} } ) {
       $reasons{ $xref->{'reason_full'} } = {
         'summary' => $xref->{'reason'},
         'full'    => $xref->{'reason_full'}
@@ -737,7 +636,9 @@ sub dump_unmapped_reason {
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
+
+  my $core_dbh = $self->core->dbc->db_handle;
 
   my $sth =
     $core_dbh->prepare( 'SELECT unmapped_reason_id '
@@ -745,7 +646,7 @@ sub dump_unmapped_reason {
       . 'WHERE full_description = ?' );
 
   foreach
-    my $reason ( sort( { $a->{'full'} cmp $b->{'full'} } values(%reasons) ) )
+    my $reason ( sort { $a->{'full'} cmp $b->{'full'} } values(%reasons) )
   {
     # Figure out 'unmapped_reason_id' from the core database.
     $sth->bind_param( 1, $reason->{'full'}, SQL_VARCHAR );
@@ -756,7 +657,7 @@ sub dump_unmapped_reason {
     $sth->bind_col( 1, \$id );
     $sth->fetch();
 
-    if ( defined($id) ) {
+    if ( defined $id ) {
       $reason->{'unmapped_reason_id'} = $id;
     }
     else {
@@ -771,14 +672,14 @@ sub dump_unmapped_reason {
   }
   $fh->close();
 
-  log_progress("Dumping for 'unmapped_reason' done\n");
+  $self->log_progress("Dumping for 'unmapped_reason' done\n");
 
   # Assign reasons to the unmapped Xrefs from %reasons.
-  foreach my $xref ( values( %{$unmapped} ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
     $xref->{'reason'}      = $reasons{ $xref->{'reason_full'} };
     $xref->{'reason_full'} = undef;
   }
-
+  return;
 } ## end sub dump_unmapped_reason
 
 =head2 dump_unmapped_object
@@ -793,14 +694,14 @@ sub dump_unmapped_reason {
 =cut
 
 sub dump_unmapped_object {
-  my ( $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
+  my ( $self, $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
 
   my $fh = IO::File->new( '>' . $filename )
     or confess( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
+  $self->log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
 
-  foreach my $xref ( values( %{$unmapped} ) ) {
+  foreach my $xref ( values %{$unmapped} ) {
 
     # Assign 'unmapped_object_id' to this Xref.
     $xref->{'unmapped_object_id'} = ++$unmapped_object_id;
@@ -827,8 +728,8 @@ sub dump_unmapped_object {
   }
   $fh->close();
 
-  log_progress("Dumping for 'unmapped_object' done\n");
-
+  $self->log_progress("Dumping for 'unmapped_object' done\n");
+  return;
 } ## end sub dump_unmapped_object
 
 =head2 upload_data
@@ -843,7 +744,7 @@ sub dump_unmapped_object {
 =cut
 
 sub upload_data {
-  my ( $table_name, $filename, $external_db_id, $dbh ) = @_;
+  my ( $self, $table_name, $filename, $external_db_id ) = @_;
 
   if ( !-r $filename ) {
     confess( sprintf( "Can not open '%s' for reading", $filename ) );
@@ -885,39 +786,24 @@ sub upload_data {
   my $load_sql =
     sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
 
-  log_progress( "Removing old data (external_db_id = '%d') from table '%s'\n",
+  $self->log_progress( "Removing old data (external_db_id = '%d') from table '%s'\n",
     $external_db_id, $table_name );
 
+  my $dbh = $self->core->dbc->db_handle();
   my $rows = $dbh->do( $cleanup_sql, undef, $external_db_id )
     or confess( $dbh->strerr() );
 
-  log_progress( "Removed %d rows\n", $rows );
+  $self->log_progress( "Removed %d rows\n", $rows );
 
-  log_progress( "Uploading for '%s' from '%s'\n", $table_name, $filename );
+  $self->log_progress( "Uploading for '%s' from '%s'\n", $table_name, $filename );
 
   $rows = $dbh->do( $load_sql, undef, $filename )
     or confess( $dbh->errstr() );
 
   $dbh->do("OPTIMIZE TABLE $table_name") or confess( $dbh->errstr() );
 
-  log_progress( "Uploading for '%s' done (%d rows)\n", $table_name, $rows );
-
+  $self->log_progress( "Uploading for '%s' done (%d rows)\n", $table_name, $rows );
+  return;
 } ## end sub upload_data
-
-=head2 log_progress
-  Arg [1]    : String to format and print
-  Arg [2]    : params to fmt
-  Description: utility method to log the mapping progress
-  Return type: None
-  Caller     : internal
-
-=cut
-
-sub log_progress {
-  my ( $fmt, @params ) = @_;
-
-  return if ( !$verbose );
-  printf( STDERR "COORD==> %s", sprintf( $fmt, @params ) );
-}
 
 1;

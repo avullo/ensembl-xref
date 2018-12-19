@@ -88,7 +88,7 @@ $db->schema->populate(
 
 # initialize cooordinatemapper with xref and core dba
 my $coord_mapper =
-  Bio::EnsEMBL::Xref::Mapper::CoordinateMapper->new( $xref_dba, $core_dba );
+  Bio::EnsEMBL::Xref::Mapper::CoordinateMapper->new( xref_dba => $xref_dba, core_dba => $core_dba );
 
 # pass species_id and base_path as arguments
 my $species_id = "9606";
