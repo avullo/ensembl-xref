@@ -62,28 +62,6 @@ my $ens_weight    = 3;
 my $transcript_score_threshold = 0.75; 
 # 75% identity is required at the minimum for transcript coordinates to match
 
-=head2 new
-  Arg [1]    : class
-  Arg [2]    : Xref DB Adaptor
-  Arg [3]    : Core DB Adaptor
-  Description: Initialisation class for the CoordinateMapper
-  Return type: Bio::EnsEMBL::Xref::Mapper::CoordinateMapper
-  Caller     : Bio::EnsEMBL::Production::Pipeline::Xrefs::CoordinateMapping
-
-=cut
-
-sub new {
-  my ( $class, $xref_dba, $core_dba ) = @_;
-
-  my $self = {};
-  bless $self, $class;
-
-  $self->core($core_dba);
-  $self->xref($xref_dba);
-
-  return $self;
-}
-
 =head2 run_coordinatemapping
   Arg [1]    : boolean flag set to upload result to table or not
   Arg [2]    : species id
