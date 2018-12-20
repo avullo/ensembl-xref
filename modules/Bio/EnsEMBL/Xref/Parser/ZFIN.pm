@@ -64,8 +64,8 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   # get the source ids for ZFIN
-  $self->{source_ids} = $self->{xref_dba}->get_source_ids_for_source_name_pattern( "ZFIN_ID" );
-
+  $self->{source_ids} = [ $self->{xref_dba}->get_source_ids_for_source_name_pattern( "ZFIN_ID" ) ];
+  
   # map xref descriptions to accessions, store count of how many (with description) have been loaded
   $self->{loaded} = $self->_build_description_map( );
   
@@ -99,7 +99,7 @@ Build hash mappinng ZFIN xref descriptions to their corresponding accession
 sub _build_description_map {
   my $self = shift;
 
-  my $sql = "SELECT accession, label, version, description FROM xref WHERE source_id in (" . join( ", ", $self->{source_ids} ) . ")";
+  my $sql = "SELECT accession, label, version, description FROM xref WHERE source_id in (" . join( ", ", @{ $self->{source_ids} } ) . ")";
   my $sth = $self->{xref_dba}->dbi->prepare_cached( $sql );
   $sth->execute();
   
