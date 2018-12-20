@@ -901,7 +901,7 @@ CREATE TABLE `xref` (
   `display_label` varchar(512) COLLATE latin1_bin NOT NULL,
   `version` varchar(10) COLLATE latin1_bin DEFAULT NULL,
   `description` text COLLATE latin1_bin,
-  `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','CHECKSUM') COLLATE latin1_bin NOT NULL DEFAULT 'NONE',
+  `info_type` enum('NONE','PROJECTION','MISC','DEPENDENT','DIRECT','SEQUENCE_MATCH','INFERRED_PAIR','PROBE','UNMAPPED','COORDINATE_OVERLAP','CHECKSUM') COLLATE latin1_bin NOT NULL DEFAULT 'NONE',
   `info_text` varchar(255) COLLATE latin1_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`xref_id`),
   UNIQUE KEY `id_index` (`dbprimary_acc`,`external_db_id`,`info_type`,`info_text`,`version`),
