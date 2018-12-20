@@ -184,10 +184,10 @@ sub new {
   # Store these as a hash to speed up lookups. Process optional
   # prefixes first so that in the event of a prefix appearing on both
   # list, it is treated as mandatory.
-  while ( my $prefix = shift @{ $optional_prefixes } ) {
+  foreach my $prefix ( @{ $optional_prefixes } ) {
     $self->{'prefixes_of_interest'}->{$prefix} = 0;
   }
-  while ( my $prefix = shift @{ $mandatory_prefixes } ) {
+  foreach my $prefix ( @{ $mandatory_prefixes } ) {
     $self->{'prefixes_of_interest'}->{$prefix} = 1;
   }
 
@@ -596,6 +596,12 @@ sub _get_gene_names {
                                     }gmsx );
 
     while ( my ( $key, $value ) = splice( @entry_captures, 0, 2 ) ) {
+      # Strip possible evidence codes - again, that they can appear
+      # here isn't mentioned in the User Manual but does appear in the
+      # data. Leave the whitespace alone, splitting should take care
+      # of it.
+      $value =~ s{ $QR_OX_DE_EVIDENCE_CODE_LIST }{}gmsx;
+
       my @split_value = split( $QR_SPLIT_COMMA_WITH_WHITESPACE, $value );
 
       $parsed_entry->{$key}
@@ -784,6 +790,13 @@ sub _get_taxon_codes {
  TAXON_ENTRY:
   while ( my ( $db_qualifier, $taxon_code ) = splice( @ox_captures, 0, 2 ) ) {
 
+    # FIXME: as it is, i.e. with /g above, it is not possible for
+    # either $db_qualifier or $taxon_code to be undefined - if the
+    # match fails for any OX entry Perl will simply not push its
+    # captures to @ox_captures. We need something better... Or perhaps
+    # we could just drop support for multiple taxon codes and stop
+    # messing around with /g.
+
     if ( ( ! defined $db_qualifier )
          || ( ! exists $taxonomy_ids_from_taxdb_codes{$db_qualifier} ) ) {
       # Abort on malformed or new database qualifiers
@@ -856,7 +869,7 @@ sub _record_has_all_needed_fields {
     = List::Util::all { exists $self->{'record'}->{$_} } @needed_fields;
   if ( ! $has_all ) {
     confess 'One or more required fields missing in record';
- }
+  }
 
   return;
 }
