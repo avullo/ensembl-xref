@@ -93,13 +93,13 @@ sub run {
   confess "Could not open zfin aliases file $file" unless defined $zfin_io;
 
   my $zfin_csv = Text::CSV->new({
-      sep_char       => ' ',
+      sep_char       => "\t",
       empty_is_undef => 1,
       strict         => 1,
   }) or confess "could not use zfin file $file: " . Text::CSV->error_diag();
 
-  $zfin_csv->column_names( [ 'acc', 'cur_name', 'cur_symbol', 'syn', 'so', ] );
-  
+  $zfin_csv->column_names( qw( acc cur_name cur_symbol syn so ) );
+
   my $syncount = 0;
   my (%zfin) = %{ $xref_dba->get_valid_codes("zfin", $species_id ) };
 
@@ -107,7 +107,6 @@ sub run {
     my ( $acc, $syn ) = @{ $zfin_line }{ qw( acc syn ) };
     
     next unless defined $zfin{ $acc } and $syn;
-
     $xref_dba->add_to_syn_for_mult_sources($acc, $self->{source_ids}, $syn, $species_id);
     $syncount++;
   }

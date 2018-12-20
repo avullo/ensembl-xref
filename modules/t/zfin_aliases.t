@@ -105,7 +105,6 @@ $parser->run();
 my $hit = $db->schema->resultset('Xref')->find( { accession => 'ZDB-GENE-040718-488' } );
 ok( $hit, 'Found a direct xref' );
 
-ok( $db->schema->resultset('Synonym')->check_synonym($hit->xref_id, 'zgc:92576'), 'Synonym attached to ZFIN Xref');
-
+is( $db->schema->resultset('Synonym')->find( { xref_id => $hit->xref_id } )->synonym , 'zgc:92576', 'Synonym attached to ZFIN Xref');
 
 done_testing();
