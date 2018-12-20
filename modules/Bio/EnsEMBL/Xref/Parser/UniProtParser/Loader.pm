@@ -152,6 +152,10 @@ sub load {
 
   $self->_add_to_send_buffer( $transformed_data );
 
+  # FIXME: time checkpointing isn't particularly useful as it is, the
+  # final xref output by the transformer will just sit in the queue ad
+  # infinitum regardless of how much more of the file there is
+  # left. Will have to create a proper timer for this.
   my $current_time = time();
   if ( ( $self->{'send_backlog'} >= $self->{'batch_size'} )
        || ( $self->{'checkpoint_seconds'} > 0  )

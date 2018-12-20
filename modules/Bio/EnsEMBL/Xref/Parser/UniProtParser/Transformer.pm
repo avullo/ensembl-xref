@@ -152,7 +152,7 @@ sub new {
   $self->_load_maps();
 
   # Store this as a hash to speed up lookups
-  while ( my $source_name = shift @{ $crossref_source_names } ) {
+  foreach my $source_name ( @{ $crossref_source_names } ) {
     $self->{'crossref_source_whitelist'}->{$source_name} = 1;
   }
 
@@ -462,7 +462,7 @@ sub _make_links_from_crossreferences {
              'STABLE_ID'    => $direct_ref->{'optional_info'}->[0],
              'ENSEMBL_TYPE' => $direct_xref_type,
              'LINKAGE_TYPE' => 'DIRECT',
-             'SOURCE_ID'    => $self->_get_source_id( 'direct' ),
+             'SOURCE_ID'    => $self->_get_source_id_from_quality( 'direct' ),
              'ACCESSION'    => $primary_xref->{'ACCESSION'},
              'VERSION'      => $primary_xref->{'VERSION'},
              'LABEL'        => $primary_xref->{'LABEL'},
