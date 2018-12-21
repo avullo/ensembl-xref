@@ -83,10 +83,6 @@ sub run {
     confess "Need to pass source_id, species_id and files";
   }
 
-  # aliases file format (in aliases.txt)
-  # DB-ALT-000717-2        zc1Tg   zc1Tg   zc1     SO:0001218
-  # ZDB-ALT-000717-4        zc3Tg   zc3Tg   Tg(NBT:MAPT-GFP)        SO:0001218
-
   my $file = shift @{ $files };
 
   my $zfin_io = $xref_dba->get_filehandle( $file );

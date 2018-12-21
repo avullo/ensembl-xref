@@ -127,4 +127,6 @@ my $hit = $db->schema->resultset( 'DependentXref' )->fetch_dependent_xref( $refs
 ok( $hit, 'Found a dependent Xref' );
 is( $hit->dependent_xref->accession, 'ZDB-GENE-040426-2161', 'ZFIN xref is dependent on RefSeq accession' );
 
+is( $db->schema->resultset('DependentXref')->count, 1, "All rows were inserted into dependent xref table" );
+
 done_testing();

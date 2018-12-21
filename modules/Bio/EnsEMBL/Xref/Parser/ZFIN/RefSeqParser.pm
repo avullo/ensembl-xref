@@ -88,12 +88,6 @@ sub run {
     $xref_dba->get_filehandle( $file );
   confess "Could not open ZFIN uniprot/swissprot $file" unless defined $refseq_io;
 
-  # refseq file format (in refseq.txt)
-  # ZDB-GENE-000125-12      SO:0000704      igfbp2a NP_571533
-  # ZDB-GENE-000125-4       SO:0000704      dlc     NM_130944
-  # ZDB-GENE-000125-4       SO:0000704      dlc     NP_571019
-  # ZDB-GENE-000128-11      SO:0000704      dbx1b   NM_131178
-
   my $refseq_csv = Text::CSV->new({
       sep_char       => "\t",
       empty_is_undef => 1,
@@ -111,7 +105,7 @@ sub run {
     my ($zfin, $so, $label, $acc) = @{ $refseq_line }{ qw( zfin so label acc ) };
     
     # ignore mappings to predicted RefSeq
-    next if $acc =~ /^XP_/ || $acc =~ /^XM_/ || $acc =~ /^XR_/;
+    next if $acc =~ /^(XP|XM|XR)_/xm;
     
     $mismatch++ and next unless defined $refseq{$acc};
     

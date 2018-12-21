@@ -102,10 +102,6 @@ sub run {
 
   my ( $spcount, $mismatch ) = ( 0, 0 );
 
-  # swissprot file format (in uniprot.txt)
-  # ZDB-GENE-000112-47      SO:0000704      ppardb  Q90Z66
-  # ZDB-GENE-000125-12      SO:0000704      igfbp2a Q9PTH3
-  # ZDB-GENE-000125-4       SO:0000704      dlc     B3DFM3
   my $acc2desc = $self->description();
   my (%swiss) = %{ $xref_dba->get_valid_codes( "uniprot/swissprot", $species_id ) };
 
