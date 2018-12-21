@@ -57,11 +57,6 @@ __PACKAGE__->table("source_url");
   extra: {unsigned => 1}
   is_nullable: 0
 
-=head2 url
-
-  data_type: 'mediumtext'
-  is_nullable: 1
-
 =head2 parser
 
   data_type: 'varchar'
