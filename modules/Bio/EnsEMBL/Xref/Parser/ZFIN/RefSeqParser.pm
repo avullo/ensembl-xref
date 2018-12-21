@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -71,7 +72,7 @@ use parent qw( Bio::EnsEMBL::Xref::Parser::ZFIN );
 
 sub run {
 
-  my ( $self ) = @_;
+  my ($self) = @_;
 
   my $source_id  = $self->{source_id};
   my $species_id = $self->{species_id};
@@ -79,52 +80,58 @@ sub run {
   my $xref_dba   = $self->{xref_dba};
   my $verbose    = $self->{verbose} // 0;
 
-  unless ( defined $source_id and defined $species_id and defined $files ) {
+  unless ( defined $source_id and
+           defined $species_id and
+           defined $files )
+  {
     confess "Need to pass source_id, species_id and files";
   }
 
-  my $file = shift @{ $files };
-  my $refseq_io =
-    $xref_dba->get_filehandle( $file );
-  confess "Could not open ZFIN uniprot/swissprot $file" unless defined $refseq_io;
+  my $file      = shift @{$files};
+  my $refseq_io = $xref_dba->get_filehandle($file);
+  confess "Could not open ZFIN uniprot/swissprot $file"
+    unless defined $refseq_io;
 
-  my $refseq_csv = Text::CSV->new({
-      sep_char       => "\t",
-      empty_is_undef => 1,
-      strict         => 1,
-  }) or confess "Could not use swissprot file $file: " . Text::CSV->error_diag();
+  my $refseq_csv = Text::CSV->new(
+            { sep_char => "\t", empty_is_undef => 1, strict => 1, } ) or
+    confess "Could not use swissprot file $file: " .
+    Text::CSV->error_diag();
 
   $refseq_csv->column_names( [ 'zfin', 'so', 'label', 'acc' ] );
 
   my ( $rscount, $mismatch ) = ( 0, 0 );
 
   my $acc2desc = $self->description();
-  my (%refseq) = %{ $xref_dba->get_valid_codes( "refseq", $species_id ) };
+  my (%refseq) =
+    %{ $xref_dba->get_valid_codes( "refseq", $species_id ) };
 
-  while ( my $refseq_line = $refseq_csv->getline_hr( $refseq_io ) ) {
-    my ($zfin, $so, $label, $acc) = @{ $refseq_line }{ qw( zfin so label acc ) };
-    
+  while ( my $refseq_line = $refseq_csv->getline_hr($refseq_io) ) {
+    my ( $zfin, $so, $label, $acc ) =
+      @{$refseq_line}{qw( zfin so label acc )};
+
     # ignore mappings to predicted RefSeq
     next if $acc =~ /^(XP|XM|XR)_/xm;
-    
+
     $mismatch++ and next unless defined $refseq{$acc};
-    
-    foreach my $xref_id ( @{ $refseq{ $acc } } ) {
-      $xref_dba->add_dependent_xref({ master_xref_id => $xref_id,
-				      acc            => $zfin,
-				      label          => $label,
-				      desc           => $acc2desc->{ $zfin },
-				      source_id      => $source_id,
-				      species_id     => $species_id } );
+
+    foreach my $xref_id ( @{ $refseq{$acc} } ) {
+      $xref_dba->add_dependent_xref(
+                                     { master_xref_id => $xref_id,
+                                       acc            => $zfin,
+                                       label          => $label,
+                                       desc       => $acc2desc->{$zfin},
+                                       source_id  => $source_id,
+                                       species_id => $species_id } );
       $rscount++;
     }
   }
 
   $refseq_io->close();
 
-  print "\t$rscount xrefs from RefSeq ($mismatch mismatches)\n" if $verbose;
-  
-  return 0; # success
+  print "\t$rscount xrefs from RefSeq ($mismatch mismatches)\n"
+    if $verbose;
+
+  return 0;    # success
 
 } ## end sub run
 

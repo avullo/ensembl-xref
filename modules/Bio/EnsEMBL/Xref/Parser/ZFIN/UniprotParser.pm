@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -71,7 +72,7 @@ use parent qw( Bio::EnsEMBL::Xref::Parser::ZFIN );
 
 sub run {
 
-  my ( $self ) = @_;
+  my ($self) = @_;
 
   my $source_id  = $self->{source_id};
   my $species_id = $self->{species_id};
@@ -79,51 +80,55 @@ sub run {
   my $xref_dba   = $self->{xref_dba};
   my $verbose    = $self->{verbose} // 0;
 
-  unless ( defined $source_id and defined $species_id and defined $files ) {
+  unless ( defined $source_id and
+           defined $species_id and
+           defined $files )
+  {
     confess "Need to pass source_id, species_id and files";
   }
 
-  my $file = shift @{ $files };
-  my $swissprot_io =
-    $xref_dba->get_filehandle( $file );
-  confess "Could not open ZFIN uniprot/swissprot $file" unless defined $swissprot_io;
+  my $file         = shift @{$files};
+  my $swissprot_io = $xref_dba->get_filehandle($file);
+  confess "Could not open ZFIN uniprot/swissprot $file"
+    unless defined $swissprot_io;
 
-  my $swissprot_csv = Text::CSV->new({
-      sep_char       => "\t",
-      empty_is_undef => 1,
-      strict         => 1,
-  }) or confess "Could not use swissprot file $file: " . Text::CSV->error_diag();
+  my $swissprot_csv = Text::CSV->new(
+            { sep_char => "\t", empty_is_undef => 1, strict => 1, } ) or
+    confess "Could not use swissprot file $file: " .
+    Text::CSV->error_diag();
 
-  $swissprot_csv->column_names([ 'zfin',
-                                 'so',
-                                 'label',
-                                 'acc',
-  ]);
+  $swissprot_csv->column_names( [ 'zfin', 'so', 'label', 'acc', ] );
 
   my ( $spcount, $mismatch ) = ( 0, 0 );
 
   my $acc2desc = $self->description();
-  my (%swiss) = %{ $xref_dba->get_valid_codes( "uniprot/swissprot", $species_id ) };
+  my (%swiss) =
+    %{ $xref_dba->get_valid_codes( "uniprot/swissprot", $species_id ) };
 
-  while ( my $swissprot_line = $swissprot_csv->getline_hr( $swissprot_io ) ) {
-    $mismatch++ and next unless defined $swiss{ $swissprot_line->{ 'acc' } };
+  while ( my $swissprot_line =
+          $swissprot_csv->getline_hr($swissprot_io) )
+  {
+    $mismatch++ and next
+      unless defined $swiss{ $swissprot_line->{'acc'} };
 
-    foreach my $xref_id ( @{ $swiss{ $swissprot_line->{ 'acc' } } } ) {
-      $xref_dba->add_dependent_xref( { master_xref_id => $xref_id,
-			      acc            => $swissprot_line->{ 'zfin' },
-			      label          => $swissprot_line->{ 'label' },
-			      desc           => $acc2desc->{ $swissprot_line->{ 'zfin' } },
-			      source_id      => $source_id,
-			      species_id     => $species_id } );
+    foreach my $xref_id ( @{ $swiss{ $swissprot_line->{'acc'} } } ) {
+      $xref_dba->add_dependent_xref(
+                     { master_xref_id => $xref_id,
+                       acc            => $swissprot_line->{'zfin'},
+                       label          => $swissprot_line->{'label'},
+                       desc => $acc2desc->{ $swissprot_line->{'zfin'} },
+                       source_id  => $source_id,
+                       species_id => $species_id } );
       $spcount++;
     }
   }
 
   $swissprot_io->close();
 
-  print "\t$spcount xrefs from UniProt ($mismatch mismatches)\n" if $verbose;
-  
-  return 0; # success
+  print "\t$spcount xrefs from UniProt ($mismatch mismatches)\n"
+    if $verbose;
+
+  return 0;    # success
 
 } ## end sub run
 

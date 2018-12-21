@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -71,7 +72,7 @@ use parent qw( Bio::EnsEMBL::Xref::Parser::ZFIN );
 
 sub run {
 
-  my ( $self ) = @_;
+  my ($self) = @_;
 
   my $source_id  = $self->{source_id};
   my $species_id = $self->{species_id};
@@ -79,31 +80,34 @@ sub run {
   my $xref_dba   = $self->{xref_dba};
   my $verbose    = $self->{verbose} // 0;
 
-  unless ( defined $source_id and defined $species_id and defined $files ) {
+  unless ( defined $source_id and
+           defined $species_id and
+           defined $files )
+  {
     confess "Need to pass source_id, species_id and files";
   }
 
-  my $file = shift @{ $files };
+  my $file = shift @{$files};
 
-  my $zfin_io = $xref_dba->get_filehandle( $file );
-  confess "Could not open zfin aliases file $file" unless defined $zfin_io;
+  my $zfin_io = $xref_dba->get_filehandle($file);
+  confess "Could not open zfin aliases file $file"
+    unless defined $zfin_io;
 
-  my $zfin_csv = Text::CSV->new({
-      sep_char       => "\t",
-      empty_is_undef => 1,
-      strict         => 1,
-  }) or confess "could not use zfin file $file: " . Text::CSV->error_diag();
+  my $zfin_csv = Text::CSV->new(
+            { sep_char => "\t", empty_is_undef => 1, strict => 1, } ) or
+    confess "could not use zfin file $file: " . Text::CSV->error_diag();
 
-  $zfin_csv->column_names( qw( acc cur_name cur_symbol syn so ) );
+  $zfin_csv->column_names(qw( acc cur_name cur_symbol syn so ));
 
   my $syncount = 0;
-  my (%zfin) = %{ $xref_dba->get_valid_codes("zfin", $species_id ) };
+  my (%zfin) = %{ $xref_dba->get_valid_codes( "zfin", $species_id ) };
 
-  while ( my $zfin_line = $zfin_csv->getline_hr( $zfin_io ) ) {
-    my ( $acc, $syn ) = @{ $zfin_line }{ qw( acc syn ) };
-    
-    next unless defined $zfin{ $acc } and $syn;
-    $xref_dba->add_to_syn_for_mult_sources($acc, $self->{source_ids}, $syn, $species_id);
+  while ( my $zfin_line = $zfin_csv->getline_hr($zfin_io) ) {
+    my ( $acc, $syn ) = @{$zfin_line}{qw( acc syn )};
+
+    next unless defined $zfin{$acc} and $syn;
+    $xref_dba->add_to_syn_for_mult_sources( $acc, $self->{source_ids},
+                                            $syn, $species_id );
     $syncount++;
   }
 
@@ -111,7 +115,7 @@ sub run {
 
   print "\t$syncount synonyms loaded\n" if $verbose;
 
-  return 0; # success
+  return 0;    # success
 
 } ## end sub run
 

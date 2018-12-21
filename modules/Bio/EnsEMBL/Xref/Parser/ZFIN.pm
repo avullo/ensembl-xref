@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
 See the NOTICE file distributed with this work for additional information
@@ -64,13 +65,15 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   # get the source ids for ZFIN
-  $self->{source_ids} = [ $self->{xref_dba}->get_source_ids_for_source_name_pattern( "ZFIN_ID" ) ];
-  
-  # map xref descriptions to accessions, store count of how many (with description) have been loaded
-  $self->{loaded} = $self->_build_description_map( );
-  
+  $self->{source_ids} = [
+    $self->{xref_dba}->get_source_ids_for_source_name_pattern("ZFIN_ID")
+  ];
+
+# map xref descriptions to accessions, store count of how many (with description) have been loaded
+  $self->{loaded} = $self->_build_description_map();
+
   return $self;
-} ## end sub new
+}
 
 =head2 loaded
 
@@ -80,7 +83,7 @@ Return number of loaded ZFIN xrefs
 
 sub loaded {
   return shift->{loaded};
-} ## end sub loaded
+}
 
 =head2 description
 
@@ -88,8 +91,8 @@ sub loaded {
 
 sub description {
   return shift->{description};
-  
-} ## end sub description
+
+}
 
 =head2 _build_description_map
 
@@ -99,12 +102,14 @@ Build hash mappinng ZFIN xref descriptions to their corresponding accession
 sub _build_description_map {
   my $self = shift;
 
-  my $sql = "SELECT accession, label, version, description FROM xref WHERE source_id in (" . join( ", ", @{ $self->{source_ids} } ) . ")";
-  my $sth = $self->{xref_dba}->dbi->prepare_cached( $sql );
+  my $sql =
+"SELECT accession, label, version, description FROM xref WHERE source_id in ("
+    . join( ", ", @{ $self->{source_ids} } ) . ")";
+  my $sth = $self->{xref_dba}->dbi->prepare_cached($sql);
   $sth->execute();
-  
+
   my ( $acc, $lab, $ver, $desc );
-  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  $sth->bind_columns( \$acc, \$lab, \$ver, \$desc );
 
   my $loaded = 0;
   while ( my @row = $sth->fetchrow_array() ) {
@@ -114,6 +119,6 @@ sub _build_description_map {
 
   return $loaded;
 
-} ## end sub _build_description_map
+}
 
 1;
