@@ -58,14 +58,9 @@ use strict;
 use warnings;
 use Carp;
 use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Xref::FetchFiles;
 use URI::ftp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
-
-my $default_ftp_server = 'ftp.ebi.ac.uk';
-my $default_ftp_dir =
-  'pub/databases/microarray/data/atlas/bioentity_properties/ensembl';
 
 sub run {
 
@@ -79,10 +74,8 @@ sub run {
   my $dba          = $self->{dba};
 
   defined $species_name or confess "Species name is required";
-  
-  my $file = shift @{$files};
 
-  my $species_lookup      = $self->_get_species($verbose);
+  my $species_lookup      = $self->_get_species($files, $verbose);
   my $active = $self->_is_active_species( $species_lookup, $species_name, $verbose );
 
   if ( !$active ) {
@@ -125,23 +118,13 @@ sub run {
 }
 
 sub _get_species {
-  my ( $self, $verbose ) = @_;
+  my ( $self, $files, $verbose ) = @_;
   $verbose = ( defined $verbose ) ? $verbose : 0;
 
-  my $ff = Bio::EnsEMBL::Xref::FetchFiles->new();
-  my $ftp = $ff->get_ftp(URI::ftp->new("ftp://".$default_ftp_server));
-
-  if ( !defined $ftp) {
-    croak "Failed to get FTP connection to $default_ftp_server\n";
-  }
-
-  $ftp->cwd($default_ftp_dir);
-  my @files = $ftp->ls() or confess "Cannot change to $default_ftp_dir: $@";
-  $ftp->quit;
-
   my %species_lookup;
-  foreach my $file (@files) {
+  foreach my $file (@$files) {
     my ($species) = split( /\./, $file );
+    $species =~ s/^.*\///g;
     $species_lookup{$species} = 1;
   }
   return \%species_lookup;
