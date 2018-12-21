@@ -381,11 +381,19 @@ sub md5_checksum {
   return uc $digest->hexdigest();
 }
 
-# REMOVE ME - WILL BE IN MAPPER.PM
+=head2 log_progress
+  Arg [1]    : String to format and print
+  Arg [2]    : params to fmt
+  Description: utility method to log the mapping progress
+  Return type: None
+  Caller     : internal
+
+=cut
+
 sub log_progress {
   my ( $self, $fmt, @params ) = @_;
   return if (!$self->verbose);
   printf( STDERR "CHKSM==> %s\n", sprintf( $fmt, @params ) );
-}
+} ## end sub log_process
 
 1;
