@@ -188,7 +188,9 @@ sub get_filehandle {
                                            'Transparent' => 1 )
     || confess("Can not open file '$file_name' because: $AnyUncompressError");
 
-  print "Reading from '$file_name'...\n" if $verbose;
+  if ($verbose) {
+    print "Reading from '$file_name'...\n";
+  }
   
   return $io;
 } ## end sub get_filehandle
@@ -308,8 +310,7 @@ sub get_source_ids_for_source_name_pattern {
     confess 'source_name undefined';
   }
 
-  my $sth = $self->dbi->prepare_cached(
-               'SELECT source_id FROM source WHERE UPPER(name) LIKE ?');
+  my $sth = $self->dbi->prepare_cached('SELECT source_id FROM source WHERE UPPER(name) LIKE ?');
 
   my $big_name = uc $source_name;
   $sth->execute("%${big_name}%");
@@ -348,11 +349,14 @@ sub get_source_name_for_source_id {
     $source_name = $row[0];
   }
   else {
-    confess
-"There is no entity with source-id  $source_id  in the source-table of the \n"
-      . "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n"
-      . "and in the parser\n"
-      . "Couldn't get source name for source ID $source_id\n";
+    my $error_msg = <<"ERROR";
+There is no entity with source-id  $source_id  in the source-table of the
+xref-database. The source-id and the name of the source-id is hard-coded in
+populate_metadata.sql and in the parser.
+Couldn't get source name for source ID $source_id
+ERROR
+
+    confess $error_msg;
   }
 
   return $source_name;
@@ -2272,6 +2276,8 @@ sub get_gene_specific_list {
 }
 
 =head2 get_refseq_sources
+
+Return a map from RefSeq prefix symbols to their corresponding sources.
 
 =cut 
 
