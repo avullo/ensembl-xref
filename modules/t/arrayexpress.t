@@ -69,7 +69,7 @@ my $parser = Bio::EnsEMBL::Xref::Parser::ArrayExpressParser->new(
   source_id  => 1,
   species_id => 9606,
   species    => 'homo_sapiens',
-  files      => ["project=>ensembl"],
+  files      => [ "$Bin/test-data/homo_sapiens.ensgene.tsv" ],
   xref_dba   => $xref_dba,
   dba        => $dba
 );
