@@ -44,9 +44,7 @@ ok($db, 'TestDB ready to go');
 
 my $source = $db->schema->resultset('Source')->create({
   name => 'RefSeq',
-  status => 'KNOWN',
   source_release => '38',
-  download => 'Y',
   priority => 1,
   priority_description => 'Like a boss',
 });

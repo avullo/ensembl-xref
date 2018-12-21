@@ -71,9 +71,7 @@ throws_ok
 # Add an example source to the db
 my $source = $db->schema->resultset('Source')->create({
   name                 => 'RefSeq',
-  status               => 'KNOWN',
   source_release       => '38',
-  download             => 'Y',
   priority             => 1,
   priority_description => 'Like a boss',
 });
@@ -111,9 +109,7 @@ is(
 # Add a second example source to the db
 my $source2 = $db->schema->resultset('Source')->create({
   name                 => 'Second_fake_source',
-  status               => 'KNOWN',
   source_release       => '38',
-  download             => 'Y',
   priority             => 1,
   priority_description => 'Like a boss',
 });
