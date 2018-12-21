@@ -557,6 +557,13 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 
 note 'Test methods to support base mapper';
 
+# Add an example source to the db
+my $species_id_autoincrement = $db->schema->resultset('Species')->create({
+  taxonomy_id => 9606,
+  name => 'Homo sapiens',
+  aliases => 'Human'
+});
+
 throws_ok {
   $xref_dba->get_id_from_species_name()
 } qr/Undefined/, 'Throws with no name argument';
@@ -573,7 +580,7 @@ is( $names->[0], 'Homo sapiens', 'Species name' );
 throws_ok {
   $xref_dba->add_alt_allele()
 } qr/Need to specify/, 'Throws with missing arguments';
-  
+
 my $gene_stable_id = $db->schema->resultset('GeneStableId')->create({
   internal_id          => 1,
   stable_id            => 'FakeStableId0001'
