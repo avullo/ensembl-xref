@@ -58,8 +58,8 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 $db->schema->populate(
   'Species',
   [
-    [qw/species_id taxonomy_id name aliases/],
-    [ 9606, 9606, 'homo_sapiens', 'homo_sapiens' ],
+    [qw/species_id taxonomy_id name/],
+    [ 9606, 9606, 'homo_sapiens' ],
   ]
 );
 
