@@ -1,8 +1,7 @@
 =head1 LICENSE
 
-Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
-Copyright [2016-2018] EMBL-European Bioinformatics Institute
-
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -70,7 +69,8 @@ Returntype  : String
 =cut
 
 sub logic_name {
-  return $_[0]->{_logic_name};
+  my $self = shift;
+  return $self->{_logic_name};
 }
 
 =head2 method
@@ -96,7 +96,8 @@ Returntype  : String - matches the db_name in external_db or the source table
 =cut
 
 sub external_db_name {
-  return $_[0]->{_external_db_name};
+  my $self = shift;
+  return $self->{_external_db_name};
 }
 
 =head2 object_type
@@ -108,7 +109,8 @@ Returntype  : String matching the Ensembl feature types e.g. Gene, Transcript,
 =cut
 
 sub object_type {
-  return $_[0]->{_object_type};
+  my $self = shift;
+  return $self->{_object_type};
 }
 
 
@@ -133,7 +135,8 @@ Description : Getter for the cached source ID used in the current run
 =cut
 
 sub source_id {
-  return $_[0]->{_source_id};
+  my $self = shift;
+  return $self->{_source_id};
 }
 
 =head2 process
@@ -217,11 +220,9 @@ sub perform_mapping {
   my ($self, $sequences) = @_;
   
   my @final_results;
-  my $dbc = $self->mapper()->xref()->dbc();
-
   my $source_id = $self->source_id;
   
-  $dbc->sql_helper()->batch(
+  $self->_xref_helper->batch(
     -SQL => 'SELECT accession FROM checksum_xref WHERE checksum = ? AND source_id = ?', 
     -CALLBACK => sub {
       my ($sth) = @_;
@@ -345,7 +346,8 @@ Returntype  : Bio::EnsEMBL::Utils::SqlHelper
 =cut
 
 sub _xref_helper {
-  return $_[0]->xref()->dbc()->sql_helper();
+  my $self = shift;
+  return $self->xref()->dbc()->sql_helper();
 }
 
 =head2 _map_checksums
