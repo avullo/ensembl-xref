@@ -557,7 +557,7 @@ is( _check_db( $db, 'PrimaryXref', { xref_id => $xref_id_new } )->sequence, 'CTA
 
 note 'Test methods to support base mapper';
 
-# Add an example source to the db
+# Add an example species to the db
 my $species_id_autoincrement = $db->schema->resultset('Species')->create({
   taxonomy_id => 9606,
   name => 'Homo sapiens',
