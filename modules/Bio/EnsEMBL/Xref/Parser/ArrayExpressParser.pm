@@ -75,10 +75,13 @@ sub run {
 
   defined $species_name or confess "Species name is required";
 
-  my $species_lookup      = $self->_get_species($files, $verbose);
-  my $active = $self->_is_active_species( $species_lookup, $species_name, $verbose );
+  # Extract species name from file name
+  my $species = shift @{$files};
+  $species =~ s/\..*$//g;
+  $species =~ s/^.*\///g;
 
-  if ( !$active ) {
+  # Leave early if this is not the right species
+  if ($species ne $species_name) {
     return 0;
   }
 
@@ -117,28 +120,5 @@ sub run {
 
 }
 
-sub _get_species {
-  my ( $self, $files, $verbose ) = @_;
-  $verbose = ( defined $verbose ) ? $verbose : 0;
-
-  my %species_lookup;
-  foreach my $file (@$files) {
-    my ($species) = split( /\./, $file );
-    $species =~ s/^.*\///g;
-    $species_lookup{$species} = 1;
-  }
-  return \%species_lookup;
-}
-
-# checks if the species is still active in ArrayExress
-sub _is_active_species {
-  my ( $self, $species_lookup, $species_name, $verbose ) = @_;
-
-  if ( $species_lookup->{$species_name} ) {
-    printf( 'Found ArrayExpress has declared the name "%s". This was an alias' . "\n", $species_name ) if $verbose;
-    return 1;
-  }
-  return 0;
-}
 
 1;
