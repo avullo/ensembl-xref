@@ -49,7 +49,6 @@ use warnings;
 use Carp;
 
 use Bio::EnsEMBL::Utils::Exception;
-use Bio::EnsEMBL::Xref::FetchFiles;
 use Getopt::Long;
 use IO::Uncompress::AnyUncompress '$AnyUncompressError';
 
