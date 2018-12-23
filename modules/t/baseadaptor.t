@@ -135,7 +135,9 @@ is(
 
 # get_source_name_for_source_id
 throws_ok { $xref_dba->get_source_name_for_source_id() } qr/source_id undefined/, 'Throws with no arguments';
-is( $xref_dba->get_source_name_for_source_id('fake_name'), -1, 'source not present in db' );
+throws_ok {
+  $xref_dba->get_source_name_for_source_id('fake_name')
+   } qr/no entity/, 'source not present in db';
 is( $xref_dba->get_source_name_for_source_id($source->source_id), 'RefSeq', 'get_source_name_for_source_id' );
 
 
