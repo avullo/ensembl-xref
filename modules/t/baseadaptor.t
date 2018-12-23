@@ -558,8 +558,7 @@ note 'Test methods to support base mapper';
 # Add an example species to the db
 my $species_id_autoincrement = $db->schema->resultset('Species')->create({
   taxonomy_id => 9606,
-  name => 'Homo sapiens',
-  aliases => 'Human'
+  name => 'Homo sapiens'
 });
 
 throws_ok {

@@ -44,8 +44,7 @@ my $dba = $multi_db->get_DBAdaptor('core');
 
 my $xref_db = Bio::EnsEMBL::Xref::Test::TestDB->new();
 my $source = $xref_db->schema->resultset('Source')->create({
-  name => 'UniParc',
-  status => 'XREF'
+  name => 'UniParc'
 });
 
 

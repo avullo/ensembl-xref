@@ -52,7 +52,6 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 note 'Create ZFIN source and some corresponding xrefs';
 my $zfin_source = $db->create_db_row('Source', {
   name => 'zfin_id',
-  status => 'XREF',
   priority_description => 'Test ZFIN source',
   priority => 10
 });

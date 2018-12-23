@@ -52,7 +52,6 @@ my $xref_dba = Bio::EnsEMBL::Xref::DBSQL::BaseAdaptor->new(
 note 'Create ZFIN source and some corresponding xrefs';
 my $zfin_source = $db->create_db_row('Source', {
   name => 'zfin_id',
-  status => 'XREF',
   priority_description => 'Test ZFIN source',
   priority => 10
 });
@@ -73,7 +72,6 @@ $zfin_desc_parser->run();
 note 'Create Uniprot source and a corresponding xref';
 my $uniprot_source = $db->create_db_row('Source', {
   name => 'uniprot/swissprot',
-  status => 'XREF',
   priority_description => 'No idea',
   priority => 20
 });
