@@ -88,9 +88,6 @@ my $result = $db->schema->resultset('Source')->find(
   { name => 'VGNC' }
 );
 
-is($result->download, 'Y', 'All VGNC sources are downloaded');
-is($result->status, 'NOIDEA', 'All VGNC sources have the same status');
-
 # We do not use URLs in the current pipeline, so it's difficult and fruitless to test
 # the source_url relationship
 
