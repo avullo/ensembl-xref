@@ -54,9 +54,9 @@ use_ok 'Bio::EnsEMBL::Xref::Parser::JGI_ProteinParser';
 $db->schema->populate(
   'Source',
   [
-   [ qw/name status/ ],
-   [ 'cint_jgi_v1', 'KNOWN' ],
-   [ 'cint_aniseed_v1', 'KNOWN' ],
+   [ qw/name/ ],
+   [ 'cint_jgi_v1' ],
+   [ 'cint_aniseed_v1' ],
   ]
 );
 
