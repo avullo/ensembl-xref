@@ -125,9 +125,19 @@ sub _init_db {
     my $dbh = DBI->connect(
       sprintf('DBI:%s:database=;host=%s;port=%s', $conf{driver}, $conf{host}, $conf{port}), $conf{user}, $conf{pass}, \%opts
     );
-    $dbh->do('CREATE DATABASE '.$conf{db}.';');
+
+    # Remove database if already exists
+    my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
+    my $dbname = $conf{db};
+    if ($dbs{$dbname}) {
+      $dbh->do( "DROP DATABASE $dbname;" );
+    }
+
+    $dbh->do("CREATE DATABASE $dbname;");
+
     $dbh->disconnect;
   }
+
   $schema->deploy(\%deploy_opts) if $conf{create} == 1;
 
   return $schema;
@@ -261,8 +271,7 @@ sub populate_metadata {
 
     my ( $source_name ) = $section =~ /
       \A
-      source\s+(\S+)
-      \s*
+      source\s+(.*)
       \Z
     /x;
     $sources{$source_name} = $self->_mangle_source_block($section, $config);
@@ -280,7 +289,7 @@ sub populate_metadata {
       \Z
     /x;
 
-    my @taxonomy_ids = split /\n/, $config->val( $section, 'taxonomy_id' );
+    my $taxon_id = $config->val( $section, 'taxonomy_id' );
 
     my @source_names = $config->val( $section, 'source', ());
     my %sources_for_species;
@@ -295,9 +304,8 @@ sub populate_metadata {
     }
 
     $compiled_config{$species_name} = {
-      species_id => $taxonomy_ids[0], # species_id == taxon_id in xref system,
-      taxonomy_id => \@taxonomy_ids,
-      alias => $species_name,
+      species_id => $taxon_id, # species_id == taxon_id in xref system,
+      taxonomy_id => $taxon_id,
       sources => \%sources_for_species
     }
   }
@@ -305,57 +313,45 @@ sub populate_metadata {
   # Now populate the database with the result each source entry in the config with source-specific info
 
   foreach my $species ( keys %compiled_config ) {
-    foreach my $taxon ( @{ $compiled_config{$species}{taxonomy_id} } ) {
 
       my $species_record = $self->schema->resultset('Species')->create({
         species_id => $compiled_config{$species}{species_id},
         name => $species,
-        taxonomy_id => $taxon,# could be $compiled_config{$species}{species_id}?
+        taxonomy_id => $compiled_config{$species}{taxonomy_id}
       });
 
-      foreach my $source ( keys %sources ) {
-        my $required_sources = delete $sources{$source}->{dependent_on};
-        my $uris = delete $sources{$source}->{data_uri};
-        my $release_url = delete $sources{$source}->{release_uri};
-        my $parser = delete $sources{$source}->{parser};
+      my $compiled_sources = $compiled_config{$species}{sources};
 
-
+      foreach my $source ( keys %$compiled_sources ) {
+        my $parser = delete $compiled_sources->{$source}->{parser};
         my $source_record = $self->schema->resultset('Source')->find_or_create(
-          $sources{$source}  # once trimmed, we can pump the source hash straight into DBIC
+          $compiled_sources->{$source}  # once trimmed, we can pump the source hash straight into DBIC
         );
+        delete $sources{$source};
 
-        if (defined $required_sources && @{$required_sources}) {
-          foreach my $predicate (@{$required_sources}) {
-            $source_record->create_related(
-              'dependent_source',
-              {
-                dependent_name => $predicate
-              }
-            );
-          }
-        }
-
-        my $time = 'now()'; # SQL::Abstract binding for SQL functions
-        if (defined $uris && @{$uris}) {
-          foreach my $uri (@{$uris}) {
-            $source_record->create_related(
-              'source_url',
-              {
-                species_id => $species_record->species_id,
-                url => $uri,
-                release_url => $release_url,
-                parser => $parser,
-                file_modified_date => \$self->now_function,
-                upload_date => \$self->now_function,
-              }
-            );
-          }
-        } # End if URIs
+        $source_record->create_related(
+           'source_url',
+           {
+             species_id => $compiled_config{$species}{species_id},
+             parser => $parser
+           }
+         );
       } # End foreach source
 
-    } # End foreach taxon
 
   } # End foreach species
+
+  # Add any sources which are not explicitly linked to a species
+  
+  foreach my $source ( keys %sources ) {
+
+    my $parser = delete $sources{$source}->{parser};
+    my $source_record = $self->schema->resultset('Source')->find_or_create(
+      $sources{$source}
+    );
+
+  }
+
   return;
 }
 
@@ -468,7 +464,7 @@ sub _mangle_source_block {
   
   my $source_config;
   # Get the easy ones done
-  foreach my $key (qw/name download priority parser release_uri/) {
+  foreach my $key (qw/name priority parser/) {
     my $value = $config->val($section, $key);
     if (defined $value) {
       $source_config->{$key} = $value;
@@ -479,18 +475,6 @@ sub _mangle_source_block {
   if (defined $priority_description) {
     $source_config->{priority_description} = $priority_description;
   }
-
-  my @dependents = split /\,/, $config->val($section, 'dependent_on', '');
-  if (scalar @dependents > 0) {
-    $source_config->{dependent_on} = \@dependents;
-  }
-
-  my @uris = $config->val($section, 'data_uri');
-  if (scalar @uris > 0) {
-    $source_config->{data_uri} = \@dependents;
-  }
-
-  $source_config->{source_release} = 1; # Why is this always 1? Nobody knows
 
   return $source_config;
 }
