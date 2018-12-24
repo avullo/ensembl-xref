@@ -84,9 +84,6 @@ my $count = $db->schema->resultset('Source')->count(
 );
 
 cmp_ok($count , '==', 1,'One VGNC source in place of four in the original DB');
-my $result = $db->schema->resultset('Source')->find(
-  { name => 'VGNC' }
-);
 
 # We do not use URLs in the current pipeline, so it's difficult and fruitless to test
 # the source_url relationship
