@@ -62,6 +62,12 @@ use URI::ftp;
 
 use parent qw( Bio::EnsEMBL::Xref::Parser );
 
+=head2 run
+  Description: Runs the ArrayExpressParser
+  Return type: N/A
+  Caller     : internal
+=cut
+
 sub run {
 
   my ( $self, $ref_arg ) = @_;
