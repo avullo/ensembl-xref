@@ -237,10 +237,12 @@ sub create_db_row {
 
 
 =head2 populate_metadata
+
   Arg [1]    : Config file path, normally xref_config.ini
   Description: Loads species and source information into the schema from the
                supplied file in Config::IniFiles format
   Caller     : User
+
 =cut
 
 # TODO: Provide species AND division in order to limit quantity of madness
@@ -250,8 +252,8 @@ sub populate_metadata {
 
   my $config = $self->_load_xref_config($config_path);
 
-  # Populate species table with species taxa and aliases
-  warn "Iterating over species groups\n";
+  # Populate species table with species taxa
+  print "Iterating over species groups\n";
 
   my %sources;
   # First build up records for each potential source
@@ -309,7 +311,6 @@ sub populate_metadata {
         species_id => $compiled_config{$species}{species_id},
         name => $species,
         taxonomy_id => $taxon,# could be $compiled_config{$species}{species_id}?
-        aliases => $compiled_config{$species}{alias},
       });
 
       foreach my $source ( keys %sources ) {
@@ -490,8 +491,6 @@ sub _mangle_source_block {
   }
 
   $source_config->{source_release} = 1; # Why is this always 1? Nobody knows
-
-  $source_config->{status} = $config->val($section, 'status', 'NOIDEA');
 
   return $source_config;
 }
