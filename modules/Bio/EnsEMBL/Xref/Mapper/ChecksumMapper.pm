@@ -394,6 +394,7 @@ sub log_progress {
   my ( $self, $fmt, @params ) = @_;
   return if (!$self->verbose);
   printf( STDERR "CHKSM==> %s\n", sprintf( $fmt, @params ) );
+  return;
 } ## end sub log_process
 
 1;
